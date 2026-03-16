@@ -1,3 +1,20 @@
+import appScript from "../public/app.js";
+import indexDocument from "../public/index.html";
+import stylesSheet from "../public/styles.css";
+
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="shield" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f4d28c" />
+      <stop offset="100%" stop-color="#8c5524" />
+    </linearGradient>
+  </defs>
+  <path d="M64 10 106 26v32c0 31-18 50-42 60C40 108 22 89 22 58V26Z" fill="url(#shield)" stroke="#351b10" stroke-width="8" />
+  <path d="M64 30 78 57H50Z" fill="#351b10" />
+  <circle cx="64" cy="75" r="15" fill="#351b10" />
+</svg>
+`;
+
 const DEFAULTS = Object.freeze({
   appName: "Duty Guild",
   timeZone: "Europe/Samara",
@@ -32,24 +49,19 @@ export default {
 };
 
 async function handleFetch(request, env) {
+  const url = new URL(request.url);
+  const { pathname } = url;
+
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204 });
   }
 
-  await ensureBootstrapMembers(env);
-
-  const url = new URL(request.url);
-  const { pathname } = url;
-
   if (!pathname.startsWith("/api/")) {
-    if (env.ASSETS && typeof env.ASSETS.fetch === "function") {
-      return env.ASSETS.fetch(request);
-    }
-    return new Response("Не найдено.", { status: 404 });
+    return serveStaticAsset(pathname);
   }
 
   if (pathname === "/api/health" && request.method === "GET") {
-    return json({ ok: true });
+    return json({ ok: true, hasDatabase: Boolean(env.DB) });
   }
 
   if (pathname === "/api/config" && request.method === "GET") {
@@ -62,6 +74,8 @@ async function handleFetch(request, env) {
       debugAuthCodes: config.authDebugCodes,
     });
   }
+
+  await ensureBootstrapMembers(env);
 
   if (pathname === "/api/auth/request-code" && request.method === "POST") {
     return handleRequestCode(request, env);
@@ -1178,8 +1192,62 @@ async function run(env, sql, params = []) {
 }
 
 function prepare(env, sql, params) {
+  if (!env.DB || typeof env.DB.prepare !== "function") {
+    throw new Error("D1 binding DB is not available.");
+  }
   const statement = env.DB.prepare(sql);
   return params.length ? statement.bind(...params) : statement;
+}
+
+function serveStaticAsset(pathname) {
+  const asset = getStaticAsset(pathname);
+  if (!asset) {
+    return new Response("Не найдено.", { status: 404 });
+  }
+
+  return new Response(asset.body, {
+    status: 200,
+    headers: {
+      "Content-Type": asset.contentType,
+      "Cache-Control": asset.cacheControl,
+    },
+  });
+}
+
+function getStaticAsset(pathname) {
+  if (pathname === "/styles.css") {
+    return {
+      body: stylesSheet,
+      contentType: "text/css; charset=utf-8",
+      cacheControl: "public, max-age=3600",
+    };
+  }
+
+  if (pathname === "/app.js") {
+    return {
+      body: appScript,
+      contentType: "text/javascript; charset=utf-8",
+      cacheControl: "public, max-age=3600",
+    };
+  }
+
+  if (pathname === "/favicon.svg" || pathname === "/favicon.ico") {
+    return {
+      body: FAVICON_SVG,
+      contentType: "image/svg+xml",
+      cacheControl: "public, max-age=86400",
+    };
+  }
+
+  if (pathname === "/" || pathname === "/index.html" || !pathname.includes(".")) {
+    return {
+      body: indexDocument,
+      contentType: "text/html; charset=utf-8",
+      cacheControl: "no-store",
+    };
+  }
+
+  return null;
 }
 
 function json(payload, status = 200, extraHeaders = {}) {
