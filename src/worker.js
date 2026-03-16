@@ -19,7 +19,7 @@ export default {
       console.error("Unhandled fetch error", error);
       return json(
         {
-          error: "Something went wrong inside the guild hall.",
+          error: "Внутри Duty Guild произошла ошибка.",
         },
         500,
       );
@@ -45,7 +45,7 @@ async function handleFetch(request, env) {
     if (env.ASSETS && typeof env.ASSETS.fetch === "function") {
       return env.ASSETS.fetch(request);
     }
-    return new Response("Not found.", { status: 404 });
+    return new Response("Не найдено.", { status: 404 });
   }
 
   if (pathname === "/api/health" && request.method === "GET") {
@@ -134,7 +134,7 @@ async function handleFetch(request, env) {
     return handleFeedbackSubmission(request, env, member, feedbackMatch[1]);
   }
 
-  return json({ error: "Route not found." }, 404);
+  return json({ error: "Маршрут не найден." }, 404);
 }
 
 async function handleRequestCode(request, env) {
@@ -143,7 +143,7 @@ async function handleRequestCode(request, env) {
   const email = normalizeEmail(rawEmail);
 
   if (!isValidEmail(email)) {
-    return json({ error: "Enter a valid work email." }, 400);
+    return json({ error: "Введите корректный рабочий email." }, 400);
   }
 
   const member = await first(
@@ -153,7 +153,7 @@ async function handleRequestCode(request, env) {
   );
 
   if (!member) {
-    return json({ error: "This email is not approved yet." }, 403);
+    return json({ error: "Этот email ещё не одобрен администратором." }, 403);
   }
 
   const config = getConfig(env);
@@ -199,7 +199,7 @@ async function handleVerifyCode(request, env) {
   const code = String(body?.code || "").trim();
 
   if (!isValidEmail(email) || !/^\d{6}$/.test(code)) {
-    return json({ error: "Email or code is invalid." }, 400);
+    return json({ error: "Некорректный email или код." }, 400);
   }
 
   const loginCode = await first(
@@ -215,19 +215,19 @@ async function handleVerifyCode(request, env) {
   );
 
   if (!loginCode) {
-    return json({ error: "Request a fresh code first." }, 400);
+    return json({ error: "Сначала запросите новый код." }, 400);
   }
 
   if (loginCode.used_at) {
-    return json({ error: "This code was already used." }, 400);
+    return json({ error: "Этот код уже использован." }, 400);
   }
 
   if (new Date(loginCode.expires_at).getTime() <= Date.now()) {
-    return json({ error: "This code has expired." }, 400);
+    return json({ error: "Срок действия кода истёк." }, 400);
   }
 
   if (Number(loginCode.attempt_count || 0) >= 5) {
-    return json({ error: "Too many attempts. Request a new code." }, 400);
+    return json({ error: "Слишком много попыток. Запросите новый код." }, 400);
   }
 
   const expectedHash = await hashValue(`${email}:${code}`, env);
@@ -237,7 +237,7 @@ async function handleVerifyCode(request, env) {
       "UPDATE login_codes SET attempt_count = attempt_count + 1 WHERE id = ?",
       [loginCode.id],
     );
-    return json({ error: "The code does not match." }, 400);
+    return json({ error: "Код не совпадает." }, 400);
   }
 
   const member = await first(
@@ -247,7 +247,7 @@ async function handleVerifyCode(request, env) {
   );
 
   if (!member) {
-    return json({ error: "This member is not active." }, 403);
+    return json({ error: "Этот участник сейчас не активен." }, 403);
   }
 
   const config = getConfig(env);
@@ -322,7 +322,7 @@ async function handleCreateMember(request, env) {
   const role = body?.role === "admin" ? "admin" : "member";
 
   if (!isValidEmail(email)) {
-    return json({ error: "Enter a valid email for the new member." }, 400);
+    return json({ error: "Введите корректный email для нового участника." }, 400);
   }
 
   const existing = await first(env, "SELECT id FROM members WHERE email = ? LIMIT 1", [
@@ -368,7 +368,7 @@ async function handleCreateGameEvent(request, env, actor) {
   const notes = String(body?.notes || "").trim();
 
   if (!title || !isDateOnly(eventDate)) {
-    return json({ error: "Fill in the event title and date." }, 400);
+    return json({ error: "Заполните название события и дату." }, 400);
   }
 
   await run(
@@ -403,11 +403,11 @@ async function handleFeedbackSubmission(request, env, actor, cycleId) {
   const rating = Number(body?.rating);
 
   if (!targetMemberId || !comment || Number.isNaN(rating)) {
-    return json({ error: "Fill in rating, target member and comment." }, 400);
+    return json({ error: "Заполните оценку, получателя отзыва и комментарий." }, 400);
   }
 
   if (rating < 1 || rating > 5) {
-    return json({ error: "Rating must be between 1 and 5." }, 400);
+    return json({ error: "Оценка должна быть от 1 до 5." }, 400);
   }
 
   const assignment = await first(
@@ -422,7 +422,7 @@ async function handleFeedbackSubmission(request, env, actor, cycleId) {
   );
 
   if (!assignment) {
-    return json({ error: "This member is not assigned to the chosen cycle." }, 400);
+    return json({ error: "Этот участник не назначен на выбранный цикл." }, 400);
   }
 
   await run(
@@ -608,7 +608,7 @@ async function createNextCycle(env, createdByMemberId) {
   if (futureCycle) {
     return {
       ok: false,
-      error: "There is already a future cleaning cycle waiting in the queue.",
+      error: "Следующий цикл уже существует и ждёт своей даты.",
     };
   }
 
@@ -648,7 +648,7 @@ async function createNextCycle(env, createdByMemberId) {
   if (members.length < config.dutyTeamSize) {
     return {
       ok: false,
-      error: "There are not enough active guild members to assign a cleaning party.",
+      error: "Недостаточно активных участников, чтобы собрать отряд Хранителей Порядка.",
     };
   }
 
@@ -983,7 +983,7 @@ async function getCurrentMember(request, env) {
 async function requireMember(request, env) {
   const member = await getCurrentMember(request, env);
   if (!member) {
-    return json({ error: "You need to sign in first." }, 401);
+    return json({ error: "Сначала нужно войти в систему." }, 401);
   }
   return member;
 }
@@ -994,7 +994,7 @@ async function requireAdmin(request, env) {
     return member;
   }
   if (member.role !== "admin") {
-    return json({ error: "Only guild admins may do that." }, 403);
+    return json({ error: "Это действие доступно только администраторам." }, 403);
   }
   return member;
 }
@@ -1042,52 +1042,52 @@ function getConfig(env) {
 
 async function sendLoginCodeEmail(env, details) {
   const text = [
-    `Hello, ${details.displayName}.`,
+    `${details.displayName}, здравствуйте.`,
     "",
-    `Your Duty Guild sign-in code is: ${details.code}`,
-    `It stays valid until ${details.expiresAt}.`,
+    `Ваш код для входа в Duty Guild: ${details.code}`,
+    `Он действует до ${details.expiresAt}.`,
   ].join("\n");
 
   return sendEmail(env, {
     to: details.email,
-    subject: "Duty Guild sign-in code",
+    subject: "Duty Guild: код для входа",
     text,
-    html: `<p>Hello, ${escapeHtml(details.displayName)}.</p><p>Your Duty Guild sign-in code is <strong>${details.code}</strong>.</p><p>It stays valid until ${escapeHtml(details.expiresAt)}.</p>`,
+    html: `<p>${escapeHtml(details.displayName)}, здравствуйте.</p><p>Ваш код для входа в Duty Guild: <strong>${details.code}</strong>.</p><p>Он действует до ${escapeHtml(details.expiresAt)}.</p>`,
     debugCode: details.code,
   });
 }
 
 async function sendAssignmentEmail(env, details) {
   const text = [
-    `Hello, ${details.displayName}.`,
+    `${details.displayName}, здравствуйте.`,
     "",
-    "A new cleaning cycle has been generated for your office party.",
-    `Window: ${details.startsOn} to ${details.endsOn}`,
-    `Recommended cleaning day: ${details.plannedCleaningDate}`,
+    "Для вашей команды созван новый Ритуал Порядка.",
+    `Окно ритуала: ${details.startsOn} - ${details.endsOn}`,
+    `Рекомендованный день ритуала: ${details.plannedCleaningDate}`,
   ].join("\n");
 
   return sendEmail(env, {
     to: details.email,
-    subject: "Duty Guild: new cleaning duty",
+    subject: "Duty Guild: созван Ритуал Порядка",
     text,
-    html: `<p>Hello, ${escapeHtml(details.displayName)}.</p><p>A new cleaning cycle has been generated for your office party.</p><p><strong>Window:</strong> ${escapeHtml(details.startsOn)} to ${escapeHtml(details.endsOn)}</p><p><strong>Recommended cleaning day:</strong> ${escapeHtml(details.plannedCleaningDate)}</p>`,
+    html: `<p>${escapeHtml(details.displayName)}, здравствуйте.</p><p>Для вашей команды созван новый Ритуал Порядка.</p><p><strong>Окно ритуала:</strong> ${escapeHtml(details.startsOn)} - ${escapeHtml(details.endsOn)}</p><p><strong>Рекомендованный день ритуала:</strong> ${escapeHtml(details.plannedCleaningDate)}</p>`,
   });
 }
 
 async function sendReminderEmail(env, details) {
   const text = [
-    `Hello, ${details.displayName}.`,
+    `${details.displayName}, здравствуйте.`,
     "",
-    "Reminder from Duty Guild:",
-    `Today is the planned cleaning day for the cycle ${details.startsOn} to ${details.endsOn}.`,
-    `Cleaning date: ${details.plannedCleaningDate}`,
+    "Напоминание от Duty Guild.",
+    `Сегодня назначен день Ритуала Порядка для цикла ${details.startsOn} - ${details.endsOn}.`,
+    `Дата ритуала: ${details.plannedCleaningDate}`,
   ].join("\n");
 
   return sendEmail(env, {
     to: details.email,
-    subject: "Duty Guild reminder: cleaning day",
+    subject: "Duty Guild: напоминание о Ритуале Порядка",
     text,
-    html: `<p>Hello, ${escapeHtml(details.displayName)}.</p><p>Reminder from Duty Guild:</p><p>Today is the planned cleaning day for the cycle <strong>${escapeHtml(details.startsOn)}</strong> to <strong>${escapeHtml(details.endsOn)}</strong>.</p><p><strong>Cleaning date:</strong> ${escapeHtml(details.plannedCleaningDate)}</p>`,
+    html: `<p>${escapeHtml(details.displayName)}, здравствуйте.</p><p>Напоминание от Duty Guild.</p><p>Сегодня назначен день Ритуала Порядка для цикла <strong>${escapeHtml(details.startsOn)}</strong> - <strong>${escapeHtml(details.endsOn)}</strong>.</p><p><strong>Дата ритуала:</strong> ${escapeHtml(details.plannedCleaningDate)}</p>`,
   });
 }
 
@@ -1217,7 +1217,7 @@ function isDateOnly(value) {
 
 function displayNameFromEmail(email) {
   if (!email) {
-    return "Guild Member";
+    return "Участник гильдии";
   }
 
   const stem = email.split("@")[0].replace(/[._-]+/g, " ");
