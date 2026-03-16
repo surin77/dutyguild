@@ -50,6 +50,12 @@ Closed office-only duty roster for cleaning cycles, board-game scheduling and te
 
 - Default local mode is `EMAIL_MODE=stub`: emails are logged, and debug codes can be returned in the API response.
 - For real delivery, set `EMAIL_MODE=resend`, configure `RESEND_API_KEY` and use a verified sender in `EMAIL_FROM`.
+- Recommended production setup:
+  - verify a dedicated subdomain such as `notify.dutyguild.ru` in Resend
+  - set `EMAIL_FROM=noreply@notify.dutyguild.ru`
+  - upload the API key with `npx wrangler secret put RESEND_API_KEY`
+  - redeploy with `npx wrangler deploy`
+- Login code requests now fail explicitly if production email is not configured, instead of pretending the message was sent.
 
 ## Recommended next implementation steps
 

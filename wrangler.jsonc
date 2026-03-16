@@ -3,7 +3,8 @@
   "name": "dutyguild",
   "main": "src/worker.js",
   "compatibility_date": "2026-03-16",
-  "workers_dev": true,
+  "workers_dev": false,
+  "preview_urls": false,
   "rules": [
     {
       "type": "Text",
@@ -21,7 +22,7 @@
   "vars": {
     "APP_NAME": "Duty Guild",
     "APP_TIMEZONE": "Europe/Samara",
-    "EMAIL_MODE": "stub",
+    "EMAIL_MODE": "resend",
     "AUTH_DEBUG_CODES": "false",
     "DUTY_INTERVAL_DAYS": "14",
     "DUTY_TEAM_SIZE": "2",

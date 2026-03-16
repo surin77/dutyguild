@@ -3,7 +3,7 @@ APP_TIMEZONE=Europe/Samara
 APP_SECRET=replace-this-before-production
 AUTH_DEBUG_CODES=true
 EMAIL_MODE=stub
-EMAIL_FROM=noreply@dutyguild.ru
+EMAIL_FROM=noreply@notify.dutyguild.ru
 ADMIN_BOOTSTRAP_EMAILS=owner@dutyguild.ru
 SESSION_COOKIE_NAME=dutyguild_session
 SESSION_TTL_DAYS=30
@@ -12,4 +12,3 @@ DUTY_INTERVAL_DAYS=14
 DUTY_TEAM_SIZE=2
 PREFERRED_CLEANING_WEEKDAYS=2,4
 RESEND_API_KEY=
-

@@ -176,6 +176,7 @@ async function handleRequestCode(request, env) {
   const expiresAt = new Date(
     Date.now() + config.loginCodeTtlMinutes * 60 * 1000,
   ).toISOString();
+  const loginCodeId = crypto.randomUUID();
 
   await run(
     env,
@@ -189,7 +190,7 @@ async function handleRequestCode(request, env) {
       INSERT INTO login_codes (id, email, code_hash, purpose, expires_at)
       VALUES (?, ?, ?, 'login', ?)
     `,
-    [crypto.randomUUID(), email, codeHash, expiresAt],
+    [loginCodeId, email, codeHash, expiresAt],
   );
 
   const delivery = await sendLoginCodeEmail(env, {
@@ -198,6 +199,20 @@ async function handleRequestCode(request, env) {
     code,
     expiresAt,
   });
+
+  if (!delivery.ok) {
+    await run(env, "DELETE FROM login_codes WHERE id = ?", [loginCodeId]);
+
+    return json(
+      {
+        error:
+          delivery.mode === "misconfigured"
+            ? "Почтовый вестник ордена ещё не настроен. Обратитесь к Магистру Совета."
+            : "Печать допуска не удалось отправить письмом. Попробуйте ещё раз чуть позже.",
+      },
+      502,
+    );
+  }
 
   return json({
     ok: true,
@@ -1107,10 +1122,9 @@ async function sendReminderEmail(env, details) {
 
 async function sendEmail(env, payload) {
   const config = getConfig(env);
-  const useResend =
-    config.emailMode === "resend" && String(env.RESEND_API_KEY || "").trim();
+  const resendApiKey = String(env.RESEND_API_KEY || "").trim();
 
-  if (!useResend) {
+  if (config.emailMode === "stub") {
     console.log("Email stub", {
       to: payload.to,
       subject: payload.subject,
@@ -1118,7 +1132,17 @@ async function sendEmail(env, payload) {
     });
 
     return {
+      ok: true,
       mode: "stub",
+      debugCode: config.authDebugCodes ? payload.debugCode ?? null : null,
+    };
+  }
+
+  if (config.emailMode === "resend" && !resendApiKey) {
+    console.error("Resend mode is enabled, but RESEND_API_KEY is missing.");
+    return {
+      ok: false,
+      mode: "misconfigured",
       debugCode: config.authDebugCodes ? payload.debugCode ?? null : null,
     };
   }
@@ -1126,7 +1150,7 @@ async function sendEmail(env, payload) {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      Authorization: `Bearer ${resendApiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -1142,12 +1166,14 @@ async function sendEmail(env, payload) {
     const body = await response.text();
     console.error("Resend request failed", body);
     return {
+      ok: false,
       mode: "failed",
       debugCode: config.authDebugCodes ? payload.debugCode ?? null : null,
     };
   }
 
   return {
+    ok: true,
     mode: "resend",
     debugCode: config.authDebugCodes ? payload.debugCode ?? null : null,
   };
