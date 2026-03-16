@@ -17,7 +17,7 @@ const root = document.querySelector("#app");
 boot().catch((error) => {
   console.error(error);
   state.loading = false;
-  state.error = error.message || "Не удалось открыть Duty Guild.";
+  state.error = error.message || "Не удалось открыть зал ордена Duty Guild.";
   render();
 });
 
@@ -59,7 +59,7 @@ function renderSiteHeader() {
         <span class="header-user__meta">${roleLabel(state.me.role)}</span>
       </div>
     `
-    : '<span class="header-user__meta">Закрытый офисный портал</span>';
+    : '<span class="header-user__meta">Закрытый зал ордена</span>';
 
   return `
     <header class="site-header">
@@ -72,10 +72,10 @@ function renderSiteHeader() {
           </div>
         </div>
         <nav class="top-nav" aria-label="Разделы">
-          <span class="top-nav__item">Обзор</span>
-          <span class="top-nav__item">График</span>
-          <span class="top-nav__item">Команда</span>
-          <span class="top-nav__item">${state.me?.role === "admin" ? "Управление" : "Статистика"}</span>
+          <span class="top-nav__item">Летопись</span>
+          <span class="top-nav__item">Ритуалы</span>
+          <span class="top-nav__item">Круг</span>
+          <span class="top-nav__item">${state.me?.role === "admin" ? "Совет" : "Знамения"}</span>
         </nav>
         ${userLabel}
       </div>
@@ -88,9 +88,9 @@ function renderLoading() {
     <section class="hero-stage">
       <article class="feature-card feature-card--loading">
         <p class="section-tag">Загрузка</p>
-        <h1>Поднимаем доску гильдии</h1>
+        <h1>Пробуждаем летопись ордена</h1>
         <p>
-          Загружаем состав команды, ближайшие Ритуалы Порядка и настольные вечера.
+          Собираем свитки круга, ближайшие Ритуалы Порядка и таверненные сборы.
         </p>
       </article>
     </section>
@@ -111,9 +111,9 @@ function renderAuth() {
   const debugBlock = state.debugCode
     ? `
       <div class="debug-note">
-        <span class="debug-note__label">Код для локальной разработки</span>
+        <span class="debug-note__label">Печать для локальной разработки</span>
         <strong>${escapeHtml(state.debugCode)}</strong>
-        <span>Показывается только когда включен режим debug-кодов.</span>
+        <span>Показывается только когда включён режим отладочных печатей.</span>
       </div>
     `
     : "";
@@ -122,30 +122,30 @@ function renderAuth() {
     <section class="hero-stage">
       <article class="feature-card">
         <div class="feature-card__content">
-          <p class="section-tag">В духе D&D Beyond</p>
-          <h1>Гильдия порядка для вашего офиса</h1>
+          <p class="section-tag">Хроники Duty Guild</p>
+          <h1>Орден Ритуала Порядка для вашего офиса</h1>
           <p class="feature-card__lead">
-            Здесь живут Ритуалы Порядка, отзывы о них, история циклов и календарь настолок,
-            чтобы выбирать день без лишних пересечений.
+            Здесь хранятся Ритуалы Порядка, свидетельства хронистов, история созывов и
+            свод настольных собраний, чтобы выбирать день без ненужных столкновений.
           </p>
           <div class="feature-badges">
-            <span class="feature-badge">Только для команды</span>
-            <span class="feature-badge">Вход по почте</span>
-            <span class="feature-badge">Ротация раз в 2 недели</span>
+            <span class="feature-badge">Только для посвящённых</span>
+            <span class="feature-badge">Печать допуска по почте</span>
+            <span class="feature-badge">Созыв раз в 2 недели</span>
           </div>
         </div>
         <aside class="feature-rail">
           <div class="rail-card">
-            <p class="rail-card__title">Как работает доступ</p>
-            <p>На сайт попадают только одобренные email-адреса. Сначала админ добавляет участника, потом вход работает по одноразовому коду.</p>
+            <p class="rail-card__title">Как войти в круг</p>
+            <p>В орден допускаются только одобренные адреса. Сначала Совет вносит имя в свиток, затем вход открывается по одноразовой печати допуска.</p>
           </div>
           <div class="rail-card">
-            <p class="rail-card__title">Что уже есть</p>
+            <p class="rail-card__title">Что уже вписано в летопись</p>
             <ul class="rail-list">
-              <li>Закрытая авторизация через email</li>
-              <li>Назначение Хранителей Порядка с балансом</li>
-              <li>Учёт игровых вечеров</li>
-              <li>DnD-стилистика интерфейса</li>
+              <li>Закрытый допуск через почтовую печать</li>
+              <li>Балансное назначение Хранителей Порядка</li>
+              <li>Таверненный свод настольных собраний</li>
+              <li>Интерфейс с налётом героической хроники</li>
             </ul>
           </div>
         </aside>
@@ -154,11 +154,11 @@ function renderAuth() {
       <section class="content-grid content-grid--auth">
         <article class="panel panel--auth">
           <div class="panel__header">
-            <p class="section-tag">Вход</p>
-            <h2>${state.pendingEmail ? "Подтвердите вход" : "Получите код доступа"}</h2>
+            <p class="section-tag">Печать допуска</p>
+            <h2>${state.pendingEmail ? "Подтвердите печать" : "Запросите печать доступа"}</h2>
           </div>
           <p class="panel__intro">
-            Используйте одобренную рабочую почту. Код придёт письмом, а в локальной разработке может показываться прямо здесь.
+            Используйте одобренную рабочую почту. Печать придёт письмом, а в локальной разработке может появиться прямо здесь.
           </p>
           ${authCard}
           ${debugBlock}
@@ -166,14 +166,14 @@ function renderAuth() {
 
         <article class="panel panel--sidebar">
           <div class="panel__header">
-            <p class="section-tag">Правила гильдии</p>
-            <h2>О чём этот портал</h2>
+            <p class="section-tag">Устав ордена</p>
+            <h2>О чём эта летопись</h2>
           </div>
           <ul class="info-list">
-            <li><strong>Честная ротация.</strong> Система старается не перегружать одних и тех же людей.</li>
-            <li><strong>Календарь в одном месте.</strong> Уборка и настолки видны рядом, без отдельного чата и таблиц.</li>
-            <li><strong>Закрытый контур.</strong> Посторонние не могут зарегистрироваться сами.</li>
-            <li><strong>Мягкий старт.</strong> Никакой собственной инфраструктуры и лишней админки на первом этапе.</li>
+            <li><strong>Справедливый жребий.</strong> Орден не даёт одному и тому же герою тащить всё бремя слишком часто.</li>
+            <li><strong>Единая карта дней.</strong> Ритуалы и настольные сборы видны рядом, без россыпи чатов и таблиц.</li>
+            <li><strong>Закрытый круг.</strong> Посторонние не могут войти в орден своей волей.</li>
+            <li><strong>Лёгкое основание.</strong> Без собственной инфраструктуры и лишней тяжести на старте.</li>
           </ul>
         </article>
       </section>
@@ -190,7 +190,7 @@ function renderRequestCodeCard() {
           state.loginEmail,
         )}" />
       </label>
-      <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Отправить код входа</button>
+      <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Призвать печать допуска</button>
     </form>
   `;
 }
@@ -205,16 +205,16 @@ function renderVerifyCard() {
         )}" readonly />
       </label>
       <label>
-        <span>Шестизначный код</span>
+        <span>Шестизначная печать</span>
         <input id="login-code" name="code" inputmode="numeric" maxlength="6" placeholder="123456" value="${escapeHtml(
           state.loginCode,
         )}" />
       </label>
       <div class="button-row">
-        <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Войти</button>
+        <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Открыть врата</button>
         <button id="back-to-email" class="button button--secondary" type="button" ${
           state.busy ? "disabled" : ""
-        }>Назад</button>
+        }>К свитку</button>
       </div>
     </form>
   `;
@@ -237,10 +237,10 @@ function renderDashboard() {
     <section class="hero-stage">
       <article class="feature-card feature-card--dashboard">
         <div class="feature-card__content">
-          <p class="section-tag">Панель гильдии</p>
-          <h1>${escapeHtml(state.me.displayName)}, управление в одном окне</h1>
+          <p class="section-tag">Зал летописей</p>
+          <h1>${escapeHtml(state.me.displayName)}, хроники открыты</h1>
           <p class="feature-card__lead">
-            Видно, кто назначен Хранителем Порядка сейчас, когда следующий Ритуал, какие настолки впереди и как распределяется нагрузка по команде.
+            Здесь видно, кто несёт текущее служение Хранителя Порядка, когда грядёт следующий Ритуал, какие таверненные сборы впереди и как распределяется бремя по кругу.
           </p>
           <div class="feature-badges">
             <span class="feature-badge">${roleLabel(state.me.role)}</span>
@@ -250,51 +250,51 @@ function renderDashboard() {
         <aside class="feature-rail">
           <div class="rail-card rail-card--compact">
             <span class="rail-metric">${stats.memberCount}</span>
-            <span class="rail-label">участников в составе</span>
+            <span class="rail-label">имен во свитке братства</span>
           </div>
           <div class="rail-card rail-card--compact">
             <span class="rail-metric">${stats.cycleCount}</span>
-            <span class="rail-label">циклов в истории</span>
+            <span class="rail-label">созывов в летописи</span>
           </div>
           <div class="rail-card rail-card--compact">
             <span class="rail-metric">${stats.gameCount}</span>
-            <span class="rail-label">ближайших настолок</span>
+            <span class="rail-label">грядущих таверненных сборов</span>
           </div>
         </aside>
       </article>
 
       <section class="toolbar">
         <div class="toolbar__copy">
-          <p class="section-tag">Статус сессии</p>
-          <h2>Вы вошли как ${escapeHtml(state.me.displayName)}</h2>
+          <p class="section-tag">Печать признана</p>
+          <h2>Врата открыты для ${escapeHtml(state.me.displayName)}</h2>
           <p>${roleLabel(state.me.role)} · ${escapeHtml(state.me.email)}</p>
         </div>
         <div class="button-row">
-          <button id="refresh-dashboard" class="button button--secondary" type="button">Обновить данные</button>
-          <button id="logout-button" class="button button--primary" type="button">Выйти</button>
+          <button id="refresh-dashboard" class="button button--secondary" type="button">Освежить летопись</button>
+          <button id="logout-button" class="button button--primary" type="button">Покинуть зал</button>
         </div>
       </section>
 
       <section class="stats-band">
         <article class="stat-card">
-          <span class="stat-card__label">Участники</span>
+          <span class="stat-card__label">Братство</span>
           <strong>${stats.memberCount}</strong>
-          <p>Активных людей в гильдии</p>
+          <p>Соратников в активном круге</p>
         </article>
         <article class="stat-card">
-          <span class="stat-card__label">Циклы</span>
+          <span class="stat-card__label">Летопись</span>
           <strong>${stats.cycleCount}</strong>
-          <p>Сохранено в истории</p>
+          <p>Созывов сохранено в хрониках</p>
         </article>
         <article class="stat-card">
-          <span class="stat-card__label">Настолки</span>
+          <span class="stat-card__label">Сборы</span>
           <strong>${stats.gameCount}</strong>
-          <p>Видно в ближайшем окне</p>
+          <p>Таверненных вечеров впереди</p>
         </article>
         <article class="stat-card">
-          <span class="stat-card__label">Средний отзыв</span>
+          <span class="stat-card__label">Слава</span>
           <strong>${stats.averageRating}</strong>
-          <p>По завершённым Ритуалам Порядка</p>
+          <p>По свидетельствам о Ритуалах Порядка</p>
         </article>
       </section>
 
@@ -316,7 +316,7 @@ function renderCyclePanel(title, cycle, emptyText) {
       <article class="panel">
         <div class="panel__header">
           <p class="section-tag">${escapeHtml(title)}</p>
-        <h2>Ритуал ещё не созван</h2>
+        <h2>Призыв ещё не совершен</h2>
         </div>
         <p class="panel__intro">${escapeHtml(emptyText)}</p>
       </article>
@@ -336,7 +336,7 @@ function renderCyclePanel(title, cycle, emptyText) {
       <p class="panel__intro">
         Окно ритуала: ${formatDate(cycle.startsOn)} - ${formatDate(cycle.endsOn)}
       </p>
-      <div class="tag-row">${badges || '<span class="muted">Назначений пока нет</span>'}</div>
+      <div class="tag-row">${badges || '<span class="muted">Хранители ещё не названы</span>'}</div>
     </article>
   `;
 }
@@ -359,13 +359,13 @@ function renderGamesPanel() {
   return `
     <article class="panel">
       <div class="panel__header">
-        <p class="section-tag">Календарь вечеров</p>
-        <h2>Ближайшие настолки</h2>
+        <p class="section-tag">Таверненный свод</p>
+        <h2>Грядущие настольные сборы</h2>
       </div>
       ${
         items
           ? `<ul class="list-stack">${items}</ul>`
-          : '<p class="panel__intro">Игровые вечера пока не добавлены.</p>'
+          : '<p class="panel__intro">Пока ни один таверненный сбор не вписан в свод.</p>'
       }
     </article>
   `;
@@ -390,13 +390,13 @@ function renderFeedbackPanel() {
   return `
     <article class="panel">
       <div class="panel__header">
-        <p class="section-tag">Репутация</p>
-        <h2>Последние отзывы</h2>
+        <p class="section-tag">Слава гильдии</p>
+        <h2>Последние свидетельства хронистов</h2>
       </div>
       ${
         items
           ? `<ul class="list-stack">${items}</ul>`
-          : '<p class="panel__intro">Отзывы появятся после завершённых уборок.</p>'
+          : '<p class="panel__intro">Свидетельства появятся после первых завершённых Ритуалов Порядка.</p>'
       }
     </article>
   `;
@@ -419,17 +419,17 @@ function renderRosterPanel() {
   return `
     <article class="panel panel--wide">
       <div class="panel__header">
-        <p class="section-tag">Состав</p>
-        <h2>Участники гильдии</h2>
+        <p class="section-tag">Свиток братства</p>
+        <h2>Имена, внесённые в круг</h2>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>Имя</th>
-              <th>Роль</th>
-              <th>Дежурств</th>
-              <th>Рейтинг</th>
+              <th>Сан</th>
+              <th>Служений</th>
+              <th>Слава</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -443,16 +443,16 @@ function renderAdminPanel() {
   return `
     <article class="panel panel--wide panel--admin">
       <div class="panel__header">
-        <p class="section-tag">Управление</p>
-        <h2>Инструменты администратора</h2>
+        <p class="section-tag">Зал совета</p>
+        <h2>Повеления Магистра</h2>
       </div>
       <p class="panel__intro">
-        Добавляйте людей, планируйте игровые вечера и запускайте следующий Ритуал Порядка из одного блока.
+        Призывайте новых соратников в круг, отмечайте таверненные сборы и созывайте следующий Ритуал Порядка из одного зала.
       </p>
 
       <div class="admin-grid">
         <form id="invite-member-form" class="stack-form admin-form">
-          <h3>Одобрить участника</h3>
+          <h3>Призвать соратника в круг</h3>
           <label>
             <span>Имя</span>
             <input name="displayName" placeholder="Мила Храбрая" />
@@ -462,17 +462,17 @@ function renderAdminPanel() {
             <input name="email" type="email" placeholder="mila@dutyguild.ru" />
           </label>
           <label>
-            <span>Роль</span>
+            <span>Сан</span>
             <select name="role">
-              <option value="member">Участник</option>
-              <option value="admin">Админ</option>
+              <option value="member">Соратник круга</option>
+              <option value="admin">Магистр Совета</option>
             </select>
           </label>
-          <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Сохранить участника</button>
+          <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Вписать в свиток</button>
         </form>
 
         <form id="game-event-form" class="stack-form admin-form">
-          <h3>Добавить настолку</h3>
+          <h3>Назначить таверненный сбор</h3>
           <label>
             <span>Название</span>
             <input name="title" placeholder="Root: реванш" />
@@ -492,16 +492,16 @@ function renderAdminPanel() {
             </label>
           </div>
           <label>
-            <span>Комментарий</span>
-            <textarea name="notes" rows="3" placeholder="Например: занята переговорка"></textarea>
+            <span>Заметка хрониста</span>
+            <textarea name="notes" rows="3" placeholder="Например: великая переговорка уже занята"></textarea>
           </label>
-          <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>Сохранить событие</button>
+          <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>Внести в свод</button>
         </form>
       </div>
 
       <div class="admin-banner">
         <div>
-          <p class="section-tag">Следующий шаг</p>
+          <p class="section-tag">Воля Совета</p>
           <h3>Созвать новый Ритуал Порядка</h3>
           <p>
             Система выберет сбалансированную пару Хранителей Порядка, постарается не повторять прошлое назначение и
@@ -562,7 +562,7 @@ async function onRequestCode(event) {
     state.pendingEmail = email;
     state.loginEmail = email;
     state.debugCode = response.debugCode || "";
-    state.notice = "Код входа отправлен. Проверь почту.";
+    state.notice = "Печать допуска отправлена. Проверь почтовый свиток.";
     state.error = "";
     render();
   });
@@ -583,7 +583,7 @@ async function onVerifyCode(event) {
     state.pendingEmail = "";
     state.loginCode = "";
     state.debugCode = "";
-    state.notice = "Вход выполнен.";
+    state.notice = "Печать признана. Врата открыты.";
     state.error = "";
     state.dashboard = await api("/api/dashboard");
     render();
@@ -593,7 +593,7 @@ async function onVerifyCode(event) {
 async function refreshDashboard() {
   await withBusy(async () => {
     state.dashboard = await api("/api/dashboard");
-    state.notice = "Данные обновлены.";
+    state.notice = "Летопись обновлена.";
     state.error = "";
     render();
   });
@@ -604,7 +604,7 @@ async function onLogout() {
     await api("/api/auth/logout", { method: "POST" });
     state.me = null;
     state.dashboard = null;
-    state.notice = "Вы вышли из системы.";
+    state.notice = "Вы покинули зал ордена.";
     state.error = "";
     render();
   });
@@ -624,7 +624,7 @@ async function onInviteMember(event) {
     });
     event.currentTarget.reset();
     state.dashboard = await api("/api/dashboard");
-    state.notice = "Участник добавлен в состав.";
+    state.notice = "Имя внесено в свиток братства.";
     state.error = "";
     render();
   });
@@ -646,7 +646,7 @@ async function onCreateGameEvent(event) {
     });
     event.currentTarget.reset();
     state.dashboard = await api("/api/dashboard");
-    state.notice = "Настолка добавлена в календарь.";
+    state.notice = "Таверненный сбор внесён в свод.";
     state.error = "";
     render();
   });
@@ -677,7 +677,7 @@ async function withBusy(action) {
     await action();
   } catch (error) {
     console.error(error);
-    state.error = error.message || "Что-то пошло не так.";
+    state.error = error.message || "Чары дали сбой.";
     state.notice = "";
     render();
   } finally {
@@ -730,7 +730,7 @@ function getStats() {
 }
 
 function roleLabel(role) {
-  return role === "admin" ? "Администратор" : "Участник";
+  return role === "admin" ? "Магистр Совета" : "Соратник круга";
 }
 
 function formatDate(dateString) {

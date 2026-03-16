@@ -153,7 +153,7 @@ async function handleRequestCode(request, env) {
   );
 
   if (!member) {
-    return json({ error: "Этот email ещё не одобрен администратором." }, 403);
+    return json({ error: "Этот адрес ещё не внесён Советом в свиток допуска." }, 403);
   }
 
   const config = getConfig(env);
@@ -199,7 +199,7 @@ async function handleVerifyCode(request, env) {
   const code = String(body?.code || "").trim();
 
   if (!isValidEmail(email) || !/^\d{6}$/.test(code)) {
-    return json({ error: "Некорректный email или код." }, 400);
+    return json({ error: "Печать не распознана. Проверьте email и код." }, 400);
   }
 
   const loginCode = await first(
@@ -215,19 +215,19 @@ async function handleVerifyCode(request, env) {
   );
 
   if (!loginCode) {
-    return json({ error: "Сначала запросите новый код." }, 400);
+    return json({ error: "Сначала призовите новую печать допуска." }, 400);
   }
 
   if (loginCode.used_at) {
-    return json({ error: "Этот код уже использован." }, 400);
+    return json({ error: "Эта печать уже угасла и не может быть призвана вновь." }, 400);
   }
 
   if (new Date(loginCode.expires_at).getTime() <= Date.now()) {
-    return json({ error: "Срок действия кода истёк." }, 400);
+    return json({ error: "Сила этой печати уже рассеялась." }, 400);
   }
 
   if (Number(loginCode.attempt_count || 0) >= 5) {
-    return json({ error: "Слишком много попыток. Запросите новый код." }, 400);
+    return json({ error: "Слишком много попыток. Призовите новую печать допуска." }, 400);
   }
 
   const expectedHash = await hashValue(`${email}:${code}`, env);
@@ -237,7 +237,7 @@ async function handleVerifyCode(request, env) {
       "UPDATE login_codes SET attempt_count = attempt_count + 1 WHERE id = ?",
       [loginCode.id],
     );
-    return json({ error: "Код не совпадает." }, 400);
+    return json({ error: "Печать не совпадает." }, 400);
   }
 
   const member = await first(
@@ -247,7 +247,7 @@ async function handleVerifyCode(request, env) {
   );
 
   if (!member) {
-    return json({ error: "Этот участник сейчас не активен." }, 403);
+    return json({ error: "Этот соратник сейчас не числится в активном круге." }, 403);
   }
 
   const config = getConfig(env);
@@ -322,7 +322,7 @@ async function handleCreateMember(request, env) {
   const role = body?.role === "admin" ? "admin" : "member";
 
   if (!isValidEmail(email)) {
-    return json({ error: "Введите корректный email для нового участника." }, 400);
+    return json({ error: "Введите корректный email для нового соратника." }, 400);
   }
 
   const existing = await first(env, "SELECT id FROM members WHERE email = ? LIMIT 1", [
@@ -403,7 +403,7 @@ async function handleFeedbackSubmission(request, env, actor, cycleId) {
   const rating = Number(body?.rating);
 
   if (!targetMemberId || !comment || Number.isNaN(rating)) {
-    return json({ error: "Заполните оценку, получателя отзыва и комментарий." }, 400);
+    return json({ error: "Заполните оценку, получателя свидетельства и комментарий хрониста." }, 400);
   }
 
   if (rating < 1 || rating > 5) {
@@ -422,7 +422,7 @@ async function handleFeedbackSubmission(request, env, actor, cycleId) {
   );
 
   if (!assignment) {
-    return json({ error: "Этот участник не назначен на выбранный цикл." }, 400);
+    return json({ error: "Этот соратник не назначен на выбранный Ритуал Порядка." }, 400);
   }
 
   await run(
@@ -608,7 +608,7 @@ async function createNextCycle(env, createdByMemberId) {
   if (futureCycle) {
     return {
       ok: false,
-      error: "Следующий цикл уже существует и ждёт своей даты.",
+      error: "Следующий Ритуал Порядка уже вписан в летопись и ждёт своего часа.",
     };
   }
 
@@ -648,7 +648,7 @@ async function createNextCycle(env, createdByMemberId) {
   if (members.length < config.dutyTeamSize) {
     return {
       ok: false,
-      error: "Недостаточно активных участников, чтобы собрать отряд Хранителей Порядка.",
+      error: "Недостаточно активных соратников, чтобы собрать отряд Хранителей Порядка.",
     };
   }
 
@@ -983,7 +983,7 @@ async function getCurrentMember(request, env) {
 async function requireMember(request, env) {
   const member = await getCurrentMember(request, env);
   if (!member) {
-    return json({ error: "Сначала нужно войти в систему." }, 401);
+    return json({ error: "Сначала нужно предъявить печать допуска." }, 401);
   }
   return member;
 }
@@ -994,7 +994,7 @@ async function requireAdmin(request, env) {
     return member;
   }
   if (member.role !== "admin") {
-    return json({ error: "Это действие доступно только администраторам." }, 403);
+    return json({ error: "Это право принадлежит только Магистрам Совета." }, 403);
   }
   return member;
 }
@@ -1042,24 +1042,24 @@ function getConfig(env) {
 
 async function sendLoginCodeEmail(env, details) {
   const text = [
-    `${details.displayName}, здравствуйте.`,
+    `${details.displayName}, приветствую.`,
     "",
-    `Ваш код для входа в Duty Guild: ${details.code}`,
-    `Он действует до ${details.expiresAt}.`,
+    `Ваша печать допуска в Duty Guild: ${details.code}`,
+    `Её сила сохранится до ${details.expiresAt}.`,
   ].join("\n");
 
   return sendEmail(env, {
     to: details.email,
-    subject: "Duty Guild: код для входа",
+    subject: "Duty Guild: печать допуска",
     text,
-    html: `<p>${escapeHtml(details.displayName)}, здравствуйте.</p><p>Ваш код для входа в Duty Guild: <strong>${details.code}</strong>.</p><p>Он действует до ${escapeHtml(details.expiresAt)}.</p>`,
+    html: `<p>${escapeHtml(details.displayName)}, приветствую.</p><p>Ваша печать допуска в Duty Guild: <strong>${details.code}</strong>.</p><p>Её сила сохранится до ${escapeHtml(details.expiresAt)}.</p>`,
     debugCode: details.code,
   });
 }
 
 async function sendAssignmentEmail(env, details) {
   const text = [
-    `${details.displayName}, здравствуйте.`,
+    `${details.displayName}, приветствую.`,
     "",
     "Для вашей команды созван новый Ритуал Порядка.",
     `Окно ритуала: ${details.startsOn} - ${details.endsOn}`,
@@ -1070,16 +1070,16 @@ async function sendAssignmentEmail(env, details) {
     to: details.email,
     subject: "Duty Guild: созван Ритуал Порядка",
     text,
-    html: `<p>${escapeHtml(details.displayName)}, здравствуйте.</p><p>Для вашей команды созван новый Ритуал Порядка.</p><p><strong>Окно ритуала:</strong> ${escapeHtml(details.startsOn)} - ${escapeHtml(details.endsOn)}</p><p><strong>Рекомендованный день ритуала:</strong> ${escapeHtml(details.plannedCleaningDate)}</p>`,
+    html: `<p>${escapeHtml(details.displayName)}, приветствую.</p><p>Для вашей команды созван новый Ритуал Порядка.</p><p><strong>Окно ритуала:</strong> ${escapeHtml(details.startsOn)} - ${escapeHtml(details.endsOn)}</p><p><strong>Рекомендованный день ритуала:</strong> ${escapeHtml(details.plannedCleaningDate)}</p>`,
   });
 }
 
 async function sendReminderEmail(env, details) {
   const text = [
-    `${details.displayName}, здравствуйте.`,
+    `${details.displayName}, приветствую.`,
     "",
     "Напоминание от Duty Guild.",
-    `Сегодня назначен день Ритуала Порядка для цикла ${details.startsOn} - ${details.endsOn}.`,
+    `Сегодня настал день Ритуала Порядка для окна ${details.startsOn} - ${details.endsOn}.`,
     `Дата ритуала: ${details.plannedCleaningDate}`,
   ].join("\n");
 
@@ -1087,7 +1087,7 @@ async function sendReminderEmail(env, details) {
     to: details.email,
     subject: "Duty Guild: напоминание о Ритуале Порядка",
     text,
-    html: `<p>${escapeHtml(details.displayName)}, здравствуйте.</p><p>Напоминание от Duty Guild.</p><p>Сегодня назначен день Ритуала Порядка для цикла <strong>${escapeHtml(details.startsOn)}</strong> - <strong>${escapeHtml(details.endsOn)}</strong>.</p><p><strong>Дата ритуала:</strong> ${escapeHtml(details.plannedCleaningDate)}</p>`,
+    html: `<p>${escapeHtml(details.displayName)}, приветствую.</p><p>Напоминание от Duty Guild.</p><p>Сегодня настал день Ритуала Порядка для окна <strong>${escapeHtml(details.startsOn)}</strong> - <strong>${escapeHtml(details.endsOn)}</strong>.</p><p><strong>Дата ритуала:</strong> ${escapeHtml(details.plannedCleaningDate)}</p>`,
   });
 }
 
@@ -1217,7 +1217,7 @@ function isDateOnly(value) {
 
 function displayNameFromEmail(email) {
   if (!email) {
-    return "Участник гильдии";
+    return "Соратник круга";
   }
 
   const stem = email.split("@")[0].replace(/[._-]+/g, " ");
