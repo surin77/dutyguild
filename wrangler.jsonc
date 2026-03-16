@@ -12,6 +12,11 @@
       "fallthrough": true
     }
   ],
+  "send_email": [
+    {
+      "name": "MAILER"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
@@ -22,7 +27,7 @@
   "vars": {
     "APP_NAME": "Duty Guild",
     "APP_TIMEZONE": "Europe/Samara",
-    "EMAIL_MODE": "resend",
+    "EMAIL_MODE": "cloudflare",
     "AUTH_DEBUG_CODES": "false",
     "DUTY_INTERVAL_DAYS": "14",
     "DUTY_TEAM_SIZE": "2",

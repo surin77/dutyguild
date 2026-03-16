@@ -1,3 +1,4 @@
+import { EmailMessage } from "cloudflare:email";
 import appScript from "../public/app.js";
 import indexDocument from "../public/index.html";
 import stylesSheet from "../public/styles.css";
@@ -1122,7 +1123,9 @@ async function sendReminderEmail(env, details) {
 
 async function sendEmail(env, payload) {
   const config = getConfig(env);
-  const resendApiKey = String(env.RESEND_API_KEY || "").trim();
+  const senderAddress = String(
+    env.EMAIL_FROM || "noreply@notify.dutyguild.ru",
+  ).trim().toLowerCase();
 
   if (config.emailMode === "stub") {
     console.log("Email stub", {
@@ -1138,8 +1141,8 @@ async function sendEmail(env, payload) {
     };
   }
 
-  if (config.emailMode === "resend" && !resendApiKey) {
-    console.error("Resend mode is enabled, but RESEND_API_KEY is missing.");
+  if (config.emailMode === "cloudflare" && typeof env.MAILER?.send !== "function") {
+    console.error("Cloudflare email mode is enabled, but MAILER binding is missing.");
     return {
       ok: false,
       mode: "misconfigured",
@@ -1147,36 +1150,43 @@ async function sendEmail(env, payload) {
     };
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: env.EMAIL_FROM || "noreply@dutyguild.ru",
-      to: [payload.to],
-      subject: payload.subject,
-      text: payload.text,
-      html: payload.html,
-    }),
-  });
+  if (config.emailMode !== "cloudflare") {
+    console.error(`Unsupported email mode: ${config.emailMode}`);
+    return {
+      ok: false,
+      mode: "misconfigured",
+      debugCode: config.authDebugCodes ? payload.debugCode ?? null : null,
+    };
+  }
 
-  if (!response.ok) {
-    const body = await response.text();
-    console.error("Resend request failed", body);
+  try {
+    const message = new EmailMessage(
+      senderAddress,
+      payload.to,
+      buildMimeMessage({
+        from: senderAddress,
+        to: payload.to,
+        subject: payload.subject,
+        text: payload.text,
+        html: payload.html,
+      }),
+    );
+
+    await env.MAILER.send(message);
+
+    return {
+      ok: true,
+      mode: "cloudflare",
+      debugCode: config.authDebugCodes ? payload.debugCode ?? null : null,
+    };
+  } catch (error) {
+    console.error("Cloudflare email send failed", error);
     return {
       ok: false,
       mode: "failed",
       debugCode: config.authDebugCodes ? payload.debugCode ?? null : null,
     };
   }
-
-  return {
-    ok: true,
-    mode: "resend",
-    debugCode: config.authDebugCodes ? payload.debugCode ?? null : null,
-  };
 }
 
 async function logNotification(env, entry) {
@@ -1290,6 +1300,61 @@ function json(payload, status = 200, extraHeaders = {}) {
     status,
     headers,
   });
+}
+
+function buildMimeMessage({ from, to, subject, text, html }) {
+  const boundary = `dg-${crypto.randomUUID()}`;
+  const headers = [
+    `From: Duty Guild <${from}>`,
+    `To: <${to}>`,
+    `Subject: ${encodeMimeHeader(subject)}`,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+  ];
+
+  return [
+    ...headers,
+    "",
+    `--${boundary}`,
+    "Content-Type: text/plain; charset=utf-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrapMimeBase64(text),
+    "",
+    `--${boundary}`,
+    "Content-Type: text/html; charset=utf-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrapMimeBase64(html),
+    "",
+    `--${boundary}--`,
+    "",
+  ].join("\r\n");
+}
+
+function encodeMimeHeader(value) {
+  return `=?UTF-8?B?${base64Utf8(value)}?=`;
+}
+
+function wrapMimeBase64(value) {
+  return chunkString(base64Utf8(value), 76).join("\r\n");
+}
+
+function base64Utf8(value) {
+  const bytes = new TextEncoder().encode(String(value || ""));
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
+function chunkString(value, size) {
+  const chunks = [];
+  for (let index = 0; index < value.length; index += size) {
+    chunks.push(value.slice(index, index + size));
+  }
+  return chunks;
 }
 
 function normalizeEmail(value) {
