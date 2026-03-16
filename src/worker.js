@@ -1304,10 +1304,13 @@ function json(payload, status = 200, extraHeaders = {}) {
 
 function buildMimeMessage({ from, to, subject, text, html }) {
   const boundary = `dg-${crypto.randomUUID()}`;
+  const messageId = buildMessageId(from);
   const headers = [
     `From: Duty Guild <${from}>`,
     `To: <${to}>`,
     `Subject: ${encodeMimeHeader(subject)}`,
+    `Date: ${new Date().toUTCString()}`,
+    `Message-ID: ${messageId}`,
     "MIME-Version: 1.0",
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
   ];
@@ -1355,6 +1358,11 @@ function chunkString(value, size) {
     chunks.push(value.slice(index, index + size));
   }
   return chunks;
+}
+
+function buildMessageId(from) {
+  const domain = String(from || "").split("@")[1] || "notify.dutyguild.ru";
+  return `<${crypto.randomUUID()}@${domain}>`;
 }
 
 function normalizeEmail(value) {
