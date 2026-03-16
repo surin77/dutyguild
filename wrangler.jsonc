@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dutyguild",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-03-16",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dutyguild",
+      "database_id": "d0a52716-7aca-4eca-9f23-28b9a1921220"
+    }
+  ],
+  "vars": {
+    "APP_NAME": "Duty Guild",
+    "APP_TIMEZONE": "Europe/Samara",
+    "EMAIL_MODE": "stub",
+    "AUTH_DEBUG_CODES": "false",
+    "DUTY_INTERVAL_DAYS": "14",
+    "DUTY_TEAM_SIZE": "2",
+    "PREFERRED_CLEANING_WEEKDAYS": "2,4"
+  },
+  "triggers": {
+    "crons": ["0 6 * * *"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}
