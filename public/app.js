@@ -56,7 +56,7 @@ function renderSiteHeader() {
     ? `
       <div class="header-user">
         <span class="header-user__name">${escapeHtml(state.me.displayName)}</span>
-        <span class="header-user__meta">${roleLabel(state.me.role)}</span>
+        <span class="header-user__meta">${roleLabel(state.me.role)} · ${escapeHtml(memberRankShort(state.me))}</span>
       </div>
     `
     : '<span class="header-user__meta">Закрытый зал ордена</span>';
@@ -244,6 +244,7 @@ function renderDashboard() {
           </p>
           <div class="feature-badges">
             <span class="feature-badge">${roleLabel(state.me.role)}</span>
+            <span class="feature-badge">${escapeHtml(memberRankTitle(state.me))}</span>
             <span class="feature-badge">${escapeHtml(state.me.email)}</span>
           </div>
         </div>
@@ -267,7 +268,8 @@ function renderDashboard() {
         <div class="toolbar__copy">
           <p class="section-tag">Печать признана</p>
           <h2>Врата открыты для ${escapeHtml(state.me.displayName)}</h2>
-          <p>${roleLabel(state.me.role)} · ${escapeHtml(state.me.email)}</p>
+          <p>${roleLabel(state.me.role)} · ${escapeHtml(memberRankTitle(state.me))} · ${escapeHtml(state.me.email)}</p>
+          <p class="toolbar__rank-note">${escapeHtml(memberRankProgress(state.me))}</p>
         </div>
         <div class="button-row">
           <button id="refresh-dashboard" class="button button--secondary" type="button">Освежить летопись</button>
@@ -324,7 +326,13 @@ function renderCyclePanel(title, cycle, emptyText) {
   }
 
   const badges = cycle.assignees
-    .map((member) => `<span class="tag-pill">${escapeHtml(member.displayName)}</span>`)
+    .map(
+      (member) => `
+        <span class="tag-pill" title="${escapeHtml(memberRankTitle(member))}">
+          ${escapeHtml(member.displayName)} · ${escapeHtml(memberRankShort(member))}
+        </span>
+      `,
+    )
     .join("");
 
   return `
@@ -407,8 +415,19 @@ function renderRosterPanel() {
     .map(
       (member) => `
         <tr>
-          <td>${escapeHtml(member.displayName)}</td>
+          <td>
+            <div class="member-cell">
+              <strong>${escapeHtml(member.displayName)}</strong>
+              <span class="member-cell__meta">${escapeHtml(member.email)}</span>
+            </div>
+          </td>
           <td>${roleLabel(member.role)}</td>
+          <td>
+            <div class="member-cell">
+              <strong>${escapeHtml(memberRankTitle(member))}</strong>
+              <span class="member-cell__meta">${escapeHtml(memberRankProgress(member))}</span>
+            </div>
+          </td>
           <td>${member.dutyCount}</td>
           <td>${member.averageRating === null ? "—" : member.averageRating.toFixed(1)}</td>
         </tr>
@@ -428,6 +447,7 @@ function renderRosterPanel() {
             <tr>
               <th>Имя</th>
               <th>Сан</th>
+              <th>Звание</th>
               <th>Служений</th>
               <th>Слава</th>
             </tr>
@@ -731,6 +751,18 @@ function getStats() {
 
 function roleLabel(role) {
   return role === "admin" ? "Магистр Совета" : "Соратник круга";
+}
+
+function memberRankTitle(member) {
+  return member?.rank?.title || "Искроносец Свитка";
+}
+
+function memberRankShort(member) {
+  return member?.rank?.shortTitle || "Искроносец";
+}
+
+function memberRankProgress(member) {
+  return member?.rank?.progressLabel || "Путь звания ещё не раскрыт.";
 }
 
 function formatDate(dateString) {

@@ -271,6 +271,7 @@ td {
   color: #47271d;
   background: linear-gradient(180deg, #f6ede2, #ebdccd);
   border: 1px solid #d7c4af;
+  line-height: 1.35;
 }
 
 .feature-rail {
@@ -335,6 +336,10 @@ td {
 .toolbar__copy p:last-child {
   margin-bottom: 0;
   color: var(--ink-soft);
+}
+
+.toolbar__rank-note {
+  font-size: 0.92rem;
 }
 
 .stats-band {
@@ -554,6 +559,22 @@ th {
   color: var(--ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.14em;
+}
+
+.member-cell {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.member-cell strong {
+  font-size: 0.98rem;
+}
+
+.member-cell__meta {
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .admin-grid {

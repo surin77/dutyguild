@@ -580,19 +580,18 @@ async function loadRoster(env) {
     `,
   );
 
-  return rows.map((row) => ({
-    id: row.id,
-    email: row.email,
-    displayName: row.display_name,
-    role: row.role,
-    status: row.status,
-    dutyCount: Number(row.duty_count || 0),
-    feedbackCount: Number(row.feedback_count || 0),
-    averageRating:
-      row.average_rating === null || row.average_rating === undefined
-        ? null
-        : Number(row.average_rating),
-  }));
+  return rows.map((row) => {
+    const member = memberToClient(row);
+
+    return {
+      ...member,
+      feedbackCount: Number(row.feedback_count || 0),
+      averageRating:
+        row.average_rating === null || row.average_rating === undefined
+          ? null
+          : Number(row.average_rating),
+    };
+  });
 }
 
 async function hydrateCycle(env, cycleRow) {
@@ -1030,14 +1029,137 @@ async function requireAdmin(request, env) {
 }
 
 function memberToClient(member) {
+  const dutyCount = Number(member.duty_count || 0);
+  const averageRating =
+    member.average_rating === null ||
+    member.average_rating === undefined ||
+    member.average_rating === ""
+      ? null
+      : Number(member.average_rating);
+  const rank = getMemberRank({ dutyCount, averageRating });
+
   return {
     id: member.id,
     email: member.email,
     displayName: member.display_name,
     role: member.role,
     status: member.status,
-    dutyCount: Number(member.duty_count || 0),
+    dutyCount,
+    rank,
   };
+}
+
+function getMemberRank({ dutyCount, averageRating }) {
+  const ladder = [
+    {
+      id: "emberbound",
+      minDutyCount: 0,
+      title: "Искроносец Свитка",
+      shortTitle: "Искроносец",
+      crest: "I",
+    },
+    {
+      id: "oathbearer",
+      minDutyCount: 1,
+      title: "Клятвенный Послушник",
+      shortTitle: "Послушник",
+      crest: "II",
+    },
+    {
+      id: "torchwarden",
+      minDutyCount: 3,
+      title: "Факелоносец Порядка",
+      shortTitle: "Факелоносец",
+      crest: "III",
+    },
+    {
+      id: "sealkeeper",
+      minDutyCount: 6,
+      title: "Хранитель Печати Зала",
+      shortTitle: "Хранитель Печати",
+      crest: "IV",
+    },
+    {
+      id: "hallsentinel",
+      minDutyCount: 10,
+      title: "Страж Ритуального Зала",
+      shortTitle: "Страж Зала",
+      crest: "V",
+    },
+    {
+      id: "dawnmarshal",
+      minDutyCount: 15,
+      title: "Маршал Белого Пламени",
+      shortTitle: "Маршал Пламени",
+      crest: "VI",
+    },
+    {
+      id: "archon",
+      minDutyCount: 21,
+      title: "Архон Вечного Порядка",
+      shortTitle: "Архон Порядка",
+      crest: "VII",
+    },
+  ];
+
+  let currentRank = ladder[0];
+  let nextRank = null;
+
+  for (const rank of ladder) {
+    if (dutyCount >= rank.minDutyCount) {
+      currentRank = rank;
+      continue;
+    }
+
+    nextRank = rank;
+    break;
+  }
+
+  const currentStageFloor = currentRank.minDutyCount;
+  const nextStageFloor = nextRank ? nextRank.minDutyCount : currentStageFloor;
+  const progressCurrent = nextRank
+    ? Math.max(dutyCount - currentStageFloor, 0)
+    : Math.max(dutyCount, 0);
+  const progressTarget = nextRank
+    ? Math.max(nextStageFloor - currentStageFloor, 1)
+    : Math.max(dutyCount, 1);
+  const ritualsToNextRank = nextRank ? Math.max(nextStageFloor - dutyCount, 0) : 0;
+
+  return {
+    ...currentRank,
+    dutyCount,
+    averageRating,
+    ritualsToNextRank,
+    nextTitle: nextRank?.title || null,
+    progressCurrent,
+    progressTarget,
+    progressLabel: nextRank
+      ? `До звания «${nextRank.shortTitle}» осталось ${ritualsToNextRank} ритуал${pluralizeRussian(
+          ritualsToNextRank,
+          ["", "а", "ов"],
+        )}.`
+      : "Высший сан братства уже достигнут.",
+    futureRatingHint:
+      averageRating === null
+        ? "Пока звание питается только числом ритуалов. Позже к нему прибавится сила славы."
+        : "Слава уже учитывается в летописи и позже сможет усилить путь звания.",
+  };
+}
+
+function pluralizeRussian(count, suffixes) {
+  const value = Math.abs(Number(count || 0)) % 100;
+  const remainder = value % 10;
+
+  if (value > 10 && value < 20) {
+    return suffixes[2];
+  }
+  if (remainder > 1 && remainder < 5) {
+    return suffixes[1];
+  }
+  if (remainder === 1) {
+    return suffixes[0];
+  }
+  return suffixes[2];
 }
 
 function getConfig(env) {
