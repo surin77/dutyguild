@@ -161,14 +161,17 @@ const RANK_LADDER = Object.freeze([
 export default {
   async fetch(request, env, ctx) {
     try {
-      return await handleFetch(request, env, ctx);
+      return withSecurityHeaders(await handleFetch(request, env, ctx), request);
     } catch (error) {
       console.error("Unhandled fetch error", error);
-      return json(
-        {
-          error: "Внутри Duty Guild произошла ошибка.",
-        },
-        500,
+      return withSecurityHeaders(
+        json(
+          {
+            error: "Внутри Duty Guild произошла ошибка.",
+          },
+          500,
+        ),
+        request,
       );
     }
   },
@@ -181,6 +184,11 @@ export default {
 async function handleFetch(request, env) {
   const url = new URL(request.url);
   const { pathname } = url;
+
+  if (shouldRedirectToHttps(url)) {
+    url.protocol = "https:";
+    return Response.redirect(url.toString(), 308);
+  }
 
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204 });
@@ -1705,6 +1713,36 @@ function serializeSessionCookie(name, value, ttlDays, requestUrl) {
 
 function clearSessionCookie(name) {
   return `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+}
+
+function shouldRedirectToHttps(url) {
+  if (url.protocol !== "http:") {
+    return false;
+  }
+
+  return !isLocalHostname(url.hostname);
+}
+
+function isLocalHostname(hostname) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function withSecurityHeaders(response, request) {
+  const url = new URL(request.url);
+  const headers = new Headers(response.headers);
+
+  if (url.protocol === "https:" && !isLocalHostname(url.hostname)) {
+    headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains",
+    );
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 function positiveInteger(value, fallback) {

@@ -25,10 +25,9 @@ async function boot() {
   state.config = await api("/api/config");
 
   const sessionResponse = await api("/api/me", { allow401: true });
-  state.me = sessionResponse.member;
 
-  if (state.me) {
-    syncDashboard(await api("/api/dashboard"));
+  if (sessionResponse.member) {
+    await hydrateDashboard();
   }
 
   state.loading = false;
@@ -36,11 +35,15 @@ async function boot() {
 }
 
 function render() {
+  const content = state.loading
+    ? renderLoading()
+    : `${renderFlash()}${state.me && state.dashboard ? renderDashboard() : renderAuth()}`;
+
   root.innerHTML = `
     <main class="page-shell">
       ${renderSiteHeader()}
       <div class="page-inner">
-        ${state.loading ? renderLoading() : `${renderFlash()}${state.me ? renderDashboard() : renderAuth()}`}
+        ${content}
       </div>
     </main>
   `;
@@ -675,7 +678,7 @@ async function onRequestCode(event) {
 async function onVerifyCode(event) {
   event.preventDefault();
   await withBusy(async () => {
-    const response = await api("/api/auth/verify-code", {
+    await api("/api/auth/verify-code", {
       method: "POST",
       body: {
         email: state.pendingEmail,
@@ -683,20 +686,19 @@ async function onVerifyCode(event) {
       },
     });
 
-    state.me = response.member;
     state.pendingEmail = "";
     state.loginCode = "";
     state.debugCode = "";
     state.notice = "Печать признана. Врата открыты.";
     state.error = "";
-    syncDashboard(await api("/api/dashboard"));
+    await hydrateDashboard({ retries: 1, retryDelayMs: 150 });
     render();
   });
 }
 
 async function refreshDashboard() {
   await withBusy(async () => {
-    syncDashboard(await api("/api/dashboard"));
+    await hydrateDashboard();
     state.notice = "Летопись обновлена.";
     state.error = "";
     render();
@@ -727,7 +729,7 @@ async function onInviteMember(event) {
       },
     });
     event.currentTarget.reset();
-    syncDashboard(await api("/api/dashboard"));
+    await hydrateDashboard();
     state.notice = "Имя внесено в свиток братства.";
     state.error = "";
     render();
@@ -749,7 +751,7 @@ async function onCreateGameEvent(event) {
       },
     });
     event.currentTarget.reset();
-    syncDashboard(await api("/api/dashboard"));
+    await hydrateDashboard();
     state.notice = "Игровой вечер вписан в свод приключений.";
     state.error = "";
     render();
@@ -762,7 +764,7 @@ async function onGenerateCycle() {
       method: "POST",
       body: {},
     });
-    syncDashboard(await api("/api/dashboard"));
+    await hydrateDashboard();
     state.notice = "Новый Ритуал Порядка созван.";
     state.error = "";
     render();
@@ -781,7 +783,12 @@ async function withBusy(action) {
     await action();
   } catch (error) {
     console.error(error);
-    state.error = error.message || "Чары дали сбой.";
+    if (error?.status === 401) {
+      resetSessionState();
+      state.error = "Печать угасла или не закрепилась. Войдите в зал ещё раз.";
+    } else {
+      state.error = error.message || "Чары дали сбой.";
+    }
     state.notice = "";
     render();
   } finally {
@@ -793,6 +800,7 @@ async function withBusy(action) {
 async function api(path, options = {}) {
   const fetchOptions = {
     method: options.method || "GET",
+    credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
     },
@@ -809,10 +817,49 @@ async function api(path, options = {}) {
     if (options.allow401 && response.status === 401) {
       return payload;
     }
-    throw new Error(payload.error || `Запрос завершился со статусом ${response.status}.`);
+    const error = new Error(
+      payload.error || `Запрос завершился со статусом ${response.status}.`,
+    );
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
   }
 
   return payload;
+}
+
+async function hydrateDashboard(options = {}) {
+  const { retries = 0, retryDelayMs = 0 } = options;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const payload = await api("/api/dashboard", { allow401: true });
+    if (payload?.me) {
+      syncDashboard(payload);
+      return payload;
+    }
+
+    if (attempt < retries) {
+      await sleep(retryDelayMs);
+    }
+  }
+
+  const error = new Error("Печать допуска ещё не закрепилась в летописи.");
+  error.status = 401;
+  throw error;
+}
+
+function resetSessionState() {
+  state.me = null;
+  state.dashboard = null;
+  state.pendingEmail = "";
+  state.loginCode = "";
+  state.debugCode = "";
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function getStats() {
