@@ -637,25 +637,38 @@ th {
 }
 
 .rank-card {
+  --rank-panel-start: rgba(255, 255, 255, 0.58);
+  --rank-panel-end: rgba(240, 232, 221, 0.94);
+  --rank-crest-start: rgba(200, 140, 58, 0.24);
+  --rank-crest-end: rgba(178, 53, 29, 0.94);
+  --rank-accent: var(--red);
+  --rank-glow: rgba(127, 34, 18, 0.14);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 16px;
   padding: 18px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.58);
+  background: linear-gradient(180deg, var(--rank-panel-start), var(--rank-panel-end));
   border: 1px solid rgba(203, 188, 173, 0.9);
   align-items: start;
+  box-shadow: 0 14px 26px var(--rank-glow);
 }
 
 .rank-card--current {
-  background: linear-gradient(180deg, rgba(255, 244, 228, 0.96), rgba(243, 226, 205, 0.98));
   border-color: rgba(193, 73, 47, 0.65);
-  box-shadow: 0 16px 30px rgba(127, 34, 18, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(193, 73, 47, 0.22),
+    0 18px 34px var(--rank-glow);
 }
 
 .rank-card--next {
-  background: linear-gradient(180deg, rgba(252, 246, 231, 0.98), rgba(239, 228, 207, 0.98));
   border-color: rgba(200, 140, 58, 0.72);
+}
+
+.rank-card__crest-block {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
 }
 
 .rank-card__crest {
@@ -664,10 +677,20 @@ th {
   border-radius: 16px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, rgba(200, 140, 58, 0.24), rgba(178, 53, 29, 0.94));
+  background: linear-gradient(135deg, var(--rank-crest-start), var(--rank-crest-end));
   color: var(--white);
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.05rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.rank-card__sigil {
+  color: var(--rank-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.68rem;
+  text-align: center;
+  line-height: 1.35;
 }
 
 .rank-card__copy {
@@ -685,7 +708,7 @@ th {
 }
 
 .rank-card__state {
-  color: var(--red);
+  color: var(--rank-accent);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
@@ -694,6 +717,11 @@ th {
 .rank-card__threshold {
   color: var(--ink);
   font-weight: 700;
+}
+
+.rank-card__motto {
+  font-style: italic;
+  color: var(--rank-accent);
 }
 
 .rank-card__meta {

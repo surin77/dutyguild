@@ -426,13 +426,20 @@ function renderRankGuidePanel() {
           : "Ступень ордена";
 
       return `
-        <article class="rank-card ${isCurrent ? "rank-card--current" : ""} ${isNext ? "rank-card--next" : ""}">
-          <div class="rank-card__crest">${escapeHtml(rank.crest)}</div>
+        <article
+          class="rank-card ${isCurrent ? "rank-card--current" : ""} ${isNext ? "rank-card--next" : ""}"
+          style="${escapeHtml(rankThemeStyle(rank))}"
+        >
+          <div class="rank-card__crest-block">
+            <div class="rank-card__crest">${escapeHtml(rank.crest)}</div>
+            <span class="rank-card__sigil">${escapeHtml(rank.sigil || "Герб ордена")}</span>
+          </div>
           <div class="rank-card__copy">
             <span class="rank-card__state">${escapeHtml(stateLabel)}</span>
             <h3>${escapeHtml(rank.title)}</h3>
             <p class="rank-card__threshold">${escapeHtml(rank.thresholdLabel)}</p>
             <p>${escapeHtml(rank.description)}</p>
+            <p class="rank-card__motto">${escapeHtml(rank.motto || "")}</p>
             <span class="rank-card__meta">${escapeHtml(rank.nextThresholdLabel)}</span>
           </div>
         </article>
@@ -863,6 +870,22 @@ function memberRankFutureHint(member) {
 
 function getRankLadder() {
   return state.config?.rankLadder || [];
+}
+
+function rankThemeStyle(rank) {
+  const theme = rank?.theme;
+  if (!theme) {
+    return "";
+  }
+
+  return [
+    `--rank-panel-start:${theme.panelStart}`,
+    `--rank-panel-end:${theme.panelEnd}`,
+    `--rank-crest-start:${theme.crestStart}`,
+    `--rank-crest-end:${theme.crestEnd}`,
+    `--rank-accent:${theme.accent}`,
+    `--rank-glow:${theme.glow}`,
+  ].join(";");
 }
 
 function formatDate(dateString) {
