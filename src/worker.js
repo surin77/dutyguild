@@ -647,7 +647,7 @@ async function buildDashboard(env, member) {
             g.notes,
             g.status,
             creator.display_name AS created_by_name
-          FROM game_events
+          FROM game_events g
           LEFT JOIN members creator ON creator.id = g.created_by_member_id
           WHERE g.event_date >= ? AND g.status != 'cancelled'
           ORDER BY g.event_date ASC
