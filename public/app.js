@@ -415,18 +415,60 @@ function renderAdventurePanel() {
 }
 
 function renderRankGuidePanel() {
+  const ladder = getRankLadder()
+    .map((rank) => {
+      const isCurrent = state.me?.rank?.id === rank.id;
+      const isNext = state.me?.rank?.nextId === rank.id;
+      const stateLabel = isCurrent
+        ? "Ваше текущее звание"
+        : isNext
+          ? "Следующий рубеж"
+          : "Ступень ордена";
+
+      return `
+        <article class="rank-card ${isCurrent ? "rank-card--current" : ""} ${isNext ? "rank-card--next" : ""}">
+          <div class="rank-card__crest">${escapeHtml(rank.crest)}</div>
+          <div class="rank-card__copy">
+            <span class="rank-card__state">${escapeHtml(stateLabel)}</span>
+            <h3>${escapeHtml(rank.title)}</h3>
+            <p class="rank-card__threshold">${escapeHtml(rank.thresholdLabel)}</p>
+            <p>${escapeHtml(rank.description)}</p>
+            <span class="rank-card__meta">${escapeHtml(rank.nextThresholdLabel)}</span>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
   return `
-    <article class="panel">
+    <article class="panel panel--wide">
       <div class="panel__header">
         <p class="section-tag">Путь возвышения</p>
-        <h2>Как растут звания ордена</h2>
+        <h2>Лестница званий ордена</h2>
       </div>
-      <ul class="info-list">
-        <li><strong>Текущая ступень.</strong> ${escapeHtml(memberRankStage(state.me))}</li>
-        <li><strong>Следующий рубеж.</strong> ${escapeHtml(memberRankProgress(state.me))}</li>
-        <li><strong>Завет славы.</strong> ${escapeHtml(memberRankFutureHint(state.me))}</li>
-        <li><strong>Для всего круга.</strong> В свитке братства ниже у каждого соратника видны его звание и путь к следующей ступени.</li>
-      </ul>
+      <p class="panel__intro">
+        Здесь собраны все ступени ордена: видно, где вы стоите сейчас, какая вершина ждёт дальше и как выглядит весь путь братства целиком.
+      </p>
+      <div class="rank-summary-grid">
+        <article class="rank-summary-card">
+          <span class="rank-summary-card__label">Текущая ступень</span>
+          <strong>${escapeHtml(memberRankTitle(state.me))}</strong>
+          <p>${escapeHtml(memberRankStage(state.me))}</p>
+        </article>
+        <article class="rank-summary-card">
+          <span class="rank-summary-card__label">Следующий рубеж</span>
+          <strong>${escapeHtml(memberNextRankTitle(state.me))}</strong>
+          <p>${escapeHtml(memberRankProgress(state.me))}</p>
+        </article>
+        <article class="rank-summary-card">
+          <span class="rank-summary-card__label">Завет славы</span>
+          <strong>Сила летописи</strong>
+          <p>${escapeHtml(memberRankFutureHint(state.me))}</p>
+        </article>
+      </div>
+      <div class="rank-ladder">
+        ${ladder}
+      </div>
     </article>
   `;
 }
@@ -817,6 +859,10 @@ function memberNextRankTitle(member) {
 
 function memberRankFutureHint(member) {
   return member?.rank?.futureRatingHint || "Слава ордена ещё только собирается.";
+}
+
+function getRankLadder() {
+  return state.config?.rankLadder || [];
 }
 
 function formatDate(dateString) {

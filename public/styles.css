@@ -596,6 +596,112 @@ th {
   line-height: 1.45;
 }
 
+.rank-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.rank-summary-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.46);
+  border: 1px solid rgba(203, 188, 173, 0.9);
+}
+
+.rank-summary-card strong {
+  display: block;
+  margin: 8px 0 10px;
+  color: var(--red-deep);
+  font-size: 1.1rem;
+}
+
+.rank-summary-card p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.rank-summary-card__label {
+  display: inline-block;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.74rem;
+}
+
+.rank-ladder {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.rank-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(203, 188, 173, 0.9);
+  align-items: start;
+}
+
+.rank-card--current {
+  background: linear-gradient(180deg, rgba(255, 244, 228, 0.96), rgba(243, 226, 205, 0.98));
+  border-color: rgba(193, 73, 47, 0.65);
+  box-shadow: 0 16px 30px rgba(127, 34, 18, 0.14);
+}
+
+.rank-card--next {
+  background: linear-gradient(180deg, rgba(252, 246, 231, 0.98), rgba(239, 228, 207, 0.98));
+  border-color: rgba(200, 140, 58, 0.72);
+}
+
+.rank-card__crest {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(200, 140, 58, 0.24), rgba(178, 53, 29, 0.94));
+  color: var(--white);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+}
+
+.rank-card__copy {
+  display: grid;
+  gap: 8px;
+}
+
+.rank-card__copy h3 {
+  margin: 0;
+}
+
+.rank-card__copy p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.rank-card__state {
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+}
+
+.rank-card__threshold {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.rank-card__meta {
+  color: var(--ink-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -666,7 +772,9 @@ th {
   .content-grid,
   .stats-band,
   .admin-grid,
-  .adventure-grid {
+  .adventure-grid,
+  .rank-summary-grid,
+  .rank-ladder {
     grid-template-columns: 1fr;
   }
 

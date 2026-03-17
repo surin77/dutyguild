@@ -29,6 +29,65 @@ const DEFAULTS = Object.freeze({
   emailMode: "stub",
 });
 
+const RANK_LADDER = Object.freeze([
+  {
+    id: "emberbound",
+    minDutyCount: 0,
+    title: "Искроносец Свитка",
+    shortTitle: "Искроносец",
+    crest: "I",
+    description: "Новобранец круга, чьё имя только внесено в свиток ордена.",
+  },
+  {
+    id: "oathbearer",
+    minDutyCount: 1,
+    title: "Клятвенный Послушник",
+    shortTitle: "Послушник",
+    crest: "II",
+    description: "Первый ритуал пройден, клятва служения впервые подтверждена делом.",
+  },
+  {
+    id: "torchwarden",
+    minDutyCount: 3,
+    title: "Факелоносец Порядка",
+    shortTitle: "Факелоносец",
+    crest: "III",
+    description: "Соратник уже держит пламя порядка уверенно и не теряется в рутине круга.",
+  },
+  {
+    id: "sealkeeper",
+    minDutyCount: 6,
+    title: "Хранитель Печати Зала",
+    shortTitle: "Хранитель Печати",
+    crest: "IV",
+    description: "Орден доверяет ему поддерживать чистоту зала как незыблемый обет.",
+  },
+  {
+    id: "hallsentinel",
+    minDutyCount: 10,
+    title: "Страж Ритуального Зала",
+    shortTitle: "Страж Зала",
+    crest: "V",
+    description: "Опытный защитник порядка, на которого можно опереться без лишних слов.",
+  },
+  {
+    id: "dawnmarshal",
+    minDutyCount: 15,
+    title: "Маршал Белого Пламени",
+    shortTitle: "Маршал Пламени",
+    crest: "VI",
+    description: "Ветеран служения, несущий пример дисциплины и спокойной силы для всего круга.",
+  },
+  {
+    id: "archon",
+    minDutyCount: 21,
+    title: "Архон Вечного Порядка",
+    shortTitle: "Архон Порядка",
+    crest: "VII",
+    description: "Высшая ступень братства для тех, чьё служение стало легендой летописи.",
+  },
+]);
+
 export default {
   async fetch(request, env, ctx) {
     try {
@@ -73,6 +132,7 @@ async function handleFetch(request, env) {
       dutyIntervalDays: config.dutyIntervalDays,
       dutyTeamSize: config.dutyTeamSize,
       debugAuthCodes: config.authDebugCodes,
+      rankLadder: getRankLadder(),
     });
   }
 
@@ -1063,57 +1123,7 @@ function memberToClient(member) {
 }
 
 function getMemberRank({ dutyCount, averageRating }) {
-  const ladder = [
-    {
-      id: "emberbound",
-      minDutyCount: 0,
-      title: "Искроносец Свитка",
-      shortTitle: "Искроносец",
-      crest: "I",
-    },
-    {
-      id: "oathbearer",
-      minDutyCount: 1,
-      title: "Клятвенный Послушник",
-      shortTitle: "Послушник",
-      crest: "II",
-    },
-    {
-      id: "torchwarden",
-      minDutyCount: 3,
-      title: "Факелоносец Порядка",
-      shortTitle: "Факелоносец",
-      crest: "III",
-    },
-    {
-      id: "sealkeeper",
-      minDutyCount: 6,
-      title: "Хранитель Печати Зала",
-      shortTitle: "Хранитель Печати",
-      crest: "IV",
-    },
-    {
-      id: "hallsentinel",
-      minDutyCount: 10,
-      title: "Страж Ритуального Зала",
-      shortTitle: "Страж Зала",
-      crest: "V",
-    },
-    {
-      id: "dawnmarshal",
-      minDutyCount: 15,
-      title: "Маршал Белого Пламени",
-      shortTitle: "Маршал Пламени",
-      crest: "VI",
-    },
-    {
-      id: "archon",
-      minDutyCount: 21,
-      title: "Архон Вечного Порядка",
-      shortTitle: "Архон Порядка",
-      crest: "VII",
-    },
-  ];
+  const ladder = RANK_LADDER;
 
   let currentRank = ladder[0];
   let nextRank = null;
@@ -1143,6 +1153,7 @@ function getMemberRank({ dutyCount, averageRating }) {
     dutyCount,
     averageRating,
     ritualsToNextRank,
+    nextId: nextRank?.id || null,
     nextTitle: nextRank?.title || null,
     progressCurrent,
     progressTarget,
@@ -1160,6 +1171,28 @@ function getMemberRank({ dutyCount, averageRating }) {
         ? "Пока звание питается только числом ритуалов. Позже к нему прибавится сила славы."
         : "Слава уже учитывается в летописи и позже сможет усилить путь звания.",
   };
+}
+
+function getRankLadder() {
+  return RANK_LADDER.map((rank, index) => {
+    const nextRank = RANK_LADDER[index + 1] || null;
+
+    return {
+      id: rank.id,
+      minDutyCount: rank.minDutyCount,
+      title: rank.title,
+      shortTitle: rank.shortTitle,
+      crest: rank.crest,
+      description: rank.description,
+      thresholdLabel:
+        rank.minDutyCount === 0
+          ? "Открывается сразу после внесения в свиток."
+          : `Порог ступени: после ${rank.minDutyCount}-го ритуала служения.`,
+      nextThresholdLabel: nextRank
+        ? `Дальше: после ${nextRank.minDutyCount}-го ритуала служения.`
+        : "Это вершина лестницы ордена.",
+    };
+  });
 }
 
 function pluralizeRussian(count, suffixes) {
