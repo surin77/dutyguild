@@ -28,7 +28,7 @@ async function boot() {
   state.me = sessionResponse.member;
 
   if (state.me) {
-    state.dashboard = await api("/api/dashboard");
+    syncDashboard(await api("/api/dashboard"));
   }
 
   state.loading = false;
@@ -74,8 +74,8 @@ function renderSiteHeader() {
         <nav class="top-nav" aria-label="Разделы">
           <span class="top-nav__item">Летопись</span>
           <span class="top-nav__item">Ритуалы</span>
-          <span class="top-nav__item">Круг</span>
-          <span class="top-nav__item">${state.me?.role === "admin" ? "Совет" : "Знамения"}</span>
+          <span class="top-nav__item">Приключения</span>
+          <span class="top-nav__item">${state.me?.role === "admin" ? "Совет" : "Звания"}</span>
         </nav>
         ${userLabel}
       </div>
@@ -90,7 +90,7 @@ function renderLoading() {
         <p class="section-tag">Загрузка</p>
         <h1>Пробуждаем летопись ордена</h1>
         <p>
-          Собираем свитки круга, ближайшие Ритуалы Порядка и таверненные сборы.
+          Собираем свитки круга, ближайшие Ритуалы Порядка и грядущие игровые вечера.
         </p>
       </article>
     </section>
@@ -126,7 +126,7 @@ function renderAuth() {
           <h1>Орден Ритуала Порядка для вашего офиса</h1>
           <p class="feature-card__lead">
             Здесь хранятся Ритуалы Порядка, свидетельства хронистов, история созывов и
-            свод настольных собраний, чтобы выбирать день без ненужных столкновений.
+            свод игровых вечеров, чтобы выбирать день без ненужных столкновений.
           </p>
           <div class="feature-badges">
             <span class="feature-badge">Только для посвящённых</span>
@@ -144,7 +144,7 @@ function renderAuth() {
             <ul class="rail-list">
               <li>Закрытый допуск через почтовую печать</li>
               <li>Балансное назначение Хранителей Порядка</li>
-              <li>Таверненный свод настольных собраний</li>
+              <li>Свод игровых вечеров для всего круга</li>
               <li>Интерфейс с налётом героической хроники</li>
             </ul>
           </div>
@@ -171,7 +171,7 @@ function renderAuth() {
           </div>
           <ul class="info-list">
             <li><strong>Справедливый жребий.</strong> Орден не даёт одному и тому же герою тащить всё бремя слишком часто.</li>
-            <li><strong>Единая карта дней.</strong> Ритуалы и настольные сборы видны рядом, без россыпи чатов и таблиц.</li>
+            <li><strong>Единая карта дней.</strong> Ритуалы и игровые вечера видны рядом, без россыпи чатов и таблиц.</li>
             <li><strong>Закрытый круг.</strong> Посторонние не могут войти в орден своей волей.</li>
             <li><strong>Лёгкое основание.</strong> Без собственной инфраструктуры и лишней тяжести на старте.</li>
           </ul>
@@ -240,7 +240,7 @@ function renderDashboard() {
           <p class="section-tag">Зал летописей</p>
           <h1>${escapeHtml(state.me.displayName)}, хроники открыты</h1>
           <p class="feature-card__lead">
-            Здесь видно, кто несёт текущее служение Хранителя Порядка, когда грядёт следующий Ритуал, какие таверненные сборы впереди и как распределяется бремя по кругу.
+            Здесь видно, кто несёт текущее служение Хранителя Порядка, когда грядёт следующий Ритуал, какие игровые вечера впереди и как распределяется бремя по кругу.
           </p>
           <div class="feature-badges">
             <span class="feature-badge">${roleLabel(state.me.role)}</span>
@@ -259,7 +259,7 @@ function renderDashboard() {
           </div>
           <div class="rail-card rail-card--compact">
             <span class="rail-metric">${stats.gameCount}</span>
-            <span class="rail-label">грядущих таверненных сборов</span>
+            <span class="rail-label">грядущих игровых вечеров</span>
           </div>
         </aside>
       </article>
@@ -289,9 +289,9 @@ function renderDashboard() {
           <p>Созывов сохранено в хрониках</p>
         </article>
         <article class="stat-card">
-          <span class="stat-card__label">Сборы</span>
+          <span class="stat-card__label">Вечера</span>
           <strong>${stats.gameCount}</strong>
-          <p>Таверненных вечеров впереди</p>
+          <p>Игровых вечеров впереди</p>
         </article>
         <article class="stat-card">
           <span class="stat-card__label">Слава</span>
@@ -303,8 +303,9 @@ function renderDashboard() {
       <section class="content-grid">
         ${currentCycle}
         ${nextCycle}
-        ${renderGamesPanel()}
+        ${renderAdventurePanel()}
         ${renderFeedbackPanel()}
+        ${renderRankGuidePanel()}
         ${renderRosterPanel()}
         ${state.me.role === "admin" ? renderAdminPanel() : ""}
       </section>
@@ -349,7 +350,7 @@ function renderCyclePanel(title, cycle, emptyText) {
   `;
 }
 
-function renderGamesPanel() {
+function renderAdventurePanel() {
   const items = state.dashboard.upcomingGames
     .map(
       (event) => `
@@ -359,22 +360,73 @@ function renderGamesPanel() {
             <span>${formatEventDate(event)}</span>
           </div>
           ${event.notes ? `<p>${escapeHtml(event.notes)}</p>` : ""}
+          <span class="list-card__meta">Вписал в свод: ${escapeHtml(event.createdByName || "Неизвестный хронист")}</span>
         </li>
       `,
     )
     .join("");
 
   return `
+    <article class="panel panel--wide">
+      <div class="panel__header">
+        <p class="section-tag">Свод приключений</p>
+        <h2>Грядущие игровые вечера</h2>
+      </div>
+      <p class="panel__intro">
+        Любой соратник круга может вписать сюда игровой вечер, чтобы Ритуалы Порядка не столкнулись с приключениями за столом.
+      </p>
+      <div class="adventure-grid">
+        <div>
+          ${
+            items
+              ? `<ul class="list-stack">${items}</ul>`
+              : '<p class="panel__intro">Пока ни один игровой вечер не вписан в свод приключений.</p>'
+          }
+        </div>
+        <form id="game-event-form" class="stack-form adventure-form">
+          <h3>Вписать игровой вечер</h3>
+          <label>
+            <span>Название</span>
+            <input name="title" placeholder="Root: реванш за лесной трон" />
+          </label>
+          <label>
+            <span>Дата</span>
+            <input name="eventDate" type="date" />
+          </label>
+          <div class="split-fields">
+            <label>
+              <span>Начало</span>
+              <input name="startsAt" type="time" />
+            </label>
+            <label>
+              <span>Конец</span>
+              <input name="endsAt" type="time" />
+            </label>
+          </div>
+          <label>
+            <span>Пометка хрониста</span>
+            <textarea name="notes" rows="3" placeholder="Например: большая переговорка уже занята под другой совет"></textarea>
+          </label>
+          <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>Внести в свод</button>
+        </form>
+      </div>
+    </article>
+  `;
+}
+
+function renderRankGuidePanel() {
+  return `
     <article class="panel">
       <div class="panel__header">
-        <p class="section-tag">Таверненный свод</p>
-        <h2>Грядущие настольные сборы</h2>
+        <p class="section-tag">Путь возвышения</p>
+        <h2>Как растут звания ордена</h2>
       </div>
-      ${
-        items
-          ? `<ul class="list-stack">${items}</ul>`
-          : '<p class="panel__intro">Пока ни один таверненный сбор не вписан в свод.</p>'
-      }
+      <ul class="info-list">
+        <li><strong>Текущая ступень.</strong> ${escapeHtml(memberRankStage(state.me))}</li>
+        <li><strong>Следующий рубеж.</strong> ${escapeHtml(memberRankProgress(state.me))}</li>
+        <li><strong>Завет славы.</strong> ${escapeHtml(memberRankFutureHint(state.me))}</li>
+        <li><strong>Для всего круга.</strong> В свитке братства ниже у каждого соратника видны его звание и путь к следующей ступени.</li>
+      </ul>
     </article>
   `;
 }
@@ -425,6 +477,12 @@ function renderRosterPanel() {
           <td>
             <div class="member-cell">
               <strong>${escapeHtml(memberRankTitle(member))}</strong>
+              <span class="member-cell__meta">${escapeHtml(memberRankStage(member))}</span>
+            </div>
+          </td>
+          <td>
+            <div class="member-cell">
+              <strong>${escapeHtml(memberNextRankTitle(member))}</strong>
               <span class="member-cell__meta">${escapeHtml(memberRankProgress(member))}</span>
             </div>
           </td>
@@ -441,6 +499,9 @@ function renderRosterPanel() {
         <p class="section-tag">Свиток братства</p>
         <h2>Имена, внесённые в круг</h2>
       </div>
+      <p class="panel__intro">
+        Здесь видно звание каждого соратника, его текущую ступень и рубеж до следующего возвышения.
+      </p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -448,6 +509,7 @@ function renderRosterPanel() {
               <th>Имя</th>
               <th>Сан</th>
               <th>Звание</th>
+              <th>Следующий рубеж</th>
               <th>Служений</th>
               <th>Слава</th>
             </tr>
@@ -467,10 +529,10 @@ function renderAdminPanel() {
         <h2>Повеления Магистра</h2>
       </div>
       <p class="panel__intro">
-        Призывайте новых соратников в круг, отмечайте таверненные сборы и созывайте следующий Ритуал Порядка из одного зала.
+        Призывайте новых соратников в круг и созывайте следующий Ритуал Порядка. Игровые вечера теперь вписывает весь круг из Свода приключений.
       </p>
 
-      <div class="admin-grid">
+      <div class="admin-grid admin-grid--single">
         <form id="invite-member-form" class="stack-form admin-form">
           <h3>Призвать соратника в круг</h3>
           <label>
@@ -490,33 +552,6 @@ function renderAdminPanel() {
           </label>
           <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Вписать в свиток</button>
         </form>
-
-        <form id="game-event-form" class="stack-form admin-form">
-          <h3>Назначить таверненный сбор</h3>
-          <label>
-            <span>Название</span>
-            <input name="title" placeholder="Root: реванш" />
-          </label>
-          <label>
-            <span>Дата</span>
-            <input name="eventDate" type="date" />
-          </label>
-          <div class="split-fields">
-            <label>
-              <span>Начало</span>
-              <input name="startsAt" type="time" />
-            </label>
-            <label>
-              <span>Конец</span>
-              <input name="endsAt" type="time" />
-            </label>
-          </div>
-          <label>
-            <span>Заметка хрониста</span>
-            <textarea name="notes" rows="3" placeholder="Например: великая переговорка уже занята"></textarea>
-          </label>
-          <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>Внести в свод</button>
-        </form>
       </div>
 
       <div class="admin-banner">
@@ -525,7 +560,7 @@ function renderAdminPanel() {
           <h3>Созвать новый Ритуал Порядка</h3>
           <p>
             Система выберет сбалансированную пару Хранителей Порядка, постарается не повторять прошлое назначение и
-            избегать дней с настольными вечерами.
+            избегать дней с игровыми вечерами.
           </p>
         </div>
         <button id="generate-cycle-button" class="button button--primary" type="button" ${
@@ -605,14 +640,14 @@ async function onVerifyCode(event) {
     state.debugCode = "";
     state.notice = "Печать признана. Врата открыты.";
     state.error = "";
-    state.dashboard = await api("/api/dashboard");
+    syncDashboard(await api("/api/dashboard"));
     render();
   });
 }
 
 async function refreshDashboard() {
   await withBusy(async () => {
-    state.dashboard = await api("/api/dashboard");
+    syncDashboard(await api("/api/dashboard"));
     state.notice = "Летопись обновлена.";
     state.error = "";
     render();
@@ -643,7 +678,7 @@ async function onInviteMember(event) {
       },
     });
     event.currentTarget.reset();
-    state.dashboard = await api("/api/dashboard");
+    syncDashboard(await api("/api/dashboard"));
     state.notice = "Имя внесено в свиток братства.";
     state.error = "";
     render();
@@ -654,7 +689,7 @@ async function onCreateGameEvent(event) {
   event.preventDefault();
   await withBusy(async () => {
     const formData = new FormData(event.currentTarget);
-    await api("/api/admin/game-events", {
+    await api("/api/game-events", {
       method: "POST",
       body: {
         title: formData.get("title"),
@@ -665,8 +700,8 @@ async function onCreateGameEvent(event) {
       },
     });
     event.currentTarget.reset();
-    state.dashboard = await api("/api/dashboard");
-    state.notice = "Таверненный сбор внесён в свод.";
+    syncDashboard(await api("/api/dashboard"));
+    state.notice = "Игровой вечер вписан в свод приключений.";
     state.error = "";
     render();
   });
@@ -678,7 +713,7 @@ async function onGenerateCycle() {
       method: "POST",
       body: {},
     });
-    state.dashboard = await api("/api/dashboard");
+    syncDashboard(await api("/api/dashboard"));
     state.notice = "Новый Ритуал Порядка созван.";
     state.error = "";
     render();
@@ -749,6 +784,13 @@ function getStats() {
   };
 }
 
+function syncDashboard(dashboard) {
+  state.dashboard = dashboard;
+  if (dashboard?.me) {
+    state.me = dashboard.me;
+  }
+}
+
 function roleLabel(role) {
   return role === "admin" ? "Магистр Совета" : "Соратник круга";
 }
@@ -763,6 +805,18 @@ function memberRankShort(member) {
 
 function memberRankProgress(member) {
   return member?.rank?.progressLabel || "Путь звания ещё не раскрыт.";
+}
+
+function memberRankStage(member) {
+  return member?.rank?.stageLabel || "Ступень пока не открыта.";
+}
+
+function memberNextRankTitle(member) {
+  return member?.rank?.nextTitle || "Высший сан братства";
+}
+
+function memberRankFutureHint(member) {
+  return member?.rank?.futureRatingHint || "Слава ордена ещё только собирается.";
 }
 
 function formatDate(dateString) {

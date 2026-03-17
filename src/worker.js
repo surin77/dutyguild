@@ -124,8 +124,11 @@ async function handleFetch(request, env) {
     return handleCreateMember(request, env);
   }
 
-  if (pathname === "/api/admin/game-events" && request.method === "POST") {
-    const member = await requireAdmin(request, env);
+  if (
+    (pathname === "/api/game-events" || pathname === "/api/admin/game-events") &&
+    request.method === "POST"
+  ) {
+    const member = await requireMember(request, env);
     if (member instanceof Response) {
       return member;
     }
@@ -505,10 +508,19 @@ async function buildDashboard(env, member) {
       all(
         env,
         `
-          SELECT id, title, event_date, starts_at, ends_at, notes, status
+          SELECT
+            g.id,
+            g.title,
+            g.event_date,
+            g.starts_at,
+            g.ends_at,
+            g.notes,
+            g.status,
+            creator.display_name AS created_by_name
           FROM game_events
-          WHERE event_date >= ? AND status != 'cancelled'
-          ORDER BY event_date ASC
+          LEFT JOIN members creator ON creator.id = g.created_by_member_id
+          WHERE g.event_date >= ? AND g.status != 'cancelled'
+          ORDER BY g.event_date ASC
           LIMIT 8
         `,
         [today],
@@ -534,7 +546,7 @@ async function buildDashboard(env, member) {
     ]);
 
   return {
-    me: memberToClient(member),
+    me: roster.find((entry) => entry.id === member.id) || memberToClient(member),
     currentCycle: currentCycleRow ? await hydrateCycle(env, currentCycleRow) : null,
     nextCycle: nextCycleRow ? await hydrateCycle(env, nextCycleRow) : null,
     recentCycles: await Promise.all(recentCycleRows.map((row) => hydrateCycle(env, row))),
@@ -546,6 +558,7 @@ async function buildDashboard(env, member) {
       endsAt: row.ends_at,
       notes: row.notes,
       status: row.status,
+      createdByName: row.created_by_name,
     })),
     recentFeedback: feedback.map((row) => ({
       id: row.id,
@@ -1133,12 +1146,15 @@ function getMemberRank({ dutyCount, averageRating }) {
     nextTitle: nextRank?.title || null,
     progressCurrent,
     progressTarget,
+    stageLabel: nextRank
+      ? `Ступень ${currentRank.crest} · ${progressCurrent} из ${progressTarget} служений этой ступени.`
+      : `Ступень ${currentRank.crest} · вершина братства достигнута.`,
     progressLabel: nextRank
-      ? `До звания «${nextRank.shortTitle}» осталось ${ritualsToNextRank} ритуал${pluralizeRussian(
+      ? `Следующая ступень — «${nextRank.title}». Осталось ${ritualsToNextRank} ритуал${pluralizeRussian(
           ritualsToNextRank,
           ["", "а", "ов"],
         )}.`
-      : "Высший сан братства уже достигнут.",
+      : "Следующая ступень больше не скрыта: высший сан братства уже достигнут.",
     futureRatingHint:
       averageRating === null
         ? "Пока звание питается только числом ритуалов. Позже к нему прибавится сила славы."

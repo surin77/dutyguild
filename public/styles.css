@@ -538,6 +538,25 @@ select:focus {
   align-items: baseline;
 }
 
+.adventure-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.adventure-form {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.46);
+  border: 1px solid rgba(203, 188, 173, 0.9);
+}
+
+.adventure-form h3 {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -581,6 +600,10 @@ th {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+}
+
+.admin-grid--single {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .admin-form {
@@ -642,7 +665,8 @@ th {
   .feature-card,
   .content-grid,
   .stats-band,
-  .admin-grid {
+  .admin-grid,
+  .adventure-grid {
     grid-template-columns: 1fr;
   }
 
