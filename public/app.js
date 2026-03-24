@@ -140,7 +140,7 @@ function renderSiteHeader() {
             <img class="brand-mark__image" src="${BRAND_MARK_SRC}" alt="Герб Duty Guild" />
           </div>
           <div class="brand-copy">
-            <span class="brand-kicker">Duty Guild</span>
+            <span class="brand-kicker">Обет порядка</span>
             <strong class="brand-title">${appName}</strong>
           </div>
         </div>
