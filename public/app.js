@@ -82,6 +82,20 @@ const PAGE_DEFINITIONS = Object.freeze([
 ]);
 
 const BRAND_MARK_SRC = "/assets/brand/dutyguild-mark.svg";
+const EMBER_FIELD = Object.freeze([
+  { left: "4%", drift: "5vw", duration: "22s", delay: "-3s", size: "5px", opacity: "0.82", blur: "0.2px" },
+  { left: "12%", drift: "2vw", duration: "18s", delay: "-9s", size: "4px", opacity: "0.72", blur: "0.15px" },
+  { left: "19%", drift: "7vw", duration: "26s", delay: "-14s", size: "6px", opacity: "0.88", blur: "0.25px" },
+  { left: "27%", drift: "3vw", duration: "20s", delay: "-6s", size: "3px", opacity: "0.66", blur: "0.1px" },
+  { left: "35%", drift: "8vw", duration: "24s", delay: "-17s", size: "5px", opacity: "0.8", blur: "0.18px" },
+  { left: "46%", drift: "4vw", duration: "19s", delay: "-1s", size: "4px", opacity: "0.7", blur: "0.12px" },
+  { left: "54%", drift: "6vw", duration: "28s", delay: "-11s", size: "6px", opacity: "0.92", blur: "0.3px" },
+  { left: "63%", drift: "2vw", duration: "17s", delay: "-5s", size: "3px", opacity: "0.64", blur: "0.08px" },
+  { left: "71%", drift: "5vw", duration: "23s", delay: "-15s", size: "4px", opacity: "0.74", blur: "0.14px" },
+  { left: "79%", drift: "7vw", duration: "27s", delay: "-7s", size: "5px", opacity: "0.86", blur: "0.24px" },
+  { left: "88%", drift: "3vw", duration: "21s", delay: "-12s", size: "4px", opacity: "0.68", blur: "0.12px" },
+  { left: "95%", drift: "6vw", duration: "25s", delay: "-19s", size: "5px", opacity: "0.84", blur: "0.22px" },
+]);
 
 const root = document.querySelector("#app");
 window.addEventListener("hashchange", syncPageFromLocation);
@@ -114,6 +128,9 @@ function render() {
 
   root.innerHTML = `
     <main class="page-shell">
+      <div class="ember-field" aria-hidden="true">
+        ${renderEmberField()}
+      </div>
       ${renderSiteHeader()}
       <div class="page-inner">
         ${content}
@@ -124,6 +141,25 @@ function render() {
   if (!state.loading) {
     bindEvents();
   }
+}
+
+function renderEmberField() {
+  return EMBER_FIELD.map(
+    (ember, index) => `
+      <span
+        class="ember ember--${index % 3}"
+        style="
+          --ember-left:${ember.left};
+          --ember-drift:${ember.drift};
+          --ember-duration:${ember.duration};
+          --ember-delay:${ember.delay};
+          --ember-size:${ember.size};
+          --ember-opacity:${ember.opacity};
+          --ember-blur:${ember.blur};
+        "
+      ></span>
+    `,
+  ).join("");
 }
 
 function renderSiteHeader() {

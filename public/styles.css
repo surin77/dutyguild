@@ -71,6 +71,56 @@ td {
 
 .page-shell {
   min-height: 100vh;
+  position: relative;
+  overflow-x: clip;
+}
+
+.ember-field {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+  mix-blend-mode: screen;
+}
+
+.ember {
+  position: absolute;
+  left: var(--ember-left);
+  bottom: -12vh;
+  width: var(--ember-size);
+  height: var(--ember-size);
+  border-radius: 999px;
+  opacity: 0;
+  background:
+    radial-gradient(circle, rgba(255, 245, 222, 0.98) 0%, rgba(255, 199, 108, 0.95) 32%, rgba(198, 73, 33, 0.58) 68%, rgba(198, 73, 33, 0) 100%);
+  box-shadow:
+    0 0 14px rgba(255, 161, 76, 0.42),
+    0 0 28px rgba(194, 73, 28, 0.18);
+  filter: blur(var(--ember-blur));
+  transform: translate3d(0, 0, 0) scale(0.42);
+  will-change: transform, opacity;
+  animation:
+    ember-rise var(--ember-duration) linear infinite,
+    ember-flicker 2.6s ease-in-out infinite;
+  animation-delay: var(--ember-delay), var(--ember-delay);
+}
+
+.ember::after {
+  content: "";
+  position: absolute;
+  inset: -38%;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(255, 236, 186, 0.95), rgba(255, 236, 186, 0) 72%);
+  opacity: 0.75;
+}
+
+.ember--1 {
+  animation-duration: calc(var(--ember-duration) * 1.08), 2.2s;
+}
+
+.ember--2 {
+  animation-duration: calc(var(--ember-duration) * 0.92), 3s;
 }
 
 .site-header {
@@ -248,6 +298,8 @@ td {
 }
 
 .page-inner {
+  position: relative;
+  z-index: 4;
   width: min(1240px, calc(100% - 32px));
   margin: 0 auto;
   padding: 28px 0 48px;
@@ -1282,7 +1334,46 @@ th {
   transform: translateY(-1px);
 }
 
+@keyframes ember-rise {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.35);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: var(--ember-opacity);
+  }
+
+  72% {
+    opacity: calc(var(--ember-opacity) * 0.78);
+  }
+
+  100% {
+    transform: translate3d(var(--ember-drift), -118vh, 0) scale(1.18);
+    opacity: 0;
+  }
+}
+
+@keyframes ember-flicker {
+  0%,
+  100% {
+    filter: blur(var(--ember-blur)) brightness(0.92);
+  }
+
+  50% {
+    filter: blur(var(--ember-blur)) brightness(1.24);
+  }
+}
+
 @media (max-width: 1080px) {
+  .ember-field {
+    opacity: 0.72;
+  }
+
+  .ember:nth-child(2n) {
+    display: none;
+  }
+
   .feature-card,
   .content-grid,
   .stats-band,
@@ -1313,6 +1404,10 @@ th {
 }
 
 @media (max-width: 720px) {
+  .ember-field {
+    opacity: 0.58;
+  }
+
   .page-inner,
   .site-header__inner {
     width: min(100% - 20px, 100%);
@@ -1343,5 +1438,11 @@ th {
 
   .status-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ember-field {
+    display: none;
   }
 }
