@@ -1299,14 +1299,20 @@ th {
 }
 
 .assignment-card {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.56);
   border: 1px solid rgba(203, 188, 173, 0.9);
+}
+
+.assignment-card .tag-pill {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
 }
 
 .assignment-card__state {
@@ -1507,12 +1513,19 @@ th {
     align-items: flex-start;
   }
 
-  .assignment-card,
   .review-form__head,
   .event-edit-form__header,
   .election-stage__head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .assignment-card {
+    grid-template-columns: 1fr;
+  }
+
+  .assignment-card__state {
+    text-align: left;
   }
 
   .status-row {
