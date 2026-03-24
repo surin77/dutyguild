@@ -30,6 +30,9 @@ spec:
               path: /api/health
               port: http
               scheme: HTTP
+              httpHeaders:
+                - name: X-Forwarded-Proto
+                  value: https
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
@@ -37,5 +40,8 @@ spec:
               path: /api/health
               port: http
               scheme: HTTP
+              httpHeaders:
+                - name: X-Forwarded-Proto
+                  value: https
             initialDelaySeconds: 15
             periodSeconds: 20
