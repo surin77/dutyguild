@@ -689,6 +689,7 @@ async function handleCreateGameEvent(request, env, actor) {
   const startsAt = normalizeTime(body?.startsAt);
   const endsAt = normalizeTime(body?.endsAt);
   const notes = String(body?.notes || "").trim();
+  const now = new Date().toISOString();
 
   if (!title || !isDateOnly(eventDate) || !isDateOnly(endDate)) {
     return json({ error: "Заполните название события, день начала и день завершения." }, 400);
@@ -710,10 +711,21 @@ async function handleCreateGameEvent(request, env, actor) {
   await run(
     env,
     `
-      INSERT INTO game_events (id, title, event_date, end_date, starts_at, ends_at, notes, status, created_by_member_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)
+      INSERT INTO game_events (
+        id,
+        title,
+        event_date,
+        end_date,
+        starts_at,
+        ends_at,
+        notes,
+        status,
+        created_by_member_id,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?)
     `,
-    [eventId, title, eventDate, endDate, startsAt, endsAt, notes, actor.id],
+    [eventId, title, eventDate, endDate, startsAt, endsAt, notes, actor.id, now],
   );
 
   await notifyGameEventCreated(env, actor, {
@@ -724,6 +736,8 @@ async function handleCreateGameEvent(request, env, actor) {
     startsAt,
     endsAt,
     notes,
+    status: "confirmed",
+    updatedAt: now,
   });
 
   return json({ ok: true });
@@ -756,6 +770,7 @@ async function handleUpdateGameEvent(request, env, actor, gameEventId) {
   const startsAt = normalizeTime(body?.startsAt);
   const endsAt = normalizeTime(body?.endsAt);
   const notes = String(body?.notes || "").trim();
+  const previousEvent = normalizeGameEventRecord(gameEvent);
 
   if (!title || !isDateOnly(eventDate) || !isDateOnly(endDate)) {
     return json({ error: "Заполните название события, день начала и день завершения." }, 400);
@@ -772,15 +787,45 @@ async function handleUpdateGameEvent(request, env, actor, gameEventId) {
     );
   }
 
+  const nextEvent = {
+    ...previousEvent,
+    title,
+    eventDate,
+    endDate,
+    startsAt,
+    endsAt,
+    notes,
+    status: "confirmed",
+  };
+
+  if (!didGameEventChange(previousEvent, nextEvent)) {
+    return json({ ok: true, unchanged: true });
+  }
+
+  const now = new Date().toISOString();
   await run(
     env,
     `
       UPDATE game_events
-      SET title = ?, event_date = ?, end_date = ?, starts_at = ?, ends_at = ?, notes = ?, status = 'confirmed'
+      SET title = ?,
+          event_date = ?,
+          end_date = ?,
+          starts_at = ?,
+          ends_at = ?,
+          notes = ?,
+          status = 'confirmed',
+          cancelled_at = NULL,
+          updated_at = ?
       WHERE id = ?
     `,
-    [title, eventDate, endDate, startsAt, endsAt, notes, gameEventId],
+    [title, eventDate, endDate, startsAt, endsAt, notes, now, gameEventId],
   );
+
+  await notifyGameEventUpdated(env, actor, previousEvent, {
+    ...nextEvent,
+    updatedAt: now,
+    createdByMemberId: gameEvent.created_by_member_id,
+  });
 
   return json({ ok: true });
 }
@@ -808,7 +853,26 @@ async function handleDeleteGameEvent(env, actor, gameEventId) {
     );
   }
 
-  await run(env, "DELETE FROM game_events WHERE id = ?", [gameEventId]);
+  const cancelledAt = new Date().toISOString();
+  await run(
+    env,
+    `
+      UPDATE game_events
+      SET status = 'cancelled',
+          cancelled_at = ?,
+          updated_at = ?
+      WHERE id = ?
+    `,
+    [cancelledAt, cancelledAt, gameEventId],
+  );
+
+  await notifyGameEventCancelled(env, actor, {
+    ...normalizeGameEventRecord(gameEvent),
+    status: "cancelled",
+    cancelledAt,
+    updatedAt: cancelledAt,
+  });
+
   return json({ ok: true });
 }
 
@@ -1321,6 +1385,7 @@ async function handleCalendarFeed(env, token) {
 async function buildCalendarFeed(env, member) {
   const config = getConfig(env);
   const today = todayInTimeZone(config.timeZone);
+  const cancelledLookbackDate = addDays(today, -14);
   const gameRows = await all(
     env,
     `
@@ -1331,14 +1396,23 @@ async function buildCalendarFeed(env, member) {
         COALESCE(end_date, event_date) AS end_date,
         starts_at,
         ends_at,
-        notes
+        notes,
+        status,
+        created_at,
+        updated_at,
+        cancelled_at
       FROM game_events
-      WHERE COALESCE(end_date, event_date) >= ?
-        AND status != 'cancelled'
+      WHERE (
+        status != 'cancelled'
+        AND COALESCE(end_date, event_date) >= ?
+      ) OR (
+        status = 'cancelled'
+        AND COALESCE(end_date, event_date) >= ?
+      )
       ORDER BY event_date ASC, COALESCE(starts_at, '23:59') ASC
-      LIMIT 40
+      LIMIT 60
     `,
-    [today],
+    [today, cancelledLookbackDate],
   );
 
   const calendarEvents = gameRows
@@ -1371,10 +1445,12 @@ function buildGameEventCalendarEntry(env, event, timeZone) {
   }
 
   const endDate = event.end_date || event.event_date;
+  const isCancelled = event.status === "cancelled";
   const entry = {
     uid: `game-${event.id}@dutyguild.ru`,
     summary: event.title,
     description: [
+      isCancelled ? "Статус: событие отменено." : null,
       `Когда: ${formatEventSchedule({
         eventDate: event.event_date,
         endDate,
@@ -1386,6 +1462,10 @@ function buildGameEventCalendarEntry(env, event, timeZone) {
       .filter(Boolean)
       .join("\n"),
     url: getAppOrigin(env),
+    status: isCancelled ? "cancelled" : "confirmed",
+    lastModifiedUtc: parseStoredTimestamp(
+      event.updated_at || event.cancelled_at || event.created_at,
+    ),
   };
 
   if (!event.starts_at) {
@@ -1407,10 +1487,11 @@ function renderIcsEvent(entry, stamp) {
     "BEGIN:VEVENT",
     `UID:${escapeIcsText(entry.uid)}`,
     `DTSTAMP:${stamp}`,
+    `LAST-MODIFIED:${formatIcsDateTimeUtc(entry.lastModifiedUtc || new Date())}`,
     `SUMMARY:${escapeIcsText(entry.summary)}`,
     `DESCRIPTION:${escapeIcsText(entry.description || "")}`,
     `URL:${escapeIcsText(entry.url || "")}`,
-    "STATUS:CONFIRMED",
+    `STATUS:${entry.status === "cancelled" ? "CANCELLED" : "CONFIRMED"}`,
   ];
 
   if (entry.allDayStart && entry.allDayEndExclusive) {
@@ -1423,8 +1504,10 @@ function renderIcsEvent(entry, stamp) {
     }
   }
 
-  lines.push(...renderIcsDisplayAlarm(entry.summary, "P2D"));
-  lines.push(...renderIcsDisplayAlarm(entry.summary, "P1D"));
+  if (entry.status !== "cancelled") {
+    lines.push(...renderIcsDisplayAlarm(entry.summary, "P2D"));
+    lines.push(...renderIcsDisplayAlarm(entry.summary, "P1D"));
+  }
   lines.push("END:VEVENT");
   return lines;
 }
@@ -3064,14 +3147,15 @@ async function sendReviewRequestEmail(env, details) {
 }
 
 async function sendGameEventEmail(env, details) {
+  const meta = getGameEventEmailMeta(details);
+  const detailRows = meta.rows(details);
+  const detailNotes = meta.notes(details);
   const text = [
     `${details.displayName}, приветствую.`,
     "",
-    "В летопись внесено новое событие круга.",
-    `Название: ${details.title}`,
-    `Когда: ${details.scheduleLabel}`,
-    `Вписал: ${details.createdByName}`,
-    details.notes ? `Пометка хрониста: ${details.notes}` : null,
+    meta.leadText,
+    ...detailRows.map(([label, value]) => `${label}: ${value}`),
+    ...detailNotes,
     details.calendarUrl ? `Подписной календарь ордена: ${details.calendarUrl}` : null,
     details.calendarWebcalUrl ? `Ссылка для подписки: ${details.calendarWebcalUrl}` : null,
     details.calendarWebcalUrl ? "Обновление календарного свитка: примерно каждые 5 минут." : null,
@@ -3081,24 +3165,18 @@ async function sendGameEventEmail(env, details) {
 
   return sendEmail(env, {
     to: details.email,
-    subject: "Duty Guild: в летопись внесено новое событие",
+    subject: meta.subject,
     text,
     html: renderEmailShell(env, {
-      kicker: "Новая запись летописи",
-      title: "Круг соберётся вновь",
-      lead: "В свод событий внесена новая встреча. Теперь орден сможет не сталкивать её с обрядами.",
-      sceneKey: "wildwood",
+      kicker: meta.kicker,
+      title: meta.title,
+      lead: meta.leadHtml,
+      sceneKey: meta.sceneKey,
       bodyHtml:
-        renderEmailDetailRows([
-          ["Название", details.title],
-          ["Когда", details.scheduleLabel],
-          ["Хронист", details.createdByName],
-        ]) +
-        (details.notes
-          ? `<p style="margin:18px 0 0;color:#5e4b41;line-height:1.65;"><strong>Пометка хрониста:</strong> ${escapeHtml(details.notes)}</p>`
-          : "") +
+        renderEmailDetailRows(detailRows) +
+        renderGameEventEmailNotesHtml(detailNotes) +
         renderCalendarSubscriptionCallout(details.calendarUrl, details.calendarWebcalUrl),
-      ctaLabel: "Открыть летопись",
+      ctaLabel: meta.ctaLabel,
       ctaHref: getAppOrigin(env),
     }),
   });
@@ -3224,15 +3302,7 @@ async function notifyReviewRequest(env, cycleId, assignments) {
 }
 
 async function notifyGameEventCreated(env, actor, event) {
-  const recipients = await all(
-    env,
-    `
-      SELECT id, email, display_name, calendar_token
-      FROM members
-      WHERE status = 'active'
-      ORDER BY display_name ASC
-    `,
-  );
+  const recipients = await loadGameEventNotificationRecipients(env);
   const scheduleLabel = formatEventSchedule({
     eventDate: event.eventDate,
     endDate: event.endDate,
@@ -3249,10 +3319,11 @@ async function notifyGameEventCreated(env, actor, event) {
     const delivery = await sendGameEventEmail(env, {
       email: recipient.email,
       displayName: recipient.display_name,
+      variant: "created",
       title: event.title,
       scheduleLabel,
       notes: event.notes,
-      createdByName: actor.display_name,
+      actorName: actor.display_name,
       calendarUrl: buildCalendarSubscriptionUrl(env, calendarToken),
       calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, calendarToken),
     });
@@ -3263,6 +3334,82 @@ async function notifyGameEventCreated(env, actor, event) {
       deliveryStatus: delivery.mode,
     });
   }
+}
+
+async function notifyGameEventUpdated(env, actor, previousEvent, nextEvent) {
+  const recipients = await loadGameEventNotificationRecipients(env);
+  const scheduleLabel = formatEventSchedule(nextEvent);
+  const previousScheduleLabel = formatEventSchedule(previousEvent);
+
+  for (const recipient of recipients) {
+    const calendarToken = await ensureCalendarTokenValue(
+      env,
+      recipient.id,
+      recipient.calendar_token,
+    );
+    const delivery = await sendGameEventEmail(env, {
+      email: recipient.email,
+      displayName: recipient.display_name,
+      variant: "updated",
+      title: nextEvent.title,
+      previousTitle: previousEvent.title,
+      scheduleLabel,
+      previousScheduleLabel,
+      notes: nextEvent.notes,
+      previousNotes: previousEvent.notes,
+      actorName: actor.display_name,
+      calendarUrl: buildCalendarSubscriptionUrl(env, calendarToken),
+      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, calendarToken),
+    });
+
+    await logNotification(env, {
+      kind: "game-event-updated",
+      memberId: recipient.id,
+      deliveryStatus: delivery.mode,
+    });
+  }
+}
+
+async function notifyGameEventCancelled(env, actor, event) {
+  const recipients = await loadGameEventNotificationRecipients(env);
+  const scheduleLabel = formatEventSchedule(event);
+
+  for (const recipient of recipients) {
+    const calendarToken = await ensureCalendarTokenValue(
+      env,
+      recipient.id,
+      recipient.calendar_token,
+    );
+    const delivery = await sendGameEventEmail(env, {
+      email: recipient.email,
+      displayName: recipient.display_name,
+      variant: "cancelled",
+      title: event.title,
+      scheduleLabel,
+      notes: event.notes,
+      actorName: actor.display_name,
+      calendarUrl: buildCalendarSubscriptionUrl(env, calendarToken),
+      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, calendarToken),
+    });
+
+    await logNotification(env, {
+      kind: "game-event-cancelled",
+      memberId: recipient.id,
+      deliveryStatus: delivery.mode,
+    });
+  }
+}
+
+async function loadGameEventNotificationRecipients(env) {
+  return all(
+    env,
+    `
+      SELECT id, email, display_name, calendar_token
+      FROM members
+      WHERE status = 'active'
+      ORDER BY display_name ASC
+    `,
+  );
 }
 
 async function sendEmail(env, payload) {
@@ -3460,8 +3607,140 @@ function renderCalendarSubscriptionCallout(calendarUrl, calendarWebcalUrl) {
   `;
 }
 
+function getGameEventEmailMeta(details) {
+  switch (details.variant) {
+    case "updated":
+      return {
+        subject: "Duty Guild: событие круга изменилось",
+        kicker: "Летопись обновлена",
+        title: "Маршрут похода переписан",
+        leadText: "В летопись внесены изменения по уже объявленному событию круга.",
+        leadHtml:
+          "В летопись внесены изменения по уже объявленному событию круга. Календарный свиток подтянет новую версию в ближайшие минуты.",
+        sceneKey: "citadel",
+        ctaLabel: "Открыть свод походов",
+        rows(current) {
+          return [
+            ["Название", current.title],
+            ["Когда теперь", current.scheduleLabel],
+            ["Переписал хронику", current.actorName],
+          ];
+        },
+        notes(current) {
+          const items = [];
+          if (current.previousTitle && current.previousTitle !== current.title) {
+            items.push(`Прежнее название: ${current.previousTitle}`);
+          }
+          if (
+            current.previousScheduleLabel &&
+            current.previousScheduleLabel !== current.scheduleLabel
+          ) {
+            items.push(`Прежнее время: ${current.previousScheduleLabel}`);
+          }
+          if (current.previousNotes !== current.notes) {
+            if (current.previousNotes) {
+              items.push(`Прежняя пометка хрониста: ${current.previousNotes}`);
+            }
+            if (current.notes) {
+              items.push(`Новая пометка хрониста: ${current.notes}`);
+            }
+          } else if (current.notes) {
+            items.push(`Пометка хрониста: ${current.notes}`);
+          }
+          return items;
+        },
+      };
+    case "cancelled":
+      return {
+        subject: "Duty Guild: событие круга отменено",
+        kicker: "Запись снята",
+        title: "Поход снят со свода",
+        leadText: "Событие круга отменено и больше не требует места в ваших планах.",
+        leadHtml:
+          "Событие круга отменено. Календарный свиток отметит это и снимет поход с будущих сборов.",
+        sceneKey: "siege",
+        ctaLabel: "Открыть летопись",
+        rows(current) {
+          return [
+            ["Название", current.title],
+            ["Когда было назначено", current.scheduleLabel],
+            ["Кто отменил", current.actorName],
+          ];
+        },
+        notes(current) {
+          return current.notes ? [`Последняя пометка хрониста: ${current.notes}`] : [];
+        },
+      };
+    case "created":
+    default:
+      return {
+        subject: "Duty Guild: в летопись внесено новое событие",
+        kicker: "Новая запись летописи",
+        title: "Круг соберётся вновь",
+        leadText: "В летопись внесено новое событие круга.",
+        leadHtml:
+          "В свод событий внесена новая встреча. Теперь орден сможет не сталкивать её с обрядами.",
+        sceneKey: "wildwood",
+        ctaLabel: "Открыть летопись",
+        rows(current) {
+          return [
+            ["Название", current.title],
+            ["Когда", current.scheduleLabel],
+            ["Вписал хронист", current.actorName],
+          ];
+        },
+        notes(current) {
+          return current.notes ? [`Пометка хрониста: ${current.notes}`] : [];
+        },
+      };
+  }
+}
+
+function renderGameEventEmailNotesHtml(notes) {
+  const items = (notes || []).filter(Boolean);
+  if (!items.length) {
+    return "";
+  }
+
+  return items
+    .map(
+      (note) =>
+        `<p style="margin:18px 0 0;color:#5e4b41;line-height:1.65;">${escapeHtml(note)}</p>`,
+    )
+    .join("");
+}
+
 function getAppOrigin(env) {
   return String(env.PUBLIC_APP_ORIGIN || "https://dutyguild.ru").trim();
+}
+
+function normalizeGameEventRecord(event) {
+  return {
+    id: event.id,
+    title: String(event.title || "").trim(),
+    eventDate: String(event.event_date || event.eventDate || "").trim(),
+    endDate: String(event.end_date || event.endDate || event.event_date || event.eventDate || "").trim(),
+    startsAt: normalizeTime(event.starts_at || event.startsAt),
+    endsAt: normalizeTime(event.ends_at || event.endsAt),
+    notes: String(event.notes || "").trim(),
+    status: String(event.status || "confirmed").trim(),
+    createdByMemberId: event.created_by_member_id || event.createdByMemberId || null,
+    createdAt: event.created_at || event.createdAt || null,
+    updatedAt: event.updated_at || event.updatedAt || null,
+    cancelledAt: event.cancelled_at || event.cancelledAt || null,
+  };
+}
+
+function didGameEventChange(previousEvent, nextEvent) {
+  return [
+    "title",
+    "eventDate",
+    "endDate",
+    "startsAt",
+    "endsAt",
+    "notes",
+    "status",
+  ].some((field) => (previousEvent?.[field] || null) !== (nextEvent?.[field] || null));
 }
 
 async function readJson(request) {
@@ -3875,6 +4154,19 @@ function formatIcsDateTimeUtc(date) {
   const minutes = String(date.getUTCMinutes()).padStart(2, "0");
   const seconds = String(date.getUTCSeconds()).padStart(2, "0");
   return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+}
+
+function parseStoredTimestamp(value) {
+  if (!value) {
+    return new Date();
+  }
+
+  const raw = String(value).trim();
+  const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(raw)
+    ? `${raw.replace(" ", "T")}Z`
+    : raw;
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
 function zonedDateTimeToUtc(dateOnly, timeValue, timeZone) {
