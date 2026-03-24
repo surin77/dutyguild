@@ -2765,7 +2765,7 @@ function decorateSelfMember(member, env) {
 }
 
 function buildCalendarSubscriptionUrl(env) {
-  return new URL("/calendar.ics", getAppOrigin(env)).toString();
+  return new URL("/calendar/events.ics", getAppOrigin(env)).toString();
 }
 
 function buildCalendarSubscriptionWebcalUrl(env) {
