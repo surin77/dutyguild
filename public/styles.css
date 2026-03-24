@@ -192,6 +192,7 @@ td {
 }
 
 .feature-card {
+  --feature-art: none;
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.95fr);
   gap: 22px;
@@ -211,9 +212,24 @@ td {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
   background:
     radial-gradient(circle at 75% 18%, rgba(255, 189, 103, 0.22), transparent 22%),
     linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+  pointer-events: none;
+}
+
+.feature-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--feature-art);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.28;
+  transform: scale(1.03);
+  filter: saturate(0.94) contrast(1.04);
   pointer-events: none;
 }
 
@@ -222,10 +238,18 @@ td {
   align-items: center;
 }
 
+.feature-card--entry {
+  --feature-art: url("/assets/fantasy-scenes/castle-at-dusk.jpg");
+}
+
+.feature-card--dashboard {
+  --feature-art: url("/assets/fantasy-scenes/castle-dragon-battle.jpg");
+}
+
 .feature-card__content,
 .feature-rail {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .feature-card h1 {
@@ -233,6 +257,7 @@ td {
   font-size: clamp(2.25rem, 5vw, 4.2rem);
   line-height: 0.95;
   max-width: 12ch;
+  text-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
 }
 
 .feature-card__lead {
@@ -940,10 +965,102 @@ th {
   min-height: 220px;
 }
 
+.scene-card {
+  position: relative;
+  min-height: 100%;
+}
+
 .scene-illustration {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  min-height: 220px;
+  object-fit: cover;
+}
+
+.scene-card__caption {
+  position: absolute;
+  inset: auto 16px 16px 16px;
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(16, 14, 15, 0.2), rgba(16, 14, 15, 0.84));
+  color: rgba(255, 251, 245, 0.92);
+  backdrop-filter: blur(6px);
+}
+
+.scene-card__caption strong {
+  font-size: 1.05rem;
+}
+
+.scene-card__caption span:last-child {
+  color: rgba(255, 249, 242, 0.74);
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.scene-card__tag,
+.scene-gallery-card__tag {
+  display: inline-block;
+  color: var(--gold-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+}
+
+.panel--gallery {
+  background: linear-gradient(180deg, rgba(249, 243, 236, 0.98), rgba(237, 228, 214, 0.98));
+}
+
+.scene-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.scene-gallery-card {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(203, 188, 173, 0.9);
+  background: linear-gradient(180deg, rgba(255, 250, 244, 0.92), rgba(238, 228, 214, 0.96));
+  box-shadow: var(--shadow);
+}
+
+.scene-gallery-card__media {
+  position: relative;
+}
+
+.scene-gallery-card__media::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 38%;
+  background: linear-gradient(180deg, transparent, rgba(15, 11, 10, 0.34));
+  pointer-events: none;
+}
+
+.scene-gallery-card__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.scene-gallery-card__body {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+
+.scene-gallery-card__body h3 {
+  margin: 0;
+}
+
+.scene-gallery-card__body p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
 }
 
 .status-row,
@@ -1110,7 +1227,8 @@ th {
   .council-grid,
   .election-summary-grid,
   .rank-summary-grid,
-  .rank-ladder {
+  .rank-ladder,
+  .scene-gallery {
     grid-template-columns: 1fr;
   }
 

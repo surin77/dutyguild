@@ -13,6 +13,30 @@ const state = {
   editingGameEventId: "",
 };
 
+const SCENE_LIBRARY = {
+  citadel: {
+    src: "/assets/fantasy-scenes/castle-at-dusk.jpg",
+    alt: "Парящий замок над туманной долиной и зелёными берегами",
+    kicker: "Знамение твердыни",
+    title: "Парящий бастион",
+    blurb: "Высокие залы, нависающие над бездной, напоминают: летопись держится на дисциплине не хуже, чем любая крепость на магии.",
+  },
+  siege: {
+    src: "/assets/fantasy-scenes/castle-dragon-battle.jpg",
+    alt: "Дракон поливает огнём осаждённую крепость среди дыма и пламени",
+    kicker: "Знамение осады",
+    title: "Драконья осада",
+    blurb: "Так выглядит час, когда круг не прячет трудности под ковёр, а встречает их прямо, вместе и без суеты.",
+  },
+  wildwood: {
+    src: "/assets/fantasy-scenes/enchanted-forest.jpg",
+    alt: "Зачарованный лес с мельницей, мостками и светящимися огнями у воды",
+    kicker: "Знамение чащи",
+    title: "Шепчущий бор",
+    blurb: "Не всякая сила приходит с боевым кличем: иногда порядок рождается в тихих рощах, где каждый знает своё место.",
+  },
+};
+
 const root = document.querySelector("#app");
 
 boot().catch((error) => {
@@ -124,7 +148,7 @@ function renderAuth() {
 
   return `
     <section class="hero-stage">
-      <article class="feature-card">
+      <article class="feature-card feature-card--entry">
         <div class="feature-card__content">
           <p class="section-tag">Хроники Duty Guild</p>
           <h1>Летопись ордена, где каждый обряд помнят по имени</h1>
@@ -141,7 +165,7 @@ function renderAuth() {
         </div>
         <aside class="feature-rail">
           <div class="illustration-card">
-            ${renderSceneIllustration("entry")}
+            ${renderSceneIllustration("wildwood")}
           </div>
           <div class="rail-card">
             <p class="rail-card__title">Как войти в круг</p>
@@ -258,7 +282,7 @@ function renderDashboard() {
         </div>
         <aside class="feature-rail feature-rail--art">
           <div class="illustration-card illustration-card--wide">
-            ${renderSceneIllustration("dashboard")}
+            ${renderSceneIllustration("citadel")}
           </div>
           <div class="rail-card rail-card--compact">
             <span class="rail-metric">${stats.memberCount}</span>
@@ -319,6 +343,7 @@ function renderDashboard() {
       <section class="content-grid">
         ${currentCycle}
         ${nextCycle}
+        ${renderSceneGalleryPanel()}
         ${renderRecentRitualsPanel()}
         ${renderAdventurePanel()}
         ${renderReviewPanel()}
@@ -731,6 +756,46 @@ function renderRecentRitualsPanel() {
           ? `<ul class="list-stack">${items}</ul>`
           : '<p class="panel__intro">Как только орден завершит первые обряды, здесь появятся их исходы и слава.</p>'
       }
+    </article>
+  `;
+}
+
+function renderSceneGalleryPanel() {
+  const sceneKeys = ["siege", "citadel", "wildwood"];
+  return `
+    <article class="panel panel--wide panel--gallery">
+      <div class="panel__header">
+        <p class="section-tag">Атлас преданий</p>
+        <h2>Знамения дальних земель</h2>
+      </div>
+      <p class="panel__intro">
+        Облик ордена теперь держится не только на тексте: по залу расставлены сцены осад, бастионов и зачарованных рощ, чтобы летопись ощущалась как живая фэнтези-энциклопедия.
+      </p>
+      <div class="scene-gallery">
+        ${sceneKeys.map((key) => renderSceneGalleryCard(key)).join("")}
+      </div>
+    </article>
+  `;
+}
+
+function renderSceneGalleryCard(kind) {
+  const scene = SCENE_LIBRARY[kind] || SCENE_LIBRARY.citadel;
+  return `
+    <article class="scene-gallery-card">
+      <div class="scene-gallery-card__media">
+        <img
+          class="scene-gallery-card__image"
+          src="${escapeHtml(scene.src)}"
+          alt="${escapeHtml(scene.alt)}"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+      <div class="scene-gallery-card__body">
+        <span class="scene-gallery-card__tag">${escapeHtml(scene.kicker)}</span>
+        <h3>${escapeHtml(scene.title)}</h3>
+        <p>${escapeHtml(scene.blurb)}</p>
+      </div>
     </article>
   `;
 }
@@ -1513,55 +1578,22 @@ function rankThemeStyle(rank) {
 }
 
 function renderSceneIllustration(kind) {
-  if (kind === "dashboard") {
-    return `
-      <svg viewBox="0 0 520 280" class="scene-illustration" aria-hidden="true">
-        <defs>
-          <linearGradient id="scene-bg-dashboard" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stop-color="#1f1515" />
-            <stop offset="58%" stop-color="#47221b" />
-            <stop offset="100%" stop-color="#9b3e20" />
-          </linearGradient>
-          <linearGradient id="scene-gold-dashboard" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stop-color="#f1d19a" />
-            <stop offset="100%" stop-color="#a85d2f" />
-          </linearGradient>
-        </defs>
-        <rect width="520" height="280" rx="28" fill="url(#scene-bg-dashboard)" />
-        <circle cx="118" cy="86" r="44" fill="rgba(241,209,154,0.18)" />
-        <path d="M75 196c36-66 84-102 150-102s114 36 150 102" fill="none" stroke="rgba(241,209,154,0.28)" stroke-width="14" stroke-linecap="round" />
-        <path d="M112 218h296" stroke="rgba(255,250,244,0.22)" stroke-width="10" stroke-linecap="round" />
-        <path d="M168 192v-80l58-30 58 30v80" fill="none" stroke="url(#scene-gold-dashboard)" stroke-width="10" stroke-linejoin="round" />
-        <path d="M214 194v-48h24v48" fill="none" stroke="#f7ead6" stroke-width="10" stroke-linejoin="round" />
-        <path d="M303 89c18 17 28 42 28 69" fill="none" stroke="rgba(255,250,244,0.34)" stroke-width="8" stroke-linecap="round" />
-        <path d="M359 90c18 17 28 42 28 69" fill="none" stroke="rgba(255,250,244,0.2)" stroke-width="8" stroke-linecap="round" />
-        <text x="46" y="242" fill="#f7ead6" font-family="Georgia, serif" font-size="28">Зал летописей</text>
-      </svg>
-    `;
-  }
-
+  const scene = SCENE_LIBRARY[kind] || SCENE_LIBRARY.citadel;
   return `
-    <svg viewBox="0 0 520 280" class="scene-illustration" aria-hidden="true">
-      <defs>
-        <linearGradient id="scene-bg-entry" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stop-color="#151213" />
-          <stop offset="58%" stop-color="#362019" />
-          <stop offset="100%" stop-color="#7a2816" />
-        </linearGradient>
-        <linearGradient id="scene-gold-entry" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stop-color="#f3d49a" />
-          <stop offset="100%" stop-color="#b7602d" />
-        </linearGradient>
-      </defs>
-      <rect width="520" height="280" rx="28" fill="url(#scene-bg-entry)" />
-      <path d="M102 214h316" stroke="rgba(255,248,239,0.22)" stroke-width="10" stroke-linecap="round" />
-      <path d="M160 196V84l100-48 100 48v112" fill="none" stroke="url(#scene-gold-entry)" stroke-width="12" stroke-linejoin="round" />
-      <path d="M225 198v-54h70v54" fill="none" stroke="#fff3e0" stroke-width="12" stroke-linejoin="round" />
-      <circle cx="260" cy="92" r="18" fill="rgba(243,212,154,0.82)" />
-      <path d="M117 108c16-15 34-24 56-28" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="8" stroke-linecap="round" />
-      <path d="M347 80c24 8 44 23 59 45" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="8" stroke-linecap="round" />
-      <text x="44" y="242" fill="#fff3e0" font-family="Georgia, serif" font-size="28">Печать входа</text>
-    </svg>
+    <figure class="scene-card scene-card--${escapeHtml(kind)}">
+      <img
+        class="scene-illustration"
+        src="${escapeHtml(scene.src)}"
+        alt="${escapeHtml(scene.alt)}"
+        loading="lazy"
+        decoding="async"
+      />
+      <figcaption class="scene-card__caption">
+        <span class="scene-card__tag">${escapeHtml(scene.kicker)}</span>
+        <strong>${escapeHtml(scene.title)}</strong>
+        <span>${escapeHtml(scene.blurb)}</span>
+      </figcaption>
+    </figure>
   `;
 }
 
