@@ -599,12 +599,12 @@ function renderAdventureCalendarCard() {
       <p class="section-tag">Календарный свиток</p>
       <h3>Подписка на события ордена</h3>
       <p>
-        В этом свитке живут только походы и встречи круга. Подпишите его один раз, и новые даты сами будут приходить в ваш календарь.
+        В этом свитке живут только походы и встречи круга. Подпишитесь на него один раз, и новые даты сами будут приходить в ваш календарь.
       </p>
       <div class="button-row">
         ${
           state.me.calendarSubscriptionWebcalUrl
-            ? `<a class="button button--secondary" href="${escapeHtml(state.me.calendarSubscriptionWebcalUrl)}">Подписать календарь</a>`
+            ? `<a class="button button--secondary" href="${escapeHtml(state.me.calendarSubscriptionWebcalUrl)}">Подписаться на календарь</a>`
             : ""
         }
         <button class="button button--primary" type="button" data-calendar-copy="true">Скопировать ссылку</button>

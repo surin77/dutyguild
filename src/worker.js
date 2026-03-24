@@ -3426,7 +3426,7 @@ function renderCalendarSubscriptionCallout(calendarUrl, calendarWebcalUrl) {
 
   const subscriptionLinks = [
     calendarWebcalUrl
-      ? `<a href="${escapeHtml(calendarWebcalUrl)}" style="color:#8f311c;text-decoration:none;font-weight:700;">Подписать через календарь</a>`
+      ? `<a href="${escapeHtml(calendarWebcalUrl)}" style="color:#8f311c;text-decoration:none;font-weight:700;">Подписаться на календарь</a>`
       : null,
     `<a href="${escapeHtml(calendarUrl)}" style="color:#8f311c;text-decoration:none;font-weight:700;">Открыть .ics-свиток</a>`,
   ]
