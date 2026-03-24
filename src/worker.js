@@ -3,6 +3,32 @@ import { readFileSync } from "node:fs";
 const appScript = readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
 const indexDocument = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
 const stylesSheet = readFileSync(new URL("../public/styles.css", import.meta.url), "utf8");
+const staticAssets = new Map([
+  [
+    "/assets/fantasy-scenes/castle-at-dusk.jpg",
+    {
+      body: readFileSync(new URL("../public/assets/fantasy-scenes/castle-at-dusk.jpg", import.meta.url)),
+      contentType: "image/jpeg",
+      cacheControl: "public, max-age=86400",
+    },
+  ],
+  [
+    "/assets/fantasy-scenes/castle-dragon-battle.jpg",
+    {
+      body: readFileSync(new URL("../public/assets/fantasy-scenes/castle-dragon-battle.jpg", import.meta.url)),
+      contentType: "image/jpeg",
+      cacheControl: "public, max-age=86400",
+    },
+  ],
+  [
+    "/assets/fantasy-scenes/enchanted-forest.jpg",
+    {
+      body: readFileSync(new URL("../public/assets/fantasy-scenes/enchanted-forest.jpg", import.meta.url)),
+      contentType: "image/jpeg",
+      cacheControl: "public, max-age=86400",
+    },
+  ],
+]);
 
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
@@ -3099,6 +3125,10 @@ function serveStaticAsset(pathname) {
 }
 
 function getStaticAsset(pathname) {
+  if (staticAssets.has(pathname)) {
+    return staticAssets.get(pathname);
+  }
+
   if (pathname === "/styles.css") {
     return {
       body: stylesSheet,
