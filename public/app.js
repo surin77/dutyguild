@@ -1300,8 +1300,9 @@ function bindEvents() {
 
 async function onRequestCode(event) {
   event.preventDefault();
+  const form = event.currentTarget;
   await withBusy(async () => {
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     const email = String(formData.get("email") || "").trim();
     const response = await api("/api/auth/request-code", {
       method: "POST",
@@ -1352,8 +1353,9 @@ async function onLogout() {
 
 async function onInviteMember(event) {
   event.preventDefault();
+  const form = event.currentTarget;
   await withBusy(async () => {
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     await api("/api/admin/members", {
       method: "POST",
       body: {
@@ -1362,7 +1364,7 @@ async function onInviteMember(event) {
         role: formData.get("role"),
       },
     });
-    event.currentTarget.reset();
+    form.reset();
     await hydrateDashboard();
     state.notice = "Имя внесено в свиток братства.";
     state.error = "";
@@ -1372,8 +1374,9 @@ async function onInviteMember(event) {
 
 async function onCreateGameEvent(event) {
   event.preventDefault();
+  const form = event.currentTarget;
   await withBusy(async () => {
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     await api("/api/game-events", {
       method: "POST",
       body: {
@@ -1385,7 +1388,7 @@ async function onCreateGameEvent(event) {
         notes: formData.get("notes"),
       },
     });
-    event.currentTarget.reset();
+    form.reset();
     state.editingGameEventId = "";
     await hydrateDashboard();
     state.notice = "Событие вписано в летопись, а круг получил почтовое знамение.";
@@ -1431,13 +1434,14 @@ function onCancelEditGameEvent() {
 
 async function onUpdateGameEvent(event) {
   event.preventDefault();
-  const gameEventId = String(event.currentTarget?.dataset?.gameUpdate || "").trim();
+  const form = event.currentTarget;
+  const gameEventId = String(form?.dataset?.gameUpdate || "").trim();
   if (!gameEventId) {
     return;
   }
 
   await withBusy(async () => {
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     await api(`/api/game-events/${gameEventId}`, {
       method: "PUT",
       body: {
@@ -1556,13 +1560,14 @@ async function onCompleteCycle(event) {
 
 async function onSubmitReview(event) {
   event.preventDefault();
-  const cycleId = String(event.currentTarget?.dataset?.cycleReview || "").trim();
+  const form = event.currentTarget;
+  const cycleId = String(form?.dataset?.cycleReview || "").trim();
   if (!cycleId) {
     return;
   }
 
   await withBusy(async () => {
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     await api(`/api/cycles/${cycleId}/feedback`, {
       method: "POST",
       body: {
