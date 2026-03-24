@@ -3,7 +3,25 @@ import { readFileSync } from "node:fs";
 const appScript = readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
 const indexDocument = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
 const stylesSheet = readFileSync(new URL("../public/styles.css", import.meta.url), "utf8");
+const brandMarkSvg = readFileSync(new URL("../public/assets/brand/dutyguild-mark.svg", import.meta.url), "utf8");
+const brandMarkPng = readFileSync(new URL("../public/assets/brand/dutyguild-mark.png", import.meta.url));
 const staticAssets = new Map([
+  [
+    "/assets/brand/dutyguild-mark.svg",
+    {
+      body: brandMarkSvg,
+      contentType: "image/svg+xml",
+      cacheControl: "public, max-age=86400",
+    },
+  ],
+  [
+    "/assets/brand/dutyguild-mark.png",
+    {
+      body: brandMarkPng,
+      contentType: "image/png",
+      cacheControl: "public, max-age=86400",
+    },
+  ],
   [
     "/assets/fantasy-scenes/castle-at-dusk.jpg",
     {
@@ -45,18 +63,7 @@ const EMAIL_SCENES = Object.freeze({
   },
 });
 
-const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <linearGradient id="shield" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#f4d28c" />
-      <stop offset="100%" stop-color="#8c5524" />
-    </linearGradient>
-  </defs>
-  <path d="M64 10 106 26v32c0 31-18 50-42 60C40 108 22 89 22 58V26Z" fill="url(#shield)" stroke="#351b10" stroke-width="8" />
-  <path d="M64 30 78 57H50Z" fill="#351b10" />
-  <circle cx="64" cy="75" r="15" fill="#351b10" />
-</svg>
-`;
+const FAVICON_SVG = brandMarkSvg;
 
 const DEFAULTS = Object.freeze({
   appName: "Duty Guild",
@@ -3041,6 +3048,7 @@ async function logNotification(env, entry) {
 function renderEmailShell(env, details) {
   const appOrigin = getAppOrigin(env);
   const scene = getEmailScene(env, details.sceneKey);
+  const brandMarkUrl = getBrandMarkUrl(env);
   const ctaBlock =
     details.ctaLabel && details.ctaHref
       ? `
@@ -3067,7 +3075,13 @@ function renderEmailShell(env, details) {
         <div style="${headerStyle}">
           <div style="${headerInnerStyle}">
             <div style="display:flex;align-items:center;gap:14px;">
-              <div style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,rgba(200,140,58,0.28),rgba(178,53,29,0.96));display:grid;place-items:center;font-weight:800;">DG</div>
+              <img
+                src="${escapeHtml(brandMarkUrl)}"
+                alt="Герб Duty Guild"
+                width="48"
+                height="48"
+                style="display:block;width:48px;height:48px;filter:drop-shadow(0 10px 16px rgba(0,0,0,0.32));"
+              />
               <div>
                 <div style="font-size:12px;letter-spacing:0.24em;text-transform:uppercase;color:#f0d39f;">${escapeHtml(details.kicker || "Duty Guild")}</div>
                 <div style="margin-top:4px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.05;">${escapeHtml(details.title)}</div>
@@ -3099,6 +3113,10 @@ function getEmailScene(env, key) {
     src: new URL(scene.path, getAppOrigin(env)).toString(),
     alt: scene.alt,
   };
+}
+
+function getBrandMarkUrl(env) {
+  return new URL("/assets/brand/dutyguild-mark.png", getAppOrigin(env)).toString();
 }
 
 function renderEmailDetailRows(rows) {

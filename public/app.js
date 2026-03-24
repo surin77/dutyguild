@@ -81,6 +81,8 @@ const PAGE_DEFINITIONS = Object.freeze([
   },
 ]);
 
+const BRAND_MARK_SRC = "/assets/brand/dutyguild-mark.svg";
+
 const root = document.querySelector("#app");
 window.addEventListener("hashchange", syncPageFromLocation);
 
@@ -134,7 +136,9 @@ function renderSiteHeader() {
     <header class="site-header">
       <div class="site-header__inner">
         <div class="brand-lockup">
-          <div class="brand-mark">DG</div>
+          <div class="brand-mark">
+            <img class="brand-mark__image" src="${BRAND_MARK_SRC}" alt="Герб Duty Guild" />
+          </div>
           <div class="brand-copy">
             <span class="brand-kicker">Duty Guild</span>
             <strong class="brand-title">${appName}</strong>
