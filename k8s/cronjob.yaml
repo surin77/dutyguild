@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dutyguild-scheduled
+  namespace: dutyguild
+spec:
+  schedule: "0 6 * * *"
+  timeZone: Europe/Samara
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: scheduled
+              image: ghcr.io/surin77/dutyguild:latest
+              imagePullPolicy: IfNotPresent
+              command:
+                - npm
+                - run
+                - scheduled
+              envFrom:
+                - configMapRef:
+                    name: dutyguild-config
+                - secretRef:
+                    name: dutyguild-secrets

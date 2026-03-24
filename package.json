@@ -4,14 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "db:apply:local": "wrangler d1 migrations apply dutyguild --local",
-    "db:apply:remote": "wrangler d1 migrations apply dutyguild --remote",
-    "check": "node --check src/worker.js && node --check public/app.js"
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "migrate:pg": "node src/migrate-postgres.js",
+    "scheduled": "node src/cli.js scheduled",
+    "check": "node --check src/worker.js && node --check src/server.js && node --check src/runtime.js && node --check src/postgres.js && node --check src/migrate-postgres.js && node --check src/cli.js && node --check public/app.js"
   },
-  "devDependencies": {
-    "wrangler": "^4"
+  "dependencies": {
+    "nodemailer": "^6.10.1",
+    "pg": "^8.16.3"
   }
 }
-

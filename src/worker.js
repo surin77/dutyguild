@@ -1,7 +1,8 @@
-import { EmailMessage } from "cloudflare:email";
-import appScript from "../public/app.js";
-import indexDocument from "../public/index.html";
-import stylesSheet from "../public/styles.css";
+import { readFileSync } from "node:fs";
+
+const appScript = readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
+const indexDocument = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+const stylesSheet = readFileSync(new URL("../public/styles.css", import.meta.url), "utf8");
 
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
@@ -158,28 +159,24 @@ const RANK_LADDER = Object.freeze([
   },
 ]);
 
-export default {
-  async fetch(request, env, ctx) {
-    try {
-      return withSecurityHeaders(await handleFetch(request, env, ctx), request);
-    } catch (error) {
-      console.error("Unhandled fetch error", error);
-      return withSecurityHeaders(
-        json(
-          {
-            error: "Внутри Duty Guild произошла ошибка.",
-          },
-          500,
-        ),
-        request,
-      );
-    }
-  },
+export async function handleRequest(request, env) {
+  try {
+    return withSecurityHeaders(await handleFetch(request, env), request);
+  } catch (error) {
+    console.error("Unhandled request error", error);
+    return withSecurityHeaders(
+      json(
+        {
+          error: "Внутри Duty Guild произошла ошибка.",
+        },
+        500,
+      ),
+      request,
+    );
+  }
+}
 
-  async scheduled(event, env, ctx) {
-    ctx.waitUntil(runScheduledTasks(env, event.scheduledTime));
-  },
-};
+export { runScheduledTasks };
 
 async function handleFetch(request, env) {
   const url = new URL(request.url);
@@ -1089,7 +1086,7 @@ async function ensureBootstrapMembers(env) {
     await run(
       env,
       `
-        INSERT OR IGNORE INTO members (
+        INSERT INTO members (
           id,
           email,
           display_name,
@@ -1099,6 +1096,7 @@ async function ensureBootstrapMembers(env) {
           updated_at
         )
         VALUES (?, ?, ?, 'admin', 'active', ?, ?)
+        ON CONFLICT (email) DO NOTHING
       `,
       [crypto.randomUUID(), email, displayName, now, now],
     );
@@ -1376,7 +1374,7 @@ async function sendReminderEmail(env, details) {
 async function sendEmail(env, payload) {
   const config = getConfig(env);
   const senderAddress = String(
-    env.EMAIL_FROM || "noreply@notify.dutyguild.ru",
+    env.EMAIL_FROM || "noreply@dutyguild.ru",
   ).trim().toLowerCase();
 
   if (config.emailMode === "stub") {
@@ -1393,8 +1391,8 @@ async function sendEmail(env, payload) {
     };
   }
 
-  if (config.emailMode === "cloudflare" && typeof env.MAILER?.send !== "function") {
-    console.error("Cloudflare email mode is enabled, but MAILER binding is missing.");
+  if (config.emailMode === "smtp" && typeof env.SMTP_TRANSPORTER?.sendMail !== "function") {
+    console.error("SMTP email mode is enabled, but SMTP transporter is missing.");
     return {
       ok: false,
       mode: "misconfigured",
@@ -1402,7 +1400,7 @@ async function sendEmail(env, payload) {
     };
   }
 
-  if (config.emailMode !== "cloudflare") {
+  if (config.emailMode !== "smtp") {
     console.error(`Unsupported email mode: ${config.emailMode}`);
     return {
       ok: false,
@@ -1412,27 +1410,21 @@ async function sendEmail(env, payload) {
   }
 
   try {
-    const message = new EmailMessage(
-      senderAddress,
-      payload.to,
-      buildMimeMessage({
-        from: senderAddress,
-        to: payload.to,
-        subject: payload.subject,
-        text: payload.text,
-        html: payload.html,
-      }),
-    );
-
-    await env.MAILER.send(message);
+    await env.SMTP_TRANSPORTER.sendMail({
+      from: `Duty Guild <${senderAddress}>`,
+      to: payload.to,
+      subject: payload.subject,
+      text: payload.text,
+      html: payload.html,
+    });
 
     return {
       ok: true,
-      mode: "cloudflare",
+      mode: "smtp",
       debugCode: config.authDebugCodes ? payload.debugCode ?? null : null,
     };
   } catch (error) {
-    console.error("Cloudflare email send failed", error);
+    console.error("SMTP email send failed", error);
     return {
       ok: false,
       mode: "failed",
@@ -1481,7 +1473,7 @@ async function run(env, sql, params = []) {
 
 function prepare(env, sql, params) {
   if (!env.DB || typeof env.DB.prepare !== "function") {
-    throw new Error("D1 binding DB is not available.");
+    throw new Error("Database adapter DB is not available.");
   }
   const statement = env.DB.prepare(sql);
   return params.length ? statement.bind(...params) : statement;

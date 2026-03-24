@@ -1,18 +1,36 @@
 # Duty Guild
 
-Closed office-only duty roster for cleaning cycles, board-game scheduling and team feedback.
+Duty Guild is a closed office-only duty roster for cleaning cycles, board-game scheduling and team feedback. The project is now prepared to run on a regular Kubernetes cluster instead of Cloudflare.
 
-## What is already implemented
+## Current stack
 
-- Cloudflare Worker backend with D1 persistence
-- Static frontend in a DnD-flavored visual shell
-- Invite-only email auth with one-time codes and secure sessions
-- Admin bootstrapping through `ADMIN_BOOTSTRAP_EMAILS`
-- Admin tools to approve members, add board-game events and generate the next cleaning cycle
-- Fair cycle generation that tries not to repeat the same assignees and avoids game-night dates
-- Daily cron hook for cleanup and same-day reminder emails
+- Node.js HTTP server with the existing fetch-style application logic
+- PostgreSQL for persistence
+- SMTP delivery for login codes and reminders
+- Static frontend in a DnD-inspired visual shell
+- Kubernetes manifests for `k3s + Traefik`
 
-## Local setup
+## Environment
+
+Copy [.env.example](/Users/sa/Documents/dutyguild/.env.example) to `.env` and fill at least:
+
+- `DATABASE_URL`
+- `APP_SECRET`
+- `ADMIN_BOOTSTRAP_EMAILS`
+- `EMAIL_MODE=smtp`
+- `SMTP_HOST=smtp.mail.ru`
+- `SMTP_PORT=465`
+- `SMTP_SECURE=true`
+- `SMTP_USER`
+- `SMTP_PASSWORD`
+- `EMAIL_FROM`
+
+For local development you can also use:
+
+- `EMAIL_MODE=stub`
+- `AUTH_DEBUG_CODES=true`
+
+## Local development
 
 1. Install dependencies:
 
@@ -20,47 +38,74 @@ Closed office-only duty roster for cleaning cycles, board-game scheduling and te
    npm install
    ```
 
-2. Create a D1 database:
+2. Start PostgreSQL locally and provide `DATABASE_URL`.
+
+3. Apply PostgreSQL migrations:
 
    ```bash
-   npx wrangler d1 create dutyguild
+   npm run migrate:pg
    ```
 
-3. Put the returned `database_id` into [wrangler.jsonc](/Users/sa/Documents/dutyguild/wrangler.jsonc).
-
-4. Copy `.dev.vars.example` to `.dev.vars` and fill at least:
-
-   - `ADMIN_BOOTSTRAP_EMAILS`
-   - `APP_SECRET`
-   - `AUTH_DEBUG_CODES=true` for local development
-
-5. Apply migrations locally:
-
-   ```bash
-   npm run db:apply:local
-   ```
-
-6. Start the app:
+4. Start the app:
 
    ```bash
    npm run dev
    ```
 
-## Email delivery
+5. Run the scheduled daily tasks manually when needed:
 
-- Default local mode is `EMAIL_MODE=stub`: emails are logged, and debug codes can be returned in the API response.
-- Production delivery now uses `Cloudflare Email Routing + Send Email from Workers`.
-- Recommended production setup:
-  - enable Email Routing for a dedicated subdomain such as `notify.dutyguild.ru`
-  - keep the main domain mailboxes on your existing provider if needed
-  - add each teammate email as a verified destination address in Email Routing
-  - set `EMAIL_FROM=noreply@notify.dutyguild.ru`
-  - redeploy with `npx wrangler deploy`
-- Login code requests now fail explicitly if production email is not configured, instead of pretending the message was sent.
+   ```bash
+   npm run scheduled
+   ```
 
-## Recommended next implementation steps
+## Container image
 
-1. Add a proper calendar view that merges cleaning cycles and game events.
-2. Add member availability management so the balancer can avoid vacations and days off.
-3. Add a feedback form in the UI and cycle completion flow.
-4. Add a deploy script for `app.dutyguild.ru`.
+Build the application image with:
+
+```bash
+docker build -t dutyguild:local .
+```
+
+## Kubernetes manifests
+
+The [k8s](/Users/sa/Documents/dutyguild/k8s) directory contains a simple baseline for `k3s + Traefik`:
+
+- `namespace.yaml`
+- PostgreSQL `Service` + `StatefulSet`
+- app `Deployment` + `Service`
+- `Ingress` for `dutyguild.ru`
+- one-off migration `Job`
+- daily scheduled `CronJob`
+
+Before applying them:
+
+1. Replace the example secrets in:
+   - [k8s/app-secret.example.yaml](/Users/sa/Documents/dutyguild/k8s/app-secret.example.yaml)
+   - [k8s/postgres-secret.example.yaml](/Users/sa/Documents/dutyguild/k8s/postgres-secret.example.yaml)
+2. Replace the image reference `ghcr.io/surin77/dutyguild:latest` with your real image.
+3. Create or provision the TLS secret `dutyguild-tls` for `dutyguild.ru`.
+
+Suggested apply order:
+
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/postgres-secret.example.yaml
+kubectl apply -f k8s/postgres-service.yaml
+kubectl apply -f k8s/postgres-statefulset.yaml
+kubectl apply -f k8s/app-configmap.yaml
+kubectl apply -f k8s/app-secret.example.yaml
+kubectl apply -f k8s/migrate-job.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
+kubectl apply -f k8s/cronjob.yaml
+```
+
+## What is already implemented
+
+- Invite-only email auth with one-time codes and secure sessions
+- Admin bootstrapping through `ADMIN_BOOTSTRAP_EMAILS`
+- Admin tools to approve members, add game events and generate the next cleaning cycle
+- Fair cycle generation that tries not to repeat the same assignees and avoids game-night dates
+- Daily cleanup and same-day reminder flow
+- DnD-flavored Russian UI with ranks and guild language

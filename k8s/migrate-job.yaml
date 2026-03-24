@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dutyguild-migrate
+  namespace: dutyguild
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: ghcr.io/surin77/dutyguild:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - npm
+            - run
+            - migrate:pg
+          envFrom:
+            - configMapRef:
+                name: dutyguild-config
+            - secretRef:
+                name: dutyguild-secrets
