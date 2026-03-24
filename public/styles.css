@@ -804,7 +804,7 @@ select:focus {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .election-summary-grid {
@@ -835,6 +835,19 @@ select:focus {
 .council-side-note p {
   margin: 0;
   color: var(--ink-soft);
+}
+
+.council-side-note {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.council-side-note .rail-card__title,
+.council-side-note .rail-list {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .election-summary-card__meta {
