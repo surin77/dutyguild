@@ -76,8 +76,8 @@ function renderSiteHeader() {
         </div>
         <nav class="top-nav" aria-label="Разделы">
           <span class="top-nav__item">Летопись</span>
-          <span class="top-nav__item">Ритуалы</span>
-          <span class="top-nav__item">Приключения</span>
+          <span class="top-nav__item">Обряды</span>
+          <span class="top-nav__item">Походы</span>
           <span class="top-nav__item">${state.me?.role === "admin" ? "Совет" : "Звания"}</span>
         </nav>
         ${userLabel}
@@ -93,7 +93,7 @@ function renderLoading() {
         <p class="section-tag">Загрузка</p>
         <h1>Пробуждаем летопись ордена</h1>
         <p>
-          Собираем свитки круга, ближайшие Ритуалы Порядка и грядущие игровые вечера.
+          Собираем свитки круга, ближайшие обряды, вердикты хронистов и грядущие сходки у стола.
         </p>
       </article>
     </section>
@@ -126,29 +126,33 @@ function renderAuth() {
       <article class="feature-card">
         <div class="feature-card__content">
           <p class="section-tag">Хроники Duty Guild</p>
-          <h1>Орден Ритуала Порядка для вашего офиса</h1>
+          <h1>Летопись ордена, где каждый обряд помнят по имени</h1>
           <p class="feature-card__lead">
-            Здесь хранятся Ритуалы Порядка, свидетельства хронистов, история созывов и
-            свод игровых вечеров, чтобы выбирать день без ненужных столкновений.
+            Здесь хранятся обряды, вердикты круга, созывы героев и карта грядущих походов у
+            стола, чтобы свершения не сталкивались друг с другом и не тонули в чатиках.
           </p>
           <div class="feature-badges">
             <span class="feature-badge">Только для посвящённых</span>
-            <span class="feature-badge">Печать допуска по почте</span>
-            <span class="feature-badge">Созыв раз в 2 недели</span>
+            <span class="feature-badge">Печать входа по почте</span>
+            <span class="feature-badge">Созыв каждые 2 недели</span>
+            <span class="feature-badge">Командная слава пары</span>
           </div>
         </div>
         <aside class="feature-rail">
+          <div class="illustration-card">
+            ${renderSceneIllustration("entry")}
+          </div>
           <div class="rail-card">
             <p class="rail-card__title">Как войти в круг</p>
-            <p>В орден допускаются только одобренные адреса. Сначала Совет вносит имя в свиток, затем вход открывается по одноразовой печати допуска.</p>
+            <p>В орден допускаются только имена, уже внесённые в свиток. После этого врата открываются через одноразовую печать входа.</p>
           </div>
           <div class="rail-card">
             <p class="rail-card__title">Что уже вписано в летопись</p>
             <ul class="rail-list">
               <li>Закрытый допуск через почтовую печать</li>
-              <li>Балансное назначение Хранителей Порядка</li>
-              <li>Свод игровых вечеров для всего круга</li>
-              <li>Интерфейс с налётом героической хроники</li>
+              <li>Созыв пары без перекосов и повторов подряд</li>
+              <li>Свод походов и сходок для всего круга</li>
+              <li>Летопись в духе героической энциклопедии</li>
             </ul>
           </div>
         </aside>
@@ -157,11 +161,11 @@ function renderAuth() {
       <section class="content-grid content-grid--auth">
         <article class="panel panel--auth">
           <div class="panel__header">
-            <p class="section-tag">Печать допуска</p>
-            <h2>${state.pendingEmail ? "Подтвердите печать" : "Запросите печать доступа"}</h2>
+            <p class="section-tag">Печать входа</p>
+            <h2>${state.pendingEmail ? "Подтвердите печать" : "Призовите печать"}</h2>
           </div>
           <p class="panel__intro">
-            Используйте одобренную рабочую почту. Печать придёт письмом, а в локальной разработке может появиться прямо здесь.
+            Используйте доверенный адрес, внесённый в свиток. Печать придёт письмом, а в локальной разработке может появиться прямо здесь.
           </p>
           ${authCard}
           ${debugBlock}
@@ -173,10 +177,10 @@ function renderAuth() {
             <h2>О чём эта летопись</h2>
           </div>
           <ul class="info-list">
-            <li><strong>Справедливый жребий.</strong> Орден не даёт одному и тому же герою тащить всё бремя слишком часто.</li>
-            <li><strong>Единая карта дней.</strong> Ритуалы и игровые вечера видны рядом, без россыпи чатов и таблиц.</li>
+            <li><strong>Справедливый жребий.</strong> Орден не наваливает одно и то же бремя на одного героя слишком часто.</li>
+            <li><strong>Единая карта дней.</strong> Обряды и сходки у стола видны рядом, без россыпи чатов и таблиц.</li>
             <li><strong>Закрытый круг.</strong> Посторонние не могут войти в орден своей волей.</li>
-            <li><strong>Лёгкое основание.</strong> Без собственной инфраструктуры и лишней тяжести на старте.</li>
+            <li><strong>Слава пары.</strong> Вердикт всегда общий, а опыт передаётся от сильнейших к тем, кому он нужнее.</li>
           </ul>
         </article>
       </section>
@@ -188,12 +192,12 @@ function renderRequestCodeCard() {
   return `
     <form id="request-code-form" class="stack-form">
       <label>
-        <span>Рабочий email</span>
+        <span>Доверенный email</span>
         <input id="request-email" name="email" type="email" placeholder="name@dutyguild.ru" value="${escapeHtml(
           state.loginEmail,
         )}" />
       </label>
-      <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Призвать печать допуска</button>
+      <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Призвать печать входа</button>
     </form>
   `;
 }
@@ -226,14 +230,14 @@ function renderVerifyCard() {
 function renderDashboard() {
   const stats = getStats();
   const currentCycle = renderCyclePanel(
-    "Текущий Ритуал Порядка",
+    "Текущий обряд",
     state.dashboard.currentCycle,
-    "Сейчас активного Ритуала Порядка нет. Его можно созвать из блока управления ниже.",
+    "Сейчас ни один обряд не удерживает зал. Его можно призвать из палаты совета ниже.",
   );
   const nextCycle = renderCyclePanel(
-    "Следующий Ритуал Порядка",
+    "Следующий обряд",
     state.dashboard.nextCycle,
-    "Следующий Ритуал Порядка пока не запланирован.",
+    "Следующий обряд ещё не вписан в летопись.",
   );
 
   return `
@@ -243,7 +247,7 @@ function renderDashboard() {
           <p class="section-tag">Зал летописей</p>
           <h1>${escapeHtml(state.me.displayName)}, хроники открыты</h1>
           <p class="feature-card__lead">
-            Здесь видно, кто несёт текущее служение Хранителя Порядка, когда грядёт следующий Ритуал, какие игровые вечера впереди и как распределяется бремя по кругу.
+            Здесь видно, кто сейчас несёт обет порядка, какие вердикты уже вынес круг, кому пора передавать опыт и какие походы у стола приближаются следом.
           </p>
           <div class="feature-badges">
             <span class="feature-badge">${roleLabel(state.me.role)}</span>
@@ -251,18 +255,21 @@ function renderDashboard() {
             <span class="feature-badge">${escapeHtml(state.me.email)}</span>
           </div>
         </div>
-        <aside class="feature-rail">
+        <aside class="feature-rail feature-rail--art">
+          <div class="illustration-card illustration-card--wide">
+            ${renderSceneIllustration("dashboard")}
+          </div>
           <div class="rail-card rail-card--compact">
             <span class="rail-metric">${stats.memberCount}</span>
             <span class="rail-label">имен во свитке братства</span>
           </div>
           <div class="rail-card rail-card--compact">
-            <span class="rail-metric">${stats.cycleCount}</span>
-            <span class="rail-label">созывов в летописи</span>
+            <span class="rail-metric">${stats.pendingReviewCount}</span>
+            <span class="rail-label">вердиктов ждут голоса круга</span>
           </div>
           <div class="rail-card rail-card--compact">
             <span class="rail-metric">${stats.gameCount}</span>
-            <span class="rail-label">грядущих игровых вечеров</span>
+            <span class="rail-label">походов уже вписано впереди</span>
           </div>
         </aside>
       </article>
@@ -287,27 +294,33 @@ function renderDashboard() {
           <p>Соратников в активном круге</p>
         </article>
         <article class="stat-card">
-          <span class="stat-card__label">Летопись</span>
+          <span class="stat-card__label">Обряды</span>
           <strong>${stats.cycleCount}</strong>
-          <p>Созывов сохранено в хрониках</p>
+          <p>Последних обрядов видно на доске</p>
         </article>
         <article class="stat-card">
-          <span class="stat-card__label">Вечера</span>
+          <span class="stat-card__label">Вердикты</span>
+          <strong>${stats.pendingReviewCount}</strong>
+          <p>Обрядов ещё ждут ваш голос</p>
+        </article>
+        <article class="stat-card">
+          <span class="stat-card__label">Походы</span>
           <strong>${stats.gameCount}</strong>
-          <p>Игровых вечеров впереди</p>
+          <p>Сходок у стола впереди</p>
         </article>
         <article class="stat-card">
           <span class="stat-card__label">Слава</span>
           <strong>${stats.averageRating}</strong>
-          <p>По свидетельствам о Ритуалах Порядка</p>
+          <p>Средний вердикт летописи</p>
         </article>
       </section>
 
       <section class="content-grid">
         ${currentCycle}
         ${nextCycle}
+        ${renderRecentRitualsPanel()}
         ${renderAdventurePanel()}
-        ${renderFeedbackPanel()}
+        ${renderReviewPanel()}
         ${renderRankGuidePanel()}
         ${renderRosterPanel()}
         ${state.me.role === "admin" ? renderAdminPanel() : ""}
@@ -322,7 +335,7 @@ function renderCyclePanel(title, cycle, emptyText) {
       <article class="panel">
         <div class="panel__header">
           <p class="section-tag">${escapeHtml(title)}</p>
-        <h2>Призыв ещё не совершен</h2>
+          <h2>Призыв ещё не совершен</h2>
         </div>
         <p class="panel__intro">${escapeHtml(emptyText)}</p>
       </article>
@@ -332,12 +345,38 @@ function renderCyclePanel(title, cycle, emptyText) {
   const badges = cycle.assignees
     .map(
       (member) => `
-        <span class="tag-pill" title="${escapeHtml(memberRankTitle(member))}">
-          ${escapeHtml(member.displayName)} · ${escapeHtml(memberRankShort(member))}
-        </span>
+        <div class="assignment-card">
+          <span class="tag-pill" title="${escapeHtml(memberRankTitle(member))}">
+            ${escapeHtml(member.displayName)} · ${escapeHtml(memberRankShort(member))}
+          </span>
+          <span class="assignment-card__state ${member.completedAt ? "assignment-card__state--done" : ""}">
+            ${member.completedAt ? "Печать завершения поставлена" : "Ожидает печать завершения"}
+          </span>
+        </div>
       `,
     )
     .join("");
+  const actionBlock = cycle.canMarkComplete
+    ? `
+      <div class="panel__actions">
+        <button class="button button--primary" type="button" data-cycle-complete="${escapeHtml(cycle.id)}" ${
+          state.busy ? "disabled" : ""
+        }>
+          Засвидетельствовать свершение
+        </button>
+        <p class="panel__aside-note">После второй печати обряд будет закрыт, а круг получит письма с просьбой вынести вердикт.</p>
+      </div>
+    `
+    : cycle.isAssignedToMe && cycle.myAssignmentCompleted
+      ? `<p class="panel__aside-note">Ваша печать завершения уже внесена. Теперь летопись ждёт знак второго героя.</p>`
+      : "";
+  const verdict = cycle.averageRating === null
+    ? cycle.status === "completed"
+      ? "Обряд завершён, но круг ещё не вынес вердикт."
+      : cycle.allAssigneesCompleted
+        ? "Обе печати стоят, летопись готова принять вердикты."
+        : "Обряд ещё идёт, и летопись ждёт двух подтверждений."
+    : `Вердикт круга: ${cycle.averageRating.toFixed(1)} · ${escapeHtml(cycle.outcome.title)}`;
 
   return `
     <article class="panel">
@@ -346,9 +385,15 @@ function renderCyclePanel(title, cycle, emptyText) {
         <h2>${formatDate(cycle.plannedCleaningDate)}</h2>
       </div>
       <p class="panel__intro">
-        Окно ритуала: ${formatDate(cycle.startsOn)} - ${formatDate(cycle.endsOn)}
+        Промежуток обряда: ${formatDate(cycle.startsOn)} - ${formatDate(cycle.endsOn)}
       </p>
-      <div class="tag-row">${badges || '<span class="muted">Хранители ещё не названы</span>'}</div>
+      <div class="status-row">
+        <span class="status-pill status-pill--${escapeHtml(cycleStatusTone(cycle))}">${escapeHtml(cycleStatusLabel(cycle))}</span>
+        <span class="status-pill status-pill--ghost">${escapeHtml(cycle.status === "completed" ? cycle.outcome.shortTitle : "Вердикт впереди")}</span>
+      </div>
+      <p class="panel__aside-note">${escapeHtml(verdict)}</p>
+      <div class="assignment-list">${badges || '<span class="muted">Герои ещё не названы</span>'}</div>
+      ${actionBlock}
     </article>
   `;
 }
@@ -372,22 +417,22 @@ function renderAdventurePanel() {
   return `
     <article class="panel panel--wide">
       <div class="panel__header">
-        <p class="section-tag">Свод приключений</p>
-        <h2>Грядущие игровые вечера</h2>
+        <p class="section-tag">Свод походов</p>
+        <h2>Сходки у стола и грядущие походы</h2>
       </div>
       <p class="panel__intro">
-        Любой соратник круга может вписать сюда игровой вечер, чтобы Ритуалы Порядка не столкнулись с приключениями за столом.
+        Любой соратник круга может вписать сюда новую встречу, и тогда всему братству уйдёт почтовое знамение.
       </p>
       <div class="adventure-grid">
         <div>
           ${
             items
               ? `<ul class="list-stack">${items}</ul>`
-              : '<p class="panel__intro">Пока ни один игровой вечер не вписан в свод приключений.</p>'
+              : '<p class="panel__intro">Пока ни одна встреча не вписана в свод походов.</p>'
           }
         </div>
         <form id="game-event-form" class="stack-form adventure-form">
-          <h3>Вписать игровой вечер</h3>
+          <h3>Вписать новое событие</h3>
           <label>
             <span>Название</span>
             <input name="title" placeholder="Root: реванш за лесной трон" />
@@ -408,11 +453,45 @@ function renderAdventurePanel() {
           </div>
           <label>
             <span>Пометка хрониста</span>
-            <textarea name="notes" rows="3" placeholder="Например: большая переговорка уже занята под другой совет"></textarea>
+            <textarea name="notes" rows="3" placeholder="Например: кто ведёт партию, сколько героев зовётся и нужен ли большой стол"></textarea>
           </label>
-          <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>Внести в свод</button>
+          <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>Внести в летопись</button>
         </form>
       </div>
+    </article>
+  `;
+}
+
+function renderRecentRitualsPanel() {
+  const items = (state.dashboard.recentCycles || [])
+    .map(
+      (cycle) => `
+        <li class="list-card list-card--ritual">
+          <div class="list-card__head">
+            <strong>${formatDate(cycle.plannedCleaningDate)}</strong>
+            <span class="status-pill status-pill--${escapeHtml(cycleStatusTone(cycle))}">${escapeHtml(cycleStatusLabel(cycle))}</span>
+          </div>
+          <p>${escapeHtml(cycle.assignees.map((member) => member.displayName).join(" и "))}</p>
+          <div class="list-card__meta-row">
+            <span class="list-card__meta">${escapeHtml(cycle.outcome.title)}</span>
+            <span class="list-card__meta">${cycle.averageRating === null ? "Без вердикта" : `${cycle.averageRating.toFixed(1)} ★`}</span>
+          </div>
+        </li>
+      `,
+    )
+    .join("");
+
+  return `
+    <article class="panel">
+      <div class="panel__header">
+        <p class="section-tag">Архив обрядов</p>
+        <h2>Недавние свершения и их исход</h2>
+      </div>
+      ${
+        items
+          ? `<ul class="list-stack">${items}</ul>`
+          : '<p class="panel__intro">Как только орден завершит первые обряды, здесь появятся их исходы и слава.</p>'
+      }
     </article>
   `;
 }
@@ -483,33 +562,81 @@ function renderRankGuidePanel() {
   `;
 }
 
-function renderFeedbackPanel() {
+function renderReviewPanel() {
+  const pending = state.dashboard.pendingReviewCycles || [];
+  const pendingCards = pending
+    .map(
+      (cycle) => `
+        <form class="review-form" data-cycle-review="${escapeHtml(cycle.id)}">
+          <div class="review-form__head">
+            <div>
+              <strong>${escapeHtml(cycle.assignees.map((member) => member.displayName).join(" и "))}</strong>
+              <span>${formatDate(cycle.plannedCleaningDate)}</span>
+            </div>
+            <span class="status-pill status-pill--ghost">${escapeHtml(cycle.outcome.shortTitle)}</span>
+          </div>
+          <div class="star-rating" aria-label="Оценка обряда">
+            ${[5, 4, 3, 2, 1]
+              .map(
+                (value) => `
+                  <input id="review-${escapeHtml(cycle.id)}-${value}" type="radio" name="rating" value="${value}" ${value === 5 ? "checked" : ""} />
+                  <label for="review-${escapeHtml(cycle.id)}-${value}" title="${value}">${"★"}</label>
+                `,
+              )
+              .join("")}
+          </div>
+          <label>
+            <span>Слово хрониста</span>
+            <textarea name="comment" rows="3" placeholder="Например: обряд проведён стройно, сияние зала держится до сих пор"></textarea>
+          </label>
+          <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Вынести вердикт</button>
+        </form>
+      `,
+    )
+    .join("");
   const items = state.dashboard.recentFeedback
     .map(
       (entry) => `
         <li class="list-card">
           <div class="list-card__head">
             <strong>${escapeHtml(entry.targetName)}</strong>
-            <span>${"★".repeat(entry.rating)}</span>
+            <span>${renderStarString(entry.rating)}</span>
           </div>
-          <p>${escapeHtml(entry.comment)}</p>
-          <span class="list-card__meta">Автор: ${escapeHtml(entry.authorName)} · ${formatDateTime(entry.createdAt)}</span>
+          ${entry.comment ? `<p>${escapeHtml(entry.comment)}</p>` : ""}
+          <div class="list-card__meta-row">
+            <span class="list-card__meta">Автор: ${escapeHtml(entry.authorName)}</span>
+            <span class="list-card__meta">${escapeHtml(entry.cycleOutcome?.shortTitle || "Вердикт вынесен")}</span>
+          </div>
         </li>
       `,
     )
     .join("");
 
   return `
-    <article class="panel">
+    <article class="panel panel--wide">
       <div class="panel__header">
-        <p class="section-tag">Слава гильдии</p>
-        <h2>Последние свидетельства хронистов</h2>
+        <p class="section-tag">Зал вердиктов</p>
+        <h2>Слава обряда и голос круга</h2>
       </div>
-      ${
-        items
-          ? `<ul class="list-stack">${items}</ul>`
-          : '<p class="panel__intro">Свидетельства появятся после первых завершённых Ритуалов Порядка.</p>'
-      }
+      <div class="review-grid">
+        <div>
+          <p class="panel__intro">
+            После того как оба героя поставят печати завершения, круг получает право вынести общий вердикт обряду.
+          </p>
+          ${
+            pendingCards
+              ? `<div class="review-stack">${pendingCards}</div>`
+              : '<p class="panel__intro">Сейчас нет обрядов, которые ждут вашего вердикта.</p>'
+          }
+        </div>
+        <div>
+          ${
+            items
+              ? `<ul class="list-stack">${items}</ul>`
+              : '<p class="panel__intro">Первые свидетельства появятся, как только круг оценит завершённый обряд.</p>'
+          }
+        </div>
+      </div>
     </article>
   `;
 }
@@ -539,7 +666,12 @@ function renderRosterPanel() {
             </div>
           </td>
           <td>${member.dutyCount}</td>
-          <td>${member.averageRating === null ? "—" : member.averageRating.toFixed(1)}</td>
+          <td>
+            <div class="member-cell">
+              <strong>${member.averageRating === null ? "—" : member.averageRating.toFixed(1)}</strong>
+              <span class="member-cell__meta">${escapeHtml(getOutcomeTitleFromRating(member.averageRating))}</span>
+            </div>
+          </td>
         </tr>
       `,
     )
@@ -581,7 +713,7 @@ function renderAdminPanel() {
         <h2>Повеления Магистра</h2>
       </div>
       <p class="panel__intro">
-        Призывайте новых соратников в круг и созывайте следующий Ритуал Порядка. Игровые вечера теперь вписывает весь круг из Свода приключений.
+        Призывайте новых соратников в круг и созывайте следующий обряд. Новые походы весь круг вписывает сам, а летопись разошлёт знамения автоматически.
       </p>
 
       <div class="admin-grid admin-grid--single">
@@ -609,15 +741,15 @@ function renderAdminPanel() {
       <div class="admin-banner">
         <div>
           <p class="section-tag">Воля Совета</p>
-          <h3>Созвать новый Ритуал Порядка</h3>
+          <h3>Созвать новый обряд</h3>
           <p>
-            Система выберет сбалансированную пару Хранителей Порядка, постарается не повторять прошлое назначение и
-            избегать дней с игровыми вечерами.
+            Система выберет пару без перекосов, постарается не повторять прошлое назначение, сведёт сильнейшего героя
+            с тем, кому нужнее опыт, и обойдёт дни с походами у стола.
           </p>
         </div>
         <button id="generate-cycle-button" class="button button--primary" type="button" ${
           state.busy ? "disabled" : ""
-        }>Созвать ритуал</button>
+        }>Созвать обряд</button>
       </div>
     </article>
   `;
@@ -654,6 +786,12 @@ function bindEvents() {
   document.querySelector("#generate-cycle-button")?.addEventListener("click", onGenerateCycle);
   document.querySelector("#invite-member-form")?.addEventListener("submit", onInviteMember);
   document.querySelector("#game-event-form")?.addEventListener("submit", onCreateGameEvent);
+  document.querySelectorAll("[data-cycle-complete]").forEach((button) => {
+    button.addEventListener("click", onCompleteCycle);
+  });
+  document.querySelectorAll("[data-cycle-review]").forEach((form) => {
+    form.addEventListener("submit", onSubmitReview);
+  });
 }
 
 async function onRequestCode(event) {
@@ -669,7 +807,7 @@ async function onRequestCode(event) {
     state.pendingEmail = email;
     state.loginEmail = email;
     state.debugCode = response.debugCode || "";
-    state.notice = "Печать допуска отправлена. Проверь почтовый свиток.";
+    state.notice = "Печать входа отправлена. Проверь почтовый свиток.";
     state.error = "";
     render();
   });
@@ -752,7 +890,7 @@ async function onCreateGameEvent(event) {
     });
     event.currentTarget.reset();
     await hydrateDashboard();
-    state.notice = "Игровой вечер вписан в свод приключений.";
+    state.notice = "Событие вписано в летопись, а круг получил почтовое знамение.";
     state.error = "";
     render();
   });
@@ -765,7 +903,50 @@ async function onGenerateCycle() {
       body: {},
     });
     await hydrateDashboard();
-    state.notice = "Новый Ритуал Порядка созван.";
+    state.notice = "Новый обряд созван, а героям уже ушли свитки с назначением.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onCompleteCycle(event) {
+  const cycleId = String(event.currentTarget?.dataset?.cycleComplete || "").trim();
+  if (!cycleId) {
+    return;
+  }
+
+  await withBusy(async () => {
+    const response = await api(`/api/cycles/${cycleId}/complete`, {
+      method: "POST",
+      body: {},
+    });
+    await hydrateDashboard();
+    state.notice = response.justCompleted
+      ? "Обряд закрыт двумя печатями. Кругу уже разосланы просьбы вынести вердикт."
+      : "Ваша печать завершения внесена. Летопись ждёт знак второго героя.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onSubmitReview(event) {
+  event.preventDefault();
+  const cycleId = String(event.currentTarget?.dataset?.cycleReview || "").trim();
+  if (!cycleId) {
+    return;
+  }
+
+  await withBusy(async () => {
+    const formData = new FormData(event.currentTarget);
+    await api(`/api/cycles/${cycleId}/feedback`, {
+      method: "POST",
+      body: {
+        rating: Number(formData.get("rating") || 0),
+        comment: String(formData.get("comment") || "").trim(),
+      },
+    });
+    await hydrateDashboard();
+    state.notice = "Вердикт круга внесён в летопись.";
     state.error = "";
     render();
   });
@@ -866,6 +1047,7 @@ function getStats() {
   const memberCount = state.dashboard?.roster?.length || 0;
   const cycleCount = state.dashboard?.recentCycles?.length || 0;
   const gameCount = state.dashboard?.upcomingGames?.length || 0;
+  const pendingReviewCount = state.dashboard?.pendingReviewCycles?.length || 0;
   const ratings = (state.dashboard?.roster || [])
     .map((member) => member.averageRating)
     .filter((value) => typeof value === "number");
@@ -874,6 +1056,7 @@ function getStats() {
     memberCount,
     cycleCount,
     gameCount,
+    pendingReviewCount,
     averageRating: ratings.length
       ? (ratings.reduce((sum, value) => sum + value, 0) / ratings.length).toFixed(1)
       : "—",
@@ -933,6 +1116,102 @@ function rankThemeStyle(rank) {
     `--rank-accent:${theme.accent}`,
     `--rank-glow:${theme.glow}`,
   ].join(";");
+}
+
+function renderSceneIllustration(kind) {
+  if (kind === "dashboard") {
+    return `
+      <svg viewBox="0 0 520 280" class="scene-illustration" aria-hidden="true">
+        <defs>
+          <linearGradient id="scene-bg-dashboard" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stop-color="#1f1515" />
+            <stop offset="58%" stop-color="#47221b" />
+            <stop offset="100%" stop-color="#9b3e20" />
+          </linearGradient>
+          <linearGradient id="scene-gold-dashboard" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stop-color="#f1d19a" />
+            <stop offset="100%" stop-color="#a85d2f" />
+          </linearGradient>
+        </defs>
+        <rect width="520" height="280" rx="28" fill="url(#scene-bg-dashboard)" />
+        <circle cx="118" cy="86" r="44" fill="rgba(241,209,154,0.18)" />
+        <path d="M75 196c36-66 84-102 150-102s114 36 150 102" fill="none" stroke="rgba(241,209,154,0.28)" stroke-width="14" stroke-linecap="round" />
+        <path d="M112 218h296" stroke="rgba(255,250,244,0.22)" stroke-width="10" stroke-linecap="round" />
+        <path d="M168 192v-80l58-30 58 30v80" fill="none" stroke="url(#scene-gold-dashboard)" stroke-width="10" stroke-linejoin="round" />
+        <path d="M214 194v-48h24v48" fill="none" stroke="#f7ead6" stroke-width="10" stroke-linejoin="round" />
+        <path d="M303 89c18 17 28 42 28 69" fill="none" stroke="rgba(255,250,244,0.34)" stroke-width="8" stroke-linecap="round" />
+        <path d="M359 90c18 17 28 42 28 69" fill="none" stroke="rgba(255,250,244,0.2)" stroke-width="8" stroke-linecap="round" />
+        <text x="46" y="242" fill="#f7ead6" font-family="Georgia, serif" font-size="28">Зал летописей</text>
+      </svg>
+    `;
+  }
+
+  return `
+    <svg viewBox="0 0 520 280" class="scene-illustration" aria-hidden="true">
+      <defs>
+        <linearGradient id="scene-bg-entry" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#151213" />
+          <stop offset="58%" stop-color="#362019" />
+          <stop offset="100%" stop-color="#7a2816" />
+        </linearGradient>
+        <linearGradient id="scene-gold-entry" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#f3d49a" />
+          <stop offset="100%" stop-color="#b7602d" />
+        </linearGradient>
+      </defs>
+      <rect width="520" height="280" rx="28" fill="url(#scene-bg-entry)" />
+      <path d="M102 214h316" stroke="rgba(255,248,239,0.22)" stroke-width="10" stroke-linecap="round" />
+      <path d="M160 196V84l100-48 100 48v112" fill="none" stroke="url(#scene-gold-entry)" stroke-width="12" stroke-linejoin="round" />
+      <path d="M225 198v-54h70v54" fill="none" stroke="#fff3e0" stroke-width="12" stroke-linejoin="round" />
+      <circle cx="260" cy="92" r="18" fill="rgba(243,212,154,0.82)" />
+      <path d="M117 108c16-15 34-24 56-28" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="8" stroke-linecap="round" />
+      <path d="M347 80c24 8 44 23 59 45" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="8" stroke-linecap="round" />
+      <text x="44" y="242" fill="#fff3e0" font-family="Georgia, serif" font-size="28">Печать входа</text>
+    </svg>
+  `;
+}
+
+function cycleStatusLabel(cycle) {
+  if (cycle.status === "completed") {
+    return "Обряд завершён";
+  }
+  if (cycle.myAssignmentCompleted) {
+    return "Ждёт второго знака";
+  }
+  return "Обряд в пути";
+}
+
+function cycleStatusTone(cycle) {
+  if (cycle.status === "completed") {
+    return "done";
+  }
+  if (cycle.myAssignmentCompleted) {
+    return "waiting";
+  }
+  return "live";
+}
+
+function renderStarString(rating) {
+  return `${"★".repeat(Number(rating || 0))}${"☆".repeat(Math.max(0, 5 - Number(rating || 0)))}`;
+}
+
+function getOutcomeTitleFromRating(averageRating) {
+  if (averageRating === null || averageRating === undefined) {
+    return "Пока без вердикта";
+  }
+  if (averageRating >= 4.8) {
+    return "Легендарный";
+  }
+  if (averageRating >= 4.4) {
+    return "Образцовый";
+  }
+  if (averageRating >= 3.8) {
+    return "Крепкий";
+  }
+  if (averageRating >= 3) {
+    return "Шаткий";
+  }
+  return "Под сомнением";
 }
 
 function formatDate(dateString) {

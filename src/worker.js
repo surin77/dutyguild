@@ -159,6 +159,54 @@ const RANK_LADDER = Object.freeze([
   },
 ]);
 
+const RITUAL_OUTCOME_LADDER = Object.freeze([
+  {
+    id: "legendary",
+    minRating: 4.8,
+    title: "Легендарный обряд",
+    shortTitle: "Легендарный",
+    description: "Зал сияет так, словно над ним прошёл благословенный шторм света.",
+    accent: "#d6a54b",
+    glow: "rgba(214, 165, 75, 0.24)",
+  },
+  {
+    id: "exemplary",
+    minRating: 4.4,
+    title: "Образцовый обряд",
+    shortTitle: "Образцовый",
+    description: "Сильное, чистое исполнение, достойное быть примером для круга.",
+    accent: "#b7552d",
+    glow: "rgba(183, 85, 45, 0.22)",
+  },
+  {
+    id: "steadfast",
+    minRating: 3.8,
+    title: "Крепкий обряд",
+    shortTitle: "Крепкий",
+    description: "Обряд проведён уверенно: зал спокоен, летопись довольна.",
+    accent: "#8b6c48",
+    glow: "rgba(139, 108, 72, 0.18)",
+  },
+  {
+    id: "wavering",
+    minRating: 3,
+    title: "Шаткий обряд",
+    shortTitle: "Шаткий",
+    description: "Обряд состоялся, но круг ждёт более собранного исполнения в следующий раз.",
+    accent: "#8a4b3a",
+    glow: "rgba(138, 75, 58, 0.18)",
+  },
+  {
+    id: "troubled",
+    minRating: 0,
+    title: "Обряд под сомнением",
+    shortTitle: "Под сомнением",
+    description: "Залу нужна более твёрдая рука и больше согласованности пары.",
+    accent: "#6c2f29",
+    glow: "rgba(108, 47, 41, 0.2)",
+  },
+]);
+
 export async function handleRequest(request, env) {
   try {
     return withSecurityHeaders(await handleFetch(request, env), request);
@@ -278,6 +326,15 @@ async function handleFetch(request, env) {
     return handleGenerateCycle(env, member);
   }
 
+  const completionMatch = pathname.match(/^\/api\/cycles\/([^/]+)\/complete$/);
+  if (completionMatch && request.method === "POST") {
+    const member = await requireMember(request, env);
+    if (member instanceof Response) {
+      return member;
+    }
+    return handleCycleCompletion(env, member, completionMatch[1]);
+  }
+
   const feedbackMatch = pathname.match(/^\/api\/cycles\/([^/]+)\/feedback$/);
   if (feedbackMatch && request.method === "POST") {
     const member = await requireMember(request, env);
@@ -296,7 +353,7 @@ async function handleRequestCode(request, env) {
   const email = normalizeEmail(rawEmail);
 
   if (!isValidEmail(email)) {
-    return json({ error: "Введите корректный рабочий email." }, 400);
+    return json({ error: "Введите корректный доверенный email." }, 400);
   }
 
   const member = await first(
@@ -347,7 +404,7 @@ async function handleRequestCode(request, env) {
         error:
           delivery.mode === "misconfigured"
             ? "Почтовый вестник ордена ещё не настроен. Обратитесь к Магистру Совета."
-            : "Печать допуска не удалось отправить письмом. Попробуйте ещё раз чуть позже.",
+            : "Печать входа не удалось отправить письмом. Попробуйте ещё раз немного позже.",
       },
       502,
     );
@@ -539,14 +596,25 @@ async function handleCreateGameEvent(request, env, actor) {
     return json({ error: "Заполните название события и дату." }, 400);
   }
 
+  const eventId = crypto.randomUUID();
+
   await run(
     env,
     `
       INSERT INTO game_events (id, title, event_date, starts_at, ends_at, notes, status, created_by_member_id)
       VALUES (?, ?, ?, ?, ?, ?, 'confirmed', ?)
     `,
-    [crypto.randomUUID(), title, eventDate, startsAt, endsAt, notes, actor.id],
+    [eventId, title, eventDate, startsAt, endsAt, notes, actor.id],
   );
+
+  await notifyGameEventCreated(env, actor, {
+    id: eventId,
+    title,
+    eventDate,
+    startsAt,
+    endsAt,
+    notes,
+  });
 
   return json({ ok: true });
 }
@@ -564,42 +632,173 @@ async function handleGenerateCycle(env, actor) {
   });
 }
 
+async function handleCycleCompletion(env, actor, cycleId) {
+  const cycle = await first(
+    env,
+    `
+      SELECT *
+      FROM cleaning_cycles
+      WHERE id = ?
+      LIMIT 1
+    `,
+    [cycleId],
+  );
+
+  if (!cycle) {
+    return json({ error: "Такой обряд не найден в летописи." }, 404);
+  }
+
+  const assignment = await first(
+    env,
+    `
+      SELECT *
+      FROM cycle_assignments
+      WHERE cycle_id = ? AND member_id = ?
+      LIMIT 1
+    `,
+    [cycleId, actor.id],
+  );
+
+  if (!assignment) {
+    return json({ error: "Только назначенные герои могут засвидетельствовать завершение обряда." }, 403);
+  }
+
+  if (cycle.status === "completed") {
+    return json({
+      ok: true,
+      cycle: await hydrateCycle(env, cycle, actor.id),
+      justCompleted: false,
+    });
+  }
+
+  const now = new Date().toISOString();
+  await run(
+    env,
+    `
+      UPDATE cycle_assignments
+      SET completed_at = COALESCE(completed_at, ?)
+      WHERE id = ?
+    `,
+    [now, assignment.id],
+  );
+
+  const assignments = await all(
+    env,
+    `
+      SELECT
+        a.id,
+        a.member_id,
+        a.completed_at,
+        m.email,
+        m.display_name
+      FROM cycle_assignments a
+      JOIN members m ON m.id = a.member_id
+      WHERE a.cycle_id = ?
+      ORDER BY a.assignment_order ASC
+    `,
+    [cycleId],
+  );
+
+  const everyoneConfirmed =
+    assignments.length > 0 && assignments.every((row) => Boolean(row.completed_at));
+  let justCompleted = false;
+
+  if (everyoneConfirmed) {
+    const completionUpdate = await run(
+      env,
+      `
+        UPDATE cleaning_cycles
+        SET status = 'completed', completed_at = COALESCE(completed_at, ?)
+        WHERE id = ? AND status != 'completed'
+      `,
+      [now, cycleId],
+    );
+
+    if (Number(completionUpdate?.meta?.rowCount || 0) > 0) {
+      for (const row of assignments) {
+        await run(
+          env,
+          `
+            UPDATE members
+            SET duty_count = duty_count + 1, updated_at = ?
+            WHERE id = ?
+          `,
+          [now, row.member_id],
+        );
+      }
+
+      justCompleted = true;
+      await notifyReviewRequest(env, cycleId, assignments);
+    }
+  }
+
+  return json({
+    ok: true,
+    cycle: await hydrateCycle(
+      env,
+      await first(env, "SELECT * FROM cleaning_cycles WHERE id = ? LIMIT 1", [cycleId]),
+      actor.id,
+    ),
+    justCompleted,
+  });
+}
+
 async function handleFeedbackSubmission(request, env, actor, cycleId) {
   const body = await readJson(request);
-  const targetMemberId = String(body?.targetMemberId || "").trim();
   const comment = String(body?.comment || "").trim();
   const rating = Number(body?.rating);
 
-  if (!targetMemberId || !comment || Number.isNaN(rating)) {
-    return json({ error: "Заполните оценку, получателя свидетельства и комментарий хрониста." }, 400);
+  if (Number.isNaN(rating)) {
+    return json({ error: "Укажите силу оценки обряда." }, 400);
   }
 
   if (rating < 1 || rating > 5) {
     return json({ error: "Оценка должна быть от 1 до 5." }, 400);
   }
 
-  const assignment = await first(
+  const cycle = await first(
     env,
     `
-      SELECT a.id
-      FROM cycle_assignments a
-      WHERE a.cycle_id = ? AND a.member_id = ?
+      SELECT *
+      FROM cleaning_cycles
+      WHERE id = ?
       LIMIT 1
     `,
-    [cycleId, targetMemberId],
+    [cycleId],
   );
 
-  if (!assignment) {
-    return json({ error: "Этот соратник не назначен на выбранный Ритуал Порядка." }, 400);
+  if (!cycle) {
+    return json({ error: "Обряд не найден в летописи." }, 404);
+  }
+
+  if (cycle.status !== "completed") {
+    return json({ error: "Свидетельства принимаются только после завершения обряда обоими героями." }, 400);
+  }
+
+  const actorAssignment = await first(
+    env,
+    `
+      SELECT id
+      FROM cycle_assignments
+      WHERE cycle_id = ? AND member_id = ?
+      LIMIT 1
+    `,
+    [cycleId, actor.id],
+  );
+
+  if (actorAssignment) {
+    return json({ error: "Назначенные герои не оценивают собственный обряд." }, 403);
   }
 
   await run(
     env,
     `
-      INSERT INTO cleaning_feedback (id, cycle_id, author_member_id, target_member_id, rating, comment)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO cycle_reviews (id, cycle_id, author_member_id, rating, comment)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT (cycle_id, author_member_id)
+      DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, created_at = CURRENT_TIMESTAMP
     `,
-    [crypto.randomUUID(), cycleId, actor.id, targetMemberId, rating, comment],
+    [crypto.randomUUID(), cycleId, actor.id, rating, comment],
   );
 
   return json({ ok: true });
@@ -607,84 +806,128 @@ async function handleFeedbackSubmission(request, env, actor, cycleId) {
 
 async function buildDashboard(env, member) {
   const today = todayInTimeZone(getConfig(env).timeZone);
-  const [currentCycleRow, nextCycleRow, recentCycleRows, upcomingGames, feedback, roster] =
-    await Promise.all([
-      first(
+  const [
+    currentCycleRow,
+    nextCycleRow,
+    recentCycleRows,
+    pendingReviewRows,
+    upcomingGames,
+    feedback,
+    roster,
+  ] = await Promise.all([
+    first(
+      env,
+      `
+        SELECT *
+        FROM cleaning_cycles
+        WHERE starts_on <= ? AND ends_on >= ?
+        ORDER BY starts_on DESC
+        LIMIT 1
+      `,
+      [today, today],
+    ),
+    first(
+      env,
+      `
+        SELECT *
+        FROM cleaning_cycles
+        WHERE starts_on > ?
+        ORDER BY starts_on ASC
+        LIMIT 1
+      `,
+      [today],
+    ),
+    all(
+      env,
+      `
+        SELECT *
+        FROM cleaning_cycles
+        ORDER BY starts_on DESC
+        LIMIT 6
+      `,
+    ),
+    all(
+      env,
+      `
+        SELECT *
+        FROM cleaning_cycles c
+        WHERE c.status = 'completed'
+          AND NOT EXISTS (
+            SELECT 1
+            FROM cycle_assignments a
+            WHERE a.cycle_id = c.id
+              AND a.member_id = ?
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM cycle_reviews r
+            WHERE r.cycle_id = c.id
+              AND r.author_member_id = ?
+          )
+        ORDER BY COALESCE(c.completed_at, c.created_at) DESC
+        LIMIT 4
+      `,
+      [member.id, member.id],
+    ),
+    all(
+      env,
+      `
+        SELECT
+          g.id,
+          g.title,
+          g.event_date,
+          g.starts_at,
+          g.ends_at,
+          g.notes,
+          g.status,
+          creator.display_name AS created_by_name
+        FROM game_events g
+        LEFT JOIN members creator ON creator.id = g.created_by_member_id
+        WHERE g.event_date >= ? AND g.status != 'cancelled'
+        ORDER BY g.event_date ASC
+        LIMIT 8
+      `,
+      [today],
+    ),
+    all(
+      env,
+      `
+        SELECT
+          r.id,
+          r.cycle_id,
+          r.rating,
+          r.comment,
+          r.created_at,
+          author.display_name AS author_name
+        FROM cycle_reviews r
+        JOIN members author ON author.id = r.author_member_id
+        ORDER BY r.created_at DESC
+        LIMIT 8
+      `,
+    ),
+    loadRoster(env),
+  ]);
+
+  const feedbackCycles = await Promise.all(
+    feedback.map(async (row) =>
+      hydrateCycle(
         env,
-        `
-          SELECT *
-          FROM cleaning_cycles
-          WHERE starts_on <= ? AND ends_on >= ?
-          ORDER BY starts_on DESC
-          LIMIT 1
-        `,
-        [today, today],
+        await first(env, "SELECT * FROM cleaning_cycles WHERE id = ? LIMIT 1", [row.cycle_id]),
+        member.id,
       ),
-      first(
-        env,
-        `
-          SELECT *
-          FROM cleaning_cycles
-          WHERE starts_on > ?
-          ORDER BY starts_on ASC
-          LIMIT 1
-        `,
-        [today],
-      ),
-      all(
-        env,
-        `
-          SELECT *
-          FROM cleaning_cycles
-          ORDER BY starts_on DESC
-          LIMIT 6
-        `,
-      ),
-      all(
-        env,
-        `
-          SELECT
-            g.id,
-            g.title,
-            g.event_date,
-            g.starts_at,
-            g.ends_at,
-            g.notes,
-            g.status,
-            creator.display_name AS created_by_name
-          FROM game_events g
-          LEFT JOIN members creator ON creator.id = g.created_by_member_id
-          WHERE g.event_date >= ? AND g.status != 'cancelled'
-          ORDER BY g.event_date ASC
-          LIMIT 8
-        `,
-        [today],
-      ),
-      all(
-        env,
-        `
-          SELECT
-            f.id,
-            f.rating,
-            f.comment,
-            f.created_at,
-            author.display_name AS author_name,
-            target.display_name AS target_name
-          FROM cleaning_feedback f
-          JOIN members author ON author.id = f.author_member_id
-          JOIN members target ON target.id = f.target_member_id
-          ORDER BY f.created_at DESC
-          LIMIT 8
-        `,
-      ),
-      loadRoster(env),
-    ]);
+    ),
+  );
 
   return {
     me: roster.find((entry) => entry.id === member.id) || memberToClient(member),
-    currentCycle: currentCycleRow ? await hydrateCycle(env, currentCycleRow) : null,
-    nextCycle: nextCycleRow ? await hydrateCycle(env, nextCycleRow) : null,
-    recentCycles: await Promise.all(recentCycleRows.map((row) => hydrateCycle(env, row))),
+    currentCycle: currentCycleRow ? await hydrateCycle(env, currentCycleRow, member.id) : null,
+    nextCycle: nextCycleRow ? await hydrateCycle(env, nextCycleRow, member.id) : null,
+    recentCycles: await Promise.all(
+      recentCycleRows.map((row) => hydrateCycle(env, row, member.id)),
+    ),
+    pendingReviewCycles: await Promise.all(
+      pendingReviewRows.map((row) => hydrateCycle(env, row, member.id)),
+    ),
     upcomingGames: upcomingGames.map((row) => ({
       id: row.id,
       title: row.title,
@@ -695,13 +938,16 @@ async function buildDashboard(env, member) {
       status: row.status,
       createdByName: row.created_by_name,
     })),
-    recentFeedback: feedback.map((row) => ({
+    recentFeedback: feedback.map((row, index) => ({
       id: row.id,
       rating: Number(row.rating),
       comment: row.comment,
       createdAt: row.created_at,
       authorName: row.author_name,
-      targetName: row.target_name,
+      targetName:
+        feedbackCycles[index]?.assignees?.map((entry) => entry.displayName).join(" и ") ||
+        "Созванная пара",
+      cycleOutcome: feedbackCycles[index]?.outcome || null,
     })),
     roster,
   };
@@ -718,10 +964,11 @@ async function loadRoster(env) {
         m.role,
         m.status,
         m.duty_count,
-        COUNT(f.id) AS feedback_count,
-        ROUND(AVG(f.rating), 1) AS average_rating
+        COUNT(r.id) AS feedback_count,
+        ROUND(AVG(r.rating), 2) AS average_rating
       FROM members m
-      LEFT JOIN cleaning_feedback f ON f.target_member_id = m.id
+      LEFT JOIN cycle_assignments a ON a.member_id = m.id
+      LEFT JOIN cycle_reviews r ON r.cycle_id = a.cycle_id
       WHERE m.status = 'active'
       GROUP BY m.id
       ORDER BY m.role DESC, m.display_name ASC
@@ -742,11 +989,23 @@ async function loadRoster(env) {
   });
 }
 
-async function hydrateCycle(env, cycleRow) {
-  const assignees = await all(
+async function hydrateCycle(env, cycleRow, viewerMemberId = null) {
+  if (!cycleRow) {
+    return null;
+  }
+
+  const assigneeRows = await all(
     env,
     `
-      SELECT m.id, m.email, m.display_name, m.role, m.status, m.duty_count
+      SELECT
+        m.id,
+        m.email,
+        m.display_name,
+        m.role,
+        m.status,
+        m.duty_count,
+        a.completed_at,
+        a.assignment_order
       FROM cycle_assignments a
       JOIN members m ON m.id = a.member_id
       WHERE a.cycle_id = ?
@@ -754,6 +1013,44 @@ async function hydrateCycle(env, cycleRow) {
     `,
     [cycleRow.id],
   );
+
+  const reviewRows = await all(
+    env,
+    `
+      SELECT
+        r.id,
+        r.author_member_id,
+        r.rating,
+        r.comment,
+        r.created_at,
+        author.display_name AS author_name
+      FROM cycle_reviews r
+      JOIN members author ON author.id = r.author_member_id
+      WHERE r.cycle_id = ?
+      ORDER BY r.created_at DESC
+    `,
+    [cycleRow.id],
+  );
+
+  const assignees = assigneeRows.map((member) => ({
+    ...memberToClient(member),
+    completedAt: member.completed_at || null,
+    assignmentOrder: Number(member.assignment_order || 0),
+  }));
+  const averageRating = reviewRows.length
+    ? Number(
+        (
+          reviewRows.reduce((sum, row) => sum + Number(row.rating || 0), 0) /
+          reviewRows.length
+        ).toFixed(2),
+      )
+    : null;
+  const viewerAssignment = viewerMemberId
+    ? assignees.find((entry) => entry.id === viewerMemberId) || null
+    : null;
+  const viewerReview = viewerMemberId
+    ? reviewRows.find((entry) => entry.author_member_id === viewerMemberId) || null
+    : null;
 
   return {
     id: cycleRow.id,
@@ -763,7 +1060,41 @@ async function hydrateCycle(env, cycleRow) {
     status: cycleRow.status,
     notes: cycleRow.notes || "",
     createdAt: cycleRow.created_at,
-    assignees: assignees.map((member) => memberToClient(member)),
+    completedAt: cycleRow.completed_at || null,
+    feedbackRequestedAt: cycleRow.feedback_requested_at || null,
+    assignees,
+    reviewCount: reviewRows.length,
+    averageRating,
+    outcome: getRitualOutcome(averageRating, reviewRows.length),
+    reviews: reviewRows.map((row) => ({
+      id: row.id,
+      authorMemberId: row.author_member_id,
+      authorName: row.author_name,
+      rating: Number(row.rating),
+      comment: row.comment,
+      createdAt: row.created_at,
+    })),
+    isAssignedToMe: Boolean(viewerAssignment),
+    myAssignmentCompleted: Boolean(viewerAssignment?.completedAt),
+    canMarkComplete:
+      Boolean(viewerAssignment) &&
+      cycleRow.status === "scheduled" &&
+      !viewerAssignment?.completedAt,
+    canReview:
+      Boolean(viewerMemberId) &&
+      cycleRow.status === "completed" &&
+      !viewerAssignment &&
+      !viewerReview,
+    myReview: viewerReview
+      ? {
+          id: viewerReview.id,
+          rating: Number(viewerReview.rating),
+          comment: viewerReview.comment,
+          createdAt: viewerReview.created_at,
+        }
+      : null,
+    allAssigneesCompleted:
+      assignees.length > 0 && assignees.every((entry) => Boolean(entry.completedAt)),
   };
 }
 
@@ -785,7 +1116,7 @@ async function createNextCycle(env, createdByMemberId) {
   if (futureCycle) {
     return {
       ok: false,
-      error: "Следующий Ритуал Порядка уже вписан в летопись и ждёт своего часа.",
+      error: "Следующий обряд уже вписан в летопись и ждёт своего часа.",
     };
   }
 
@@ -815,17 +1146,28 @@ async function createNextCycle(env, createdByMemberId) {
   const members = await all(
     env,
     `
-      SELECT id, email, display_name, role, status, duty_count
-      FROM members
-      WHERE status = 'active'
-      ORDER BY display_name ASC
+      SELECT
+        m.id,
+        m.email,
+        m.display_name,
+        m.role,
+        m.status,
+        m.duty_count,
+        COUNT(r.id) AS review_count,
+        ROUND(AVG(r.rating), 2) AS average_rating
+      FROM members m
+      LEFT JOIN cycle_assignments a ON a.member_id = m.id
+      LEFT JOIN cycle_reviews r ON r.cycle_id = a.cycle_id
+      WHERE m.status = 'active'
+      GROUP BY m.id
+      ORDER BY m.display_name ASC
     `,
   );
 
   if (members.length < config.dutyTeamSize) {
     return {
       ok: false,
-      error: "Недостаточно активных соратников, чтобы собрать отряд Хранителей Порядка.",
+      error: "Недостаточно активных соратников, чтобы собрать новую пару обряда.",
     };
   }
 
@@ -855,6 +1197,11 @@ async function createNextCycle(env, createdByMemberId) {
       email: row.email,
       displayName: row.display_name,
       dutyCount: Number(row.duty_count || 0),
+      averageRating:
+        row.average_rating === null || row.average_rating === undefined
+          ? null
+          : Number(row.average_rating),
+      reviewCount: Number(row.review_count || 0),
     })),
     config.dutyTeamSize,
     recentlyAssignedIds,
@@ -902,22 +1249,14 @@ async function createNextCycle(env, createdByMemberId) {
       ],
     );
 
-    await run(
-      env,
-      `
-        UPDATE members
-        SET duty_count = duty_count + 1, updated_at = ?
-        WHERE id = ?
-      `,
-      [new Date().toISOString(), assignee.id],
-    );
-
     const delivery = await sendAssignmentEmail(env, {
       email: assignee.email,
       displayName: assignee.displayName,
       startsOn,
       endsOn,
       plannedCleaningDate,
+      counterpartName:
+        assignees.find((entry) => entry.id !== assignee.id)?.displayName || "парный соратник",
     });
 
     await logNotification(env, {
@@ -942,25 +1281,86 @@ function pickAssignees(members, targetCount, recentlyAssignedIds, unavailableIds
   const restedPool = primaryPool.filter((member) => !recentlyAssignedIds.has(member.id));
   const candidatePool = restedPool.length >= targetCount ? restedPool : primaryPool;
 
-  const ranked = candidatePool
+  const fairnessRanked = candidatePool
     .map((member) => {
-      let score = member.dutyCount;
-      if (recentlyAssignedIds.has(member.id)) {
-        score += 2;
-      }
-      if (unavailableIds.has(member.id)) {
-        score += 10;
-      }
+      const score = scoreDutyCandidate(member, recentlyAssignedIds, unavailableIds);
       return { ...member, score, tieBreaker: randomInteger(1_000_000) };
     })
-    .sort((left, right) => {
-      if (left.score !== right.score) {
-        return left.score - right.score;
-      }
-      return left.tieBreaker - right.tieBreaker;
-    });
+    .sort(compareByScoreThenTieBreaker);
 
-  return ranked.slice(0, targetCount);
+  if (targetCount <= 1 || fairnessRanked.length <= 1) {
+    return fairnessRanked.slice(0, targetCount);
+  }
+
+  const apprenticeWindow = fairnessRanked.slice(0, Math.min(4, fairnessRanked.length));
+  const apprenticeCandidate = apprenticeWindow
+    .filter((member) => member.averageRating !== null)
+    .sort((left, right) => {
+      if (left.averageRating !== right.averageRating) {
+        return left.averageRating - right.averageRating;
+      }
+      return compareByScoreThenTieBreaker(left, right);
+    })[0];
+
+  const firstAssignee = apprenticeCandidate || fairnessRanked[0];
+  const remainingPool = candidatePool.filter((member) => member.id !== firstAssignee.id);
+
+  if (!remainingPool.length) {
+    return [firstAssignee];
+  }
+
+  const ratedCount = candidatePool.filter((member) => member.averageRating !== null).length;
+  const mentorRanked = remainingPool
+    .map((member) => ({
+      ...member,
+      score:
+        ratedCount >= 2 && firstAssignee.averageRating !== null
+          ? scoreMentorCandidate(member, recentlyAssignedIds, unavailableIds)
+          : scoreDutyCandidate(member, recentlyAssignedIds, unavailableIds),
+      tieBreaker: randomInteger(1_000_000),
+    }))
+    .sort(compareByScoreThenTieBreaker);
+
+  return [firstAssignee, mentorRanked[0]].filter(Boolean);
+}
+
+function scoreDutyCandidate(member, recentlyAssignedIds, unavailableIds) {
+  let score = Number(member.dutyCount || 0);
+
+  if (member.averageRating !== null && member.averageRating !== undefined) {
+    score -= Math.max(0, 4.2 - Number(member.averageRating)) * 0.35;
+  }
+  if (recentlyAssignedIds.has(member.id)) {
+    score += 3.2;
+  }
+  if (unavailableIds.has(member.id)) {
+    score += 20;
+  }
+
+  return score;
+}
+
+function scoreMentorCandidate(member, recentlyAssignedIds, unavailableIds) {
+  let score = Number(member.dutyCount || 0);
+
+  if (member.averageRating !== null && member.averageRating !== undefined) {
+    score -= Number(member.averageRating) * 0.55;
+  }
+  if (recentlyAssignedIds.has(member.id)) {
+    score += 3.4;
+  }
+  if (unavailableIds.has(member.id)) {
+    score += 20;
+  }
+
+  return score;
+}
+
+function compareByScoreThenTieBreaker(left, right) {
+  if (left.score !== right.score) {
+    return left.score - right.score;
+  }
+  return left.tieBreaker - right.tieBreaker;
 }
 
 function pickCleaningDate(startsOn, endsOn, gameDates, preferredWeekdays) {
@@ -1244,8 +1644,8 @@ function getMemberRank({ dutyCount, averageRating }) {
       : "Следующая ступень больше не скрыта: высший сан братства уже достигнут.",
     futureRatingHint:
       averageRating === null
-        ? "Пока звание питается только числом ритуалов. Позже к нему прибавится сила славы."
-        : "Слава уже учитывается в летописи и позже сможет усилить путь звания.",
+        ? "Пока звание растёт от числа завершённых обрядов. Слава уже влияет на выбор пары и позже сможет усилить путь звания."
+        : "Слава уже влияет на жребий пары и со временем сможет усилить само восхождение по званиям.",
   };
 }
 
@@ -1272,6 +1672,31 @@ function getRankLadder() {
         : "Это вершина лестницы ордена.",
     };
   });
+}
+
+function getRitualOutcome(averageRating, reviewCount) {
+  if (averageRating === null || averageRating === undefined || reviewCount <= 0) {
+    return {
+      id: "awaiting",
+      title: "Летопись ожидает свидетельств",
+      shortTitle: "Ожидает отзывов",
+      description: "Обряд завершён, но круг ещё не вынес свой вердикт.",
+      accent: "#6e5b4d",
+      glow: "rgba(110, 91, 77, 0.18)",
+      reviewCount,
+      averageRating: null,
+    };
+  }
+
+  const found =
+    RITUAL_OUTCOME_LADDER.find((entry) => Number(averageRating) >= entry.minRating) ||
+    RITUAL_OUTCOME_LADDER[RITUAL_OUTCOME_LADDER.length - 1];
+
+  return {
+    ...found,
+    reviewCount,
+    averageRating: Number(averageRating),
+  };
 }
 
 function pluralizeRussian(count, suffixes) {
@@ -1324,15 +1749,31 @@ async function sendLoginCodeEmail(env, details) {
   const text = [
     `${details.displayName}, приветствую.`,
     "",
-    `Ваша печать допуска в Duty Guild: ${details.code}`,
-    `Её сила сохранится до ${details.expiresAt}.`,
+    "Совет ордена развернул врата.",
+    `Ваша печать входа: ${details.code}`,
+    `Сила печати угаснет: ${details.expiresAt}.`,
+    "",
+    "Если вы не призывали печать, просто проигнорируйте это письмо.",
   ].join("\n");
 
   return sendEmail(env, {
     to: details.email,
-    subject: "Duty Guild: печать допуска",
+    subject: "Duty Guild: печать входа",
     text,
-    html: `<p>${escapeHtml(details.displayName)}, приветствую.</p><p>Ваша печать допуска в Duty Guild: <strong>${details.code}</strong>.</p><p>Её сила сохранится до ${escapeHtml(details.expiresAt)}.</p>`,
+    html: renderEmailShell(env, {
+      kicker: "Печать входа",
+      title: "Врата ордена распахнуты",
+      lead: "Одноразовая печать уже ждёт. Останется лишь подтвердить её на сайте и войти в летопись.",
+      bodyHtml: `
+        <div style="margin:24px 0;padding:20px 22px;border-radius:20px;background:linear-gradient(180deg,#fff8ef,#f3e2cf);border:1px solid #ead2b0;text-align:center;">
+          <div style="font-size:13px;letter-spacing:0.22em;text-transform:uppercase;color:#9e5b2e;">Печать входа</div>
+          <div style="margin-top:8px;font-size:38px;letter-spacing:0.22em;font-weight:800;color:#6a2419;">${escapeHtml(details.code)}</div>
+          <div style="margin-top:10px;color:#6d584c;font-size:14px;">Сила печати угаснет: ${escapeHtml(details.expiresAt)}</div>
+        </div>
+      `,
+      ctaLabel: "Войти в Duty Guild",
+      ctaHref: getAppOrigin(env),
+    }),
     debugCode: details.code,
   });
 }
@@ -1341,16 +1782,34 @@ async function sendAssignmentEmail(env, details) {
   const text = [
     `${details.displayName}, приветствую.`,
     "",
-    "Для вашей команды созван новый Ритуал Порядка.",
-    `Окно ритуала: ${details.startsOn} - ${details.endsOn}`,
-    `Рекомендованный день ритуала: ${details.plannedCleaningDate}`,
+    "Орден призвал вас к новому обряду порядка.",
+    `Ваш парный соратник: ${details.counterpartName}`,
+    `Промежуток обряда: ${details.startsOn} - ${details.endsOn}`,
+    `День свершения: ${details.plannedCleaningDate}`,
+    "",
+    "Ритуал зачтётся только после того, как оба участника подтвердят завершение на сайте.",
   ].join("\n");
 
   return sendEmail(env, {
     to: details.email,
-    subject: "Duty Guild: созван Ритуал Порядка",
+    subject: "Duty Guild: орден призвал вас к обряду",
     text,
-    html: `<p>${escapeHtml(details.displayName)}, приветствую.</p><p>Для вашей команды созван новый Ритуал Порядка.</p><p><strong>Окно ритуала:</strong> ${escapeHtml(details.startsOn)} - ${escapeHtml(details.endsOn)}</p><p><strong>Рекомендованный день ритуала:</strong> ${escapeHtml(details.plannedCleaningDate)}</p>`,
+    html: renderEmailShell(env, {
+      kicker: "Новый обряд",
+      title: "Совет назвал ваш клинок",
+      lead: "Вы внесены в пару, которой предстоит провести следующий обряд порядка и вернуть залу должный блеск.",
+      bodyHtml: renderEmailDetailRows([
+        ["Парный соратник", details.counterpartName],
+        ["Промежуток обряда", `${details.startsOn} - ${details.endsOn}`],
+        ["День свершения", details.plannedCleaningDate],
+      ]) + `
+        <p style="margin:18px 0 0;color:#5e4b41;line-height:1.65;">
+          Подвиг зачтётся только тогда, когда оба участника отметят завершение обряда в летописи.
+        </p>
+      `,
+      ctaLabel: "Открыть летопись",
+      ctaHref: getAppOrigin(env),
+    }),
   });
 }
 
@@ -1358,17 +1817,188 @@ async function sendReminderEmail(env, details) {
   const text = [
     `${details.displayName}, приветствую.`,
     "",
-    "Напоминание от Duty Guild.",
-    `Сегодня настал день Ритуала Порядка для окна ${details.startsOn} - ${details.endsOn}.`,
-    `Дата ритуала: ${details.plannedCleaningDate}`,
+    "Сегодня настал день свершения вашего обряда.",
+    `Промежуток обряда: ${details.startsOn} - ${details.endsOn}.`,
+    `День свершения: ${details.plannedCleaningDate}`,
+    "",
+    "Не забудьте после завершения подтвердить обряд в летописи.",
   ].join("\n");
 
   return sendEmail(env, {
     to: details.email,
-    subject: "Duty Guild: напоминание о Ритуале Порядка",
+    subject: "Duty Guild: день обряда настал",
     text,
-    html: `<p>${escapeHtml(details.displayName)}, приветствую.</p><p>Напоминание от Duty Guild.</p><p>Сегодня настал день Ритуала Порядка для окна <strong>${escapeHtml(details.startsOn)}</strong> - <strong>${escapeHtml(details.endsOn)}</strong>.</p><p><strong>Дата ритуала:</strong> ${escapeHtml(details.plannedCleaningDate)}</p>`,
+    html: renderEmailShell(env, {
+      kicker: "Напоминание ордена",
+      title: "День обряда уже здесь",
+      lead: "Летопись напоминает: сегодня вашей паре предстоит исполнить возложенный обет.",
+      bodyHtml: renderEmailDetailRows([
+        ["Промежуток обряда", `${details.startsOn} - ${details.endsOn}`],
+        ["День свершения", details.plannedCleaningDate],
+      ]),
+      ctaLabel: "Подтвердить после свершения",
+      ctaHref: getAppOrigin(env),
+    }),
   });
+}
+
+async function sendReviewRequestEmail(env, details) {
+  const text = [
+    `${details.displayName}, приветствую.`,
+    "",
+    "Два героя завершили обряд порядка, и летопись ждёт голос круга.",
+    `Пара обряда: ${details.assigneeNames.join(" и ")}`,
+    `День свершения: ${details.plannedCleaningDate}`,
+    "",
+    "Откройте Duty Guild и оцените обряд по шкале от 1 до 5 звёзд.",
+  ].join("\n");
+
+  return sendEmail(env, {
+    to: details.email,
+    subject: "Duty Guild: летопись просит оценить обряд",
+    text,
+    html: renderEmailShell(env, {
+      kicker: "Глас летописи",
+      title: "Круг ждёт ваш вердикт",
+      lead: "Обряд завершён, и теперь сила славы зависит от того, как круг оценит исполнение пары.",
+      bodyHtml:
+        renderEmailDetailRows([
+          ["Пара обряда", details.assigneeNames.join(" и ")],
+          ["День свершения", details.plannedCleaningDate],
+        ]) +
+        `
+          <div style="margin-top:20px;padding:18px 20px;border-radius:20px;background:#1f1615;color:#f8efe5;text-align:center;">
+            <div style="font-size:13px;letter-spacing:0.22em;text-transform:uppercase;color:#ddb778;">Оценка обряда</div>
+            <div style="margin-top:10px;font-size:30px;letter-spacing:0.22em;color:#f0c26d;">★ ★ ★ ★ ★</div>
+            <div style="margin-top:10px;color:#d5c0b2;line-height:1.6;">
+              Войдите в Duty Guild и поставьте от одной до пяти звёзд. Зачёт общий для всей пары.
+            </div>
+          </div>
+        `,
+      ctaLabel: "Оценить обряд",
+      ctaHref: getAppOrigin(env),
+    }),
+  });
+}
+
+async function sendGameEventEmail(env, details) {
+  const text = [
+    `${details.displayName}, приветствую.`,
+    "",
+    "В летопись внесено новое событие круга.",
+    `Название: ${details.title}`,
+    `Дата: ${details.eventDate}`,
+    details.timeLabel ? `Время: ${details.timeLabel}` : null,
+    `Вписал: ${details.createdByName}`,
+    details.notes ? `Пометка хрониста: ${details.notes}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return sendEmail(env, {
+    to: details.email,
+    subject: "Duty Guild: в летопись внесено новое событие",
+    text,
+    html: renderEmailShell(env, {
+      kicker: "Новая запись летописи",
+      title: "Круг соберётся вновь",
+      lead: "В свод событий внесена новая встреча. Теперь орден сможет не сталкивать её с обрядами.",
+      bodyHtml:
+        renderEmailDetailRows([
+          ["Название", details.title],
+          ["Дата", details.eventDate],
+          ...(details.timeLabel ? [["Время", details.timeLabel]] : []),
+          ["Хронист", details.createdByName],
+        ]) +
+        (details.notes
+          ? `<p style="margin:18px 0 0;color:#5e4b41;line-height:1.65;"><strong>Пометка хрониста:</strong> ${escapeHtml(details.notes)}</p>`
+          : ""),
+      ctaLabel: "Открыть летопись",
+      ctaHref: getAppOrigin(env),
+    }),
+  });
+}
+
+async function notifyReviewRequest(env, cycleId, assignments) {
+  const cycle = await first(env, "SELECT * FROM cleaning_cycles WHERE id = ? LIMIT 1", [cycleId]);
+
+  if (!cycle) {
+    return;
+  }
+
+  const now = new Date().toISOString();
+  await run(
+    env,
+    `
+      UPDATE cleaning_cycles
+      SET feedback_requested_at = COALESCE(feedback_requested_at, ?)
+      WHERE id = ?
+    `,
+    [now, cycleId],
+  );
+
+  const recipients = await all(
+    env,
+    `
+      SELECT id, email, display_name
+      FROM members
+      WHERE status = 'active'
+      ORDER BY display_name ASC
+    `,
+  );
+  const assigneeIds = new Set(assignments.map((row) => row.member_id));
+  const assigneeNames = assignments.map((row) => row.display_name);
+
+  for (const recipient of recipients) {
+    if (assigneeIds.has(recipient.id)) {
+      continue;
+    }
+
+    const delivery = await sendReviewRequestEmail(env, {
+      email: recipient.email,
+      displayName: recipient.display_name,
+      assigneeNames,
+      plannedCleaningDate: cycle.planned_cleaning_date,
+    });
+
+    await logNotification(env, {
+      kind: "cycle-review-request",
+      cycleId,
+      memberId: recipient.id,
+      deliveryStatus: delivery.mode,
+    });
+  }
+}
+
+async function notifyGameEventCreated(env, actor, event) {
+  const recipients = await all(
+    env,
+    `
+      SELECT id, email, display_name
+      FROM members
+      WHERE status = 'active'
+      ORDER BY display_name ASC
+    `,
+  );
+  const timeLabel = [event.startsAt, event.endsAt].filter(Boolean).join(" - ");
+
+  for (const recipient of recipients) {
+    const delivery = await sendGameEventEmail(env, {
+      email: recipient.email,
+      displayName: recipient.display_name,
+      title: event.title,
+      eventDate: event.eventDate,
+      timeLabel: timeLabel || "",
+      notes: event.notes,
+      createdByName: actor.display_name,
+    });
+
+    await logNotification(env, {
+      kind: "game-event-created",
+      memberId: recipient.id,
+      deliveryStatus: delivery.mode,
+    });
+  }
 }
 
 async function sendEmail(env, payload) {
@@ -1448,6 +2078,69 @@ async function logNotification(env, entry) {
       entry.deliveryStatus,
     ],
   );
+}
+
+function renderEmailShell(env, details) {
+  const appOrigin = getAppOrigin(env);
+  const ctaBlock =
+    details.ctaLabel && details.ctaHref
+      ? `
+        <div style="margin-top:28px;">
+          <a
+            href="${escapeHtml(details.ctaHref)}"
+            style="display:inline-block;padding:14px 22px;border-radius:999px;background:linear-gradient(135deg,#b43e22,#d46c3f);color:#fff9f2;text-decoration:none;font-weight:700;letter-spacing:0.04em;"
+          >
+            ${escapeHtml(details.ctaLabel)}
+          </a>
+        </div>
+      `
+      : "";
+
+  return `
+    <div style="margin:0;padding:24px 12px;background:#16110f;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#231b17;">
+      <div style="max-width:680px;margin:0 auto;border-radius:28px;overflow:hidden;background:linear-gradient(180deg,#f8f1e7 0%,#f0e4d4 100%);border:1px solid #d8c1a5;box-shadow:0 24px 48px rgba(0,0,0,0.18);">
+        <div style="padding:26px 28px;background:linear-gradient(120deg,#130f10,#2b1816 55%,#7f2212);color:#fffaf4;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,rgba(200,140,58,0.28),rgba(178,53,29,0.96));display:grid;place-items:center;font-weight:800;">DG</div>
+            <div>
+              <div style="font-size:12px;letter-spacing:0.24em;text-transform:uppercase;color:#f0d39f;">${escapeHtml(details.kicker || "Duty Guild")}</div>
+              <div style="margin-top:4px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.05;">${escapeHtml(details.title)}</div>
+            </div>
+          </div>
+          <p style="margin:18px 0 0;color:rgba(255,249,242,0.86);font-size:16px;line-height:1.7;">${escapeHtml(details.lead || "")}</p>
+        </div>
+        <div style="padding:28px;">
+          ${details.bodyHtml || ""}
+          ${ctaBlock}
+        </div>
+        <div style="padding:18px 28px;border-top:1px solid #e0cfbb;background:#efe3d4;color:#6d584c;font-size:13px;line-height:1.6;">
+          Duty Guild хранит хроники круга и зовёт обратно в летопись по адресу
+          <a href="${escapeHtml(appOrigin)}" style="color:#8f311c;text-decoration:none;">${escapeHtml(appOrigin)}</a>.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderEmailDetailRows(rows) {
+  return `
+    <div style="display:grid;gap:12px;">
+      ${rows
+        .map(
+          ([label, value]) => `
+            <div style="padding:14px 16px;border-radius:18px;background:#fffaf4;border:1px solid #ead9c3;">
+              <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9e5b2e;">${escapeHtml(label)}</div>
+              <div style="margin-top:6px;font-size:16px;color:#2c201a;font-weight:700;">${escapeHtml(value)}</div>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function getAppOrigin(env) {
+  return String(env.PUBLIC_APP_ORIGIN || "https://dutyguild.ru").trim();
 }
 
 async function readJson(request) {

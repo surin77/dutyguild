@@ -7,6 +7,7 @@ data:
   HOST: "0.0.0.0"
   PORT: "3000"
   APP_NAME: "Duty Guild"
+  PUBLIC_APP_ORIGIN: "https://dutyguild.ru"
   APP_TIMEZONE: "Europe/Samara"
   SESSION_COOKIE_NAME: "dutyguild_session"
   SESSION_TTL_DAYS: "30"
