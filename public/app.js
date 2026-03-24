@@ -84,7 +84,6 @@ function renderSiteHeader() {
     ? `
       <div class="header-user">
         <span class="header-user__name">${escapeHtml(state.me.displayName)}</span>
-        <span class="header-user__meta">${roleLabel(state.me.role)} · ${escapeHtml(memberRankShort(state.me))}</span>
       </div>
     `
     : '<span class="header-user__meta">Закрытый зал ордена</span>';
@@ -99,12 +98,6 @@ function renderSiteHeader() {
             <strong class="brand-title">${appName}</strong>
           </div>
         </div>
-        <nav class="top-nav" aria-label="Разделы">
-          <span class="top-nav__item">Летопись</span>
-          <span class="top-nav__item">Обряды</span>
-          <span class="top-nav__item">Походы</span>
-          <span class="top-nav__item">${isCouncilMember(state.me) ? "Совет" : "Звания"}</span>
-        </nav>
         ${userLabel}
       </div>
     </header>
@@ -279,35 +272,11 @@ function renderDashboard() {
             <span class="feature-badge">${escapeHtml(memberRankTitle(state.me))}</span>
             <span class="feature-badge">${escapeHtml(state.me.email)}</span>
           </div>
-        </div>
-        <div class="hero-metrics">
-          <div class="rail-card rail-card--compact">
-            <span class="rail-metric">${stats.memberCount}</span>
-            <span class="rail-label">имен во свитке братства</span>
-          </div>
-          <div class="rail-card rail-card--compact">
-            <span class="rail-metric">${stats.pendingReviewCount}</span>
-            <span class="rail-label">вердиктов ждут голоса круга</span>
-          </div>
-          <div class="rail-card rail-card--compact">
-            <span class="rail-metric">${stats.gameCount}</span>
-            <span class="rail-label">походов уже вписано впереди</span>
+          <div class="button-row feature-card__actions">
+            <button id="logout-button" class="button button--primary" type="button">Покинуть зал</button>
           </div>
         </div>
       </article>
-
-      <section class="toolbar">
-        <div class="toolbar__copy">
-          <p class="section-tag">Печать признана</p>
-          <h2>Врата открыты для ${escapeHtml(state.me.displayName)}</h2>
-          <p>${roleLabel(state.me.role)} · ${escapeHtml(memberRankTitle(state.me))} · ${escapeHtml(state.me.email)}</p>
-          <p class="toolbar__rank-note">${escapeHtml(memberRankProgress(state.me))}</p>
-        </div>
-        <div class="button-row">
-          <button id="refresh-dashboard" class="button button--secondary" type="button">Освежить летопись</button>
-          <button id="logout-button" class="button button--primary" type="button">Покинуть зал</button>
-        </div>
-      </section>
 
       <section class="stats-band">
         <article class="stat-card">
