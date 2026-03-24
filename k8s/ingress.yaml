@@ -5,12 +5,10 @@ metadata:
   namespace: dutyguild
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
 spec:
   ingressClassName: traefik
-  tls:
-    - hosts:
-        - dutyguild.ru
-      secretName: dutyguild-tls
   rules:
     - host: dutyguild.ru
       http:
