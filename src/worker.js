@@ -290,12 +290,12 @@ async function handleFetch(request, env) {
   }
 
   if (pathname === "/api/admin/members" && request.method === "GET") {
-    const member = await requireAdmin(request, env);
+    const member = await requireCouncil(request, env);
     if (member instanceof Response) {
       return member;
     }
     return json({
-      members: await loadRoster(env),
+      members: await loadCouncilRoster(env),
     });
   }
 
@@ -318,8 +318,25 @@ async function handleFetch(request, env) {
     return handleCreateGameEvent(request, env, member);
   }
 
+  const gameEventMatch = pathname.match(/^\/api\/game-events\/([^/]+)$/);
+  if (gameEventMatch && request.method === "PUT") {
+    const member = await requireMember(request, env);
+    if (member instanceof Response) {
+      return member;
+    }
+    return handleUpdateGameEvent(request, env, member, gameEventMatch[1]);
+  }
+
+  if (gameEventMatch && request.method === "DELETE") {
+    const member = await requireMember(request, env);
+    if (member instanceof Response) {
+      return member;
+    }
+    return handleDeleteGameEvent(env, member, gameEventMatch[1]);
+  }
+
   if (pathname === "/api/admin/cycles/generate" && request.method === "POST") {
-    const member = await requireAdmin(request, env);
+    const member = await requireCouncil(request, env);
     if (member instanceof Response) {
       return member;
     }
@@ -619,6 +636,74 @@ async function handleCreateGameEvent(request, env, actor) {
   return json({ ok: true });
 }
 
+async function handleUpdateGameEvent(request, env, actor, gameEventId) {
+  const gameEvent = await first(
+    env,
+    `
+      SELECT *
+      FROM game_events
+      WHERE id = ?
+      LIMIT 1
+    `,
+    [gameEventId],
+  );
+
+  if (!gameEvent || gameEvent.status === "cancelled") {
+    return json({ error: "Такое событие не найдено в летописи." }, 404);
+  }
+
+  if (!(await canManageGameEvent(env, actor, gameEvent))) {
+    return json({ error: "Править это событие может только его хронист или совет." }, 403);
+  }
+
+  const body = await readJson(request);
+  const title = String(body?.title || "").trim();
+  const eventDate = String(body?.eventDate || "").trim();
+  const startsAt = normalizeTime(body?.startsAt);
+  const endsAt = normalizeTime(body?.endsAt);
+  const notes = String(body?.notes || "").trim();
+
+  if (!title || !isDateOnly(eventDate)) {
+    return json({ error: "Заполните название события и дату." }, 400);
+  }
+
+  await run(
+    env,
+    `
+      UPDATE game_events
+      SET title = ?, event_date = ?, starts_at = ?, ends_at = ?, notes = ?, status = 'confirmed'
+      WHERE id = ?
+    `,
+    [title, eventDate, startsAt, endsAt, notes, gameEventId],
+  );
+
+  return json({ ok: true });
+}
+
+async function handleDeleteGameEvent(env, actor, gameEventId) {
+  const gameEvent = await first(
+    env,
+    `
+      SELECT *
+      FROM game_events
+      WHERE id = ?
+      LIMIT 1
+    `,
+    [gameEventId],
+  );
+
+  if (!gameEvent || gameEvent.status === "cancelled") {
+    return json({ error: "Такое событие не найдено в летописи." }, 404);
+  }
+
+  if (!(await canManageGameEvent(env, actor, gameEvent))) {
+    return json({ error: "Стереть это событие может только его хронист или совет." }, 403);
+  }
+
+  await run(env, "DELETE FROM game_events WHERE id = ?", [gameEventId]);
+  return json({ ok: true });
+}
+
 async function handleGenerateCycle(env, actor) {
   const result = await createNextCycle(env, actor.id);
 
@@ -813,7 +898,7 @@ async function buildDashboard(env, member) {
     pendingReviewRows,
     upcomingGames,
     feedback,
-    roster,
+    rawRoster,
   ] = await Promise.all([
     first(
       env,
@@ -880,6 +965,7 @@ async function buildDashboard(env, member) {
           g.ends_at,
           g.notes,
           g.status,
+          g.created_by_member_id,
           creator.display_name AS created_by_name
         FROM game_events g
         LEFT JOIN members creator ON creator.id = g.created_by_member_id
@@ -908,6 +994,9 @@ async function buildDashboard(env, member) {
     loadRoster(env),
   ]);
 
+  const roster = decorateCouncilRoster(rawRoster);
+  const me = roster.find((entry) => entry.id === member.id) || memberToClient(member);
+
   const feedbackCycles = await Promise.all(
     feedback.map(async (row) =>
       hydrateCycle(
@@ -919,7 +1008,7 @@ async function buildDashboard(env, member) {
   );
 
   return {
-    me: roster.find((entry) => entry.id === member.id) || memberToClient(member),
+    me,
     currentCycle: currentCycleRow ? await hydrateCycle(env, currentCycleRow, member.id) : null,
     nextCycle: nextCycleRow ? await hydrateCycle(env, nextCycleRow, member.id) : null,
     recentCycles: await Promise.all(
@@ -936,7 +1025,9 @@ async function buildDashboard(env, member) {
       endsAt: row.ends_at,
       notes: row.notes,
       status: row.status,
+      createdByMemberId: row.created_by_member_id,
       createdByName: row.created_by_name,
+      canManage: canManageGameEventLocally(me, row),
     })),
     recentFeedback: feedback.map((row, index) => ({
       id: row.id,
@@ -987,6 +1078,127 @@ async function loadRoster(env) {
           : Number(row.average_rating),
     };
   });
+}
+
+async function loadCouncilRoster(env) {
+  return decorateCouncilRoster(await loadRoster(env));
+}
+
+function decorateCouncilRoster(roster) {
+  const stewardMemberId = pickStewardMemberId(roster);
+
+  return roster
+    .map((member) => decorateCouncilMember(member, stewardMemberId))
+    .sort(compareCouncilMembers);
+}
+
+function pickStewardMemberId(roster) {
+  const candidates = roster
+    .filter(
+      (member) =>
+        member.status === "active" &&
+        member.baseRole !== "admin" &&
+        member.role !== "admin" &&
+        typeof member.averageRating === "number" &&
+        member.feedbackCount > 0,
+    )
+    .sort((left, right) => {
+      if (left.averageRating !== right.averageRating) {
+        return right.averageRating - left.averageRating;
+      }
+      if (left.feedbackCount !== right.feedbackCount) {
+        return right.feedbackCount - left.feedbackCount;
+      }
+      if (left.dutyCount !== right.dutyCount) {
+        return right.dutyCount - left.dutyCount;
+      }
+      return left.displayName.localeCompare(right.displayName, "ru");
+    });
+
+  return candidates[0]?.id || null;
+}
+
+function decorateCouncilMember(member, stewardMemberId) {
+  const effectiveRole =
+    member.baseRole === "admin" || member.role === "admin"
+      ? "admin"
+      : member.id === stewardMemberId
+        ? "steward"
+        : "member";
+
+  return {
+    ...member,
+    role: effectiveRole,
+    permissions: getCouncilPermissions(effectiveRole),
+  };
+}
+
+function compareCouncilMembers(left, right) {
+  const order = {
+    admin: 0,
+    steward: 1,
+    member: 2,
+  };
+  const leftWeight = order[left.role] ?? 99;
+  const rightWeight = order[right.role] ?? 99;
+
+  if (leftWeight !== rightWeight) {
+    return leftWeight - rightWeight;
+  }
+
+  return left.displayName.localeCompare(right.displayName, "ru");
+}
+
+function getCouncilPermissions(role) {
+  return {
+    canManageMembers: role === "admin",
+    canManageCycles: role === "admin" || role === "steward",
+    canManageAllEvents: role === "admin" || role === "steward",
+  };
+}
+
+async function getEffectiveMemberRole(env, member) {
+  if (!member) {
+    return "member";
+  }
+  if (member.role === "admin") {
+    return "admin";
+  }
+
+  const stewardMemberId = pickStewardMemberId(await loadRoster(env));
+  return member.id === stewardMemberId ? "steward" : "member";
+}
+
+async function requireCouncil(request, env) {
+  const member = await requireMember(request, env);
+  if (member instanceof Response) {
+    return member;
+  }
+
+  const effectiveRole = await getEffectiveMemberRole(env, member);
+  if (effectiveRole !== "admin" && effectiveRole !== "steward") {
+    return json(
+      { error: "Это право принадлежит только Магистру или Сенешалю Совета." },
+      403,
+    );
+  }
+
+  return member;
+}
+
+async function canManageGameEvent(env, actor, gameEvent) {
+  const effectiveRole = await getEffectiveMemberRole(env, actor);
+  return canManageGameEventLocally({ ...actor, role: effectiveRole }, gameEvent);
+}
+
+function canManageGameEventLocally(actor, gameEvent) {
+  if (!actor || !gameEvent) {
+    return false;
+  }
+  if (actor.role === "admin" || actor.role === "steward") {
+    return true;
+  }
+  return actor.id === gameEvent.created_by_member_id;
 }
 
 async function hydrateCycle(env, cycleRow, viewerMemberId = null) {
@@ -1592,6 +1804,7 @@ function memberToClient(member) {
     email: member.email,
     displayName: member.display_name,
     role: member.role,
+    baseRole: member.role,
     status: member.status,
     dutyCount,
     rank,

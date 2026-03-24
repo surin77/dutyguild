@@ -10,6 +10,7 @@ const state = {
   notice: "",
   error: "",
   busy: false,
+  editingGameEventId: "",
 };
 
 const root = document.querySelector("#app");
@@ -78,7 +79,7 @@ function renderSiteHeader() {
           <span class="top-nav__item">Летопись</span>
           <span class="top-nav__item">Обряды</span>
           <span class="top-nav__item">Походы</span>
-          <span class="top-nav__item">${state.me?.role === "admin" ? "Совет" : "Звания"}</span>
+          <span class="top-nav__item">${isCouncilMember(state.me) ? "Совет" : "Звания"}</span>
         </nav>
         ${userLabel}
       </div>
@@ -323,7 +324,7 @@ function renderDashboard() {
         ${renderReviewPanel()}
         ${renderRankGuidePanel()}
         ${renderRosterPanel()}
-        ${state.me.role === "admin" ? renderAdminPanel() : ""}
+        ${state.me.permissions?.canManageCycles ? renderAdminPanel() : ""}
       </section>
     </section>
   `;
@@ -400,18 +401,7 @@ function renderCyclePanel(title, cycle, emptyText) {
 
 function renderAdventurePanel() {
   const items = state.dashboard.upcomingGames
-    .map(
-      (event) => `
-        <li class="list-card">
-          <div class="list-card__head">
-            <strong>${escapeHtml(event.title)}</strong>
-            <span>${formatEventDate(event)}</span>
-          </div>
-          ${event.notes ? `<p>${escapeHtml(event.notes)}</p>` : ""}
-          <span class="list-card__meta">Вписал в свод: ${escapeHtml(event.createdByName || "Неизвестный хронист")}</span>
-        </li>
-      `,
-    )
+    .map((event) => renderAdventureEvent(event))
     .join("");
 
   return `
@@ -459,6 +449,91 @@ function renderAdventurePanel() {
         </form>
       </div>
     </article>
+  `;
+}
+
+function renderAdventureEvent(event) {
+  const isEditing = state.editingGameEventId === event.id;
+  const actions = event.canManage
+    ? `
+      <div class="list-card__actions">
+        <button
+          class="button button--secondary"
+          type="button"
+          data-game-edit-start="${escapeHtml(event.id)}"
+          ${state.busy || isEditing ? "disabled" : ""}
+        >
+          Исправить
+        </button>
+        <button
+          class="button button--danger"
+          type="button"
+          data-game-delete="${escapeHtml(event.id)}"
+          ${state.busy ? "disabled" : ""}
+        >
+          Стереть
+        </button>
+      </div>
+    `
+    : "";
+
+  const editor = isEditing
+    ? `
+      <form class="stack-form event-edit-form" data-game-update="${escapeHtml(event.id)}">
+        <div class="event-edit-form__header">
+          <strong>Исправить запись в летописи</strong>
+          <button
+            class="button button--secondary"
+            type="button"
+            data-game-edit-cancel="${escapeHtml(event.id)}"
+            ${state.busy ? "disabled" : ""}
+          >
+            Отменить
+          </button>
+        </div>
+        <label>
+          <span>Название</span>
+          <input name="title" value="${escapeHtml(event.title)}" />
+        </label>
+        <label>
+          <span>Дата</span>
+          <input name="eventDate" type="date" value="${escapeHtml(event.eventDate)}" />
+        </label>
+        <div class="split-fields">
+          <label>
+            <span>Начало</span>
+            <input name="startsAt" type="time" value="${escapeHtml(event.startsAt || "")}" />
+          </label>
+          <label>
+            <span>Конец</span>
+            <input name="endsAt" type="time" value="${escapeHtml(event.endsAt || "")}" />
+          </label>
+        </div>
+        <label>
+          <span>Пометка хрониста</span>
+          <textarea name="notes" rows="3">${escapeHtml(event.notes || "")}</textarea>
+        </label>
+        <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
+          Переписать запись
+        </button>
+      </form>
+    `
+    : "";
+
+  return `
+    <li class="list-card">
+      <div class="list-card__head">
+        <strong>${escapeHtml(event.title)}</strong>
+        <span>${formatEventDate(event)}</span>
+      </div>
+      ${event.notes ? `<p>${escapeHtml(event.notes)}</p>` : ""}
+      <div class="list-card__meta-row">
+        <span class="list-card__meta">Вписал в свод: ${escapeHtml(event.createdByName || "Неизвестный хронист")}</span>
+        ${event.canManage ? `<span class="list-card__meta">Право пера: у вас есть</span>` : ""}
+      </div>
+      ${actions}
+      ${editor}
+    </li>
   `;
 }
 
@@ -706,16 +781,12 @@ function renderRosterPanel() {
 }
 
 function renderAdminPanel() {
-  return `
-    <article class="panel panel--wide panel--admin">
-      <div class="panel__header">
-        <p class="section-tag">Зал совета</p>
-        <h2>Повеления Магистра</h2>
-      </div>
-      <p class="panel__intro">
-        Призывайте новых соратников в круг и созывайте следующий обряд. Новые походы весь круг вписывает сам, а летопись разошлёт знамения автоматически.
-      </p>
-
+  const canInviteMembers = Boolean(state.me.permissions?.canManageMembers);
+  const intro = canInviteMembers
+    ? "Призывайте новых соратников в круг, следите за устройством братства и созывайте следующий обряд. Новые походы весь круг вписывает сам, а летопись разошлёт знамения автоматически."
+    : "Как Сенешаль Совета, вы можете созывать новые обряды и править летопись походов, но свиток братства пополняет только Магистр.";
+  const inviteBlock = canInviteMembers
+    ? `
       <div class="admin-grid admin-grid--single">
         <form id="invite-member-form" class="stack-form admin-form">
           <h3>Призвать соратника в круг</h3>
@@ -737,6 +808,29 @@ function renderAdminPanel() {
           <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>Вписать в свиток</button>
         </form>
       </div>
+    `
+    : `
+      <div class="admin-grid admin-grid--single">
+        <article class="admin-form">
+          <h3>Сан Сенешаля</h3>
+          <p>
+            Этот сан получает сильнейший по славе соратник, кроме действующего Магистра. Сенешаль
+            помогает вести обряды и летописи походов, но не призывает новых имён в круг.
+          </p>
+        </article>
+      </div>
+    `;
+
+  return `
+    <article class="panel panel--wide panel--admin">
+      <div class="panel__header">
+        <p class="section-tag">Зал совета</p>
+        <h2>${state.me.role === "admin" ? "Повеления Магистра" : "Печать Сенешаля"}</h2>
+      </div>
+      <p class="panel__intro">
+        ${intro}
+      </p>
+      ${inviteBlock}
 
       <div class="admin-banner">
         <div>
@@ -786,6 +880,18 @@ function bindEvents() {
   document.querySelector("#generate-cycle-button")?.addEventListener("click", onGenerateCycle);
   document.querySelector("#invite-member-form")?.addEventListener("submit", onInviteMember);
   document.querySelector("#game-event-form")?.addEventListener("submit", onCreateGameEvent);
+  document.querySelectorAll("[data-game-edit-start]").forEach((button) => {
+    button.addEventListener("click", onStartEditGameEvent);
+  });
+  document.querySelectorAll("[data-game-edit-cancel]").forEach((button) => {
+    button.addEventListener("click", onCancelEditGameEvent);
+  });
+  document.querySelectorAll("[data-game-update]").forEach((form) => {
+    form.addEventListener("submit", onUpdateGameEvent);
+  });
+  document.querySelectorAll("[data-game-delete]").forEach((button) => {
+    button.addEventListener("click", onDeleteGameEvent);
+  });
   document.querySelectorAll("[data-cycle-complete]").forEach((button) => {
     button.addEventListener("click", onCompleteCycle);
   });
@@ -889,8 +995,74 @@ async function onCreateGameEvent(event) {
       },
     });
     event.currentTarget.reset();
+    state.editingGameEventId = "";
     await hydrateDashboard();
     state.notice = "Событие вписано в летопись, а круг получил почтовое знамение.";
+    state.error = "";
+    render();
+  });
+}
+
+function onStartEditGameEvent(event) {
+  state.editingGameEventId = String(event.currentTarget?.dataset?.gameEditStart || "").trim();
+  state.notice = "";
+  state.error = "";
+  render();
+}
+
+function onCancelEditGameEvent() {
+  state.editingGameEventId = "";
+  state.notice = "";
+  state.error = "";
+  render();
+}
+
+async function onUpdateGameEvent(event) {
+  event.preventDefault();
+  const gameEventId = String(event.currentTarget?.dataset?.gameUpdate || "").trim();
+  if (!gameEventId) {
+    return;
+  }
+
+  await withBusy(async () => {
+    const formData = new FormData(event.currentTarget);
+    await api(`/api/game-events/${gameEventId}`, {
+      method: "PUT",
+      body: {
+        title: formData.get("title"),
+        eventDate: formData.get("eventDate"),
+        startsAt: formData.get("startsAt"),
+        endsAt: formData.get("endsAt"),
+        notes: formData.get("notes"),
+      },
+    });
+    state.editingGameEventId = "";
+    await hydrateDashboard();
+    state.notice = "Запись в своде приключений переписана.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onDeleteGameEvent(event) {
+  const gameEventId = String(event.currentTarget?.dataset?.gameDelete || "").trim();
+  if (!gameEventId) {
+    return;
+  }
+
+  if (!window.confirm("Стереть это событие из свода приключений?")) {
+    return;
+  }
+
+  await withBusy(async () => {
+    await api(`/api/game-events/${gameEventId}`, {
+      method: "DELETE",
+    });
+    if (state.editingGameEventId === gameEventId) {
+      state.editingGameEventId = "";
+    }
+    await hydrateDashboard();
+    state.notice = "Событие стёрто из летописи походов.";
     state.error = "";
     render();
   });
@@ -1071,7 +1243,17 @@ function syncDashboard(dashboard) {
 }
 
 function roleLabel(role) {
-  return role === "admin" ? "Магистр Совета" : "Соратник круга";
+  if (role === "admin") {
+    return "Магистр Совета";
+  }
+  if (role === "steward") {
+    return "Сенешаль Совета";
+  }
+  return "Соратник круга";
+}
+
+function isCouncilMember(member) {
+  return Boolean(member?.permissions?.canManageCycles);
 }
 
 function memberRankTitle(member) {
