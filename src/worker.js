@@ -30,6 +30,21 @@ const staticAssets = new Map([
   ],
 ]);
 
+const EMAIL_SCENES = Object.freeze({
+  citadel: {
+    path: "/assets/fantasy-scenes/castle-at-dusk.jpg",
+    alt: "Парящий замок над туманной долиной",
+  },
+  siege: {
+    path: "/assets/fantasy-scenes/castle-dragon-battle.jpg",
+    alt: "Дракон осаждает объятую огнём крепость",
+  },
+  wildwood: {
+    path: "/assets/fantasy-scenes/enchanted-forest.jpg",
+    alt: "Зачарованный лес с водяной мельницей и мостками",
+  },
+});
+
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
     <linearGradient id="shield" x1="0" x2="1" y1="0" y2="1">
@@ -2634,6 +2649,7 @@ async function sendLoginCodeEmail(env, details) {
       kicker: "Печать входа",
       title: "Врата ордена распахнуты",
       lead: "Одноразовая печать уже ждёт. Останется лишь подтвердить её на сайте и войти в летопись.",
+      sceneKey: "wildwood",
       bodyHtml: `
         <div style="margin:24px 0;padding:20px 22px;border-radius:20px;background:linear-gradient(180deg,#fff8ef,#f3e2cf);border:1px solid #ead2b0;text-align:center;">
           <div style="font-size:13px;letter-spacing:0.22em;text-transform:uppercase;color:#9e5b2e;">Печать входа</div>
@@ -2668,6 +2684,7 @@ async function sendAssignmentEmail(env, details) {
       kicker: "Новый обряд",
       title: "Совет назвал ваш клинок",
       lead: "Вы внесены в пару, которой предстоит провести следующий обряд порядка и вернуть залу должный блеск.",
+      sceneKey: "siege",
       bodyHtml: renderEmailDetailRows([
         ["Парный соратник", details.counterpartName],
         ["Промежуток обряда", `${details.startsOn} - ${details.endsOn}`],
@@ -2702,6 +2719,7 @@ async function sendReminderEmail(env, details) {
       kicker: "Напоминание ордена",
       title: "День обряда уже здесь",
       lead: "Летопись напоминает: сегодня вашей паре предстоит исполнить возложенный обет.",
+      sceneKey: "siege",
       bodyHtml: renderEmailDetailRows([
         ["Промежуток обряда", `${details.startsOn} - ${details.endsOn}`],
         ["День свершения", details.plannedCleaningDate],
@@ -2731,6 +2749,7 @@ async function sendReviewRequestEmail(env, details) {
       kicker: "Глас летописи",
       title: "Круг ждёт ваш вердикт",
       lead: "Обряд завершён, и теперь сила славы зависит от того, как круг оценит исполнение пары.",
+      sceneKey: "citadel",
       bodyHtml:
         renderEmailDetailRows([
           ["Пара обряда", details.assigneeNames.join(" и ")],
@@ -2773,6 +2792,7 @@ async function sendGameEventEmail(env, details) {
       kicker: "Новая запись летописи",
       title: "Круг соберётся вновь",
       lead: "В свод событий внесена новая встреча. Теперь орден сможет не сталкивать её с обрядами.",
+      sceneKey: "wildwood",
       bodyHtml:
         renderEmailDetailRows([
           ["Название", details.title],
@@ -2807,6 +2827,7 @@ async function sendCouncilElectionEmail(env, details) {
       kicker: details.kicker,
       title: details.title,
       lead: details.lead,
+      sceneKey: "citadel",
       bodyHtml:
         renderEmailDetailRows(details.rows) +
         `
@@ -3019,6 +3040,7 @@ async function logNotification(env, entry) {
 
 function renderEmailShell(env, details) {
   const appOrigin = getAppOrigin(env);
+  const scene = getEmailScene(env, details.sceneKey);
   const ctaBlock =
     details.ctaLabel && details.ctaHref
       ? `
@@ -3032,6 +3054,17 @@ function renderEmailShell(env, details) {
         </div>
       `
       : "";
+  const sceneBlock = scene
+    ? `
+      <div style="padding:0 28px 0;">
+        <img
+          src="${escapeHtml(scene.src)}"
+          alt="${escapeHtml(scene.alt)}"
+          style="display:block;width:100%;height:auto;max-height:240px;object-fit:cover;border-radius:0 0 24px 24px;"
+        />
+      </div>
+    `
+    : "";
 
   return `
     <div style="margin:0;padding:24px 12px;background:#16110f;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#231b17;">
@@ -3046,6 +3079,7 @@ function renderEmailShell(env, details) {
           </div>
           <p style="margin:18px 0 0;color:rgba(255,249,242,0.86);font-size:16px;line-height:1.7;">${escapeHtml(details.lead || "")}</p>
         </div>
+        ${sceneBlock}
         <div style="padding:28px;">
           ${details.bodyHtml || ""}
           ${ctaBlock}
@@ -3057,6 +3091,18 @@ function renderEmailShell(env, details) {
       </div>
     </div>
   `;
+}
+
+function getEmailScene(env, key) {
+  const scene = EMAIL_SCENES[key];
+  if (!scene) {
+    return null;
+  }
+
+  return {
+    src: new URL(scene.path, getAppOrigin(env)).toString(),
+    alt: scene.alt,
+  };
 }
 
 function renderEmailDetailRows(rows) {

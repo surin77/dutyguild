@@ -2,6 +2,7 @@ const state = {
   config: null,
   me: null,
   dashboard: null,
+  page: "home",
   loading: true,
   loginEmail: "",
   loginCode: "",
@@ -37,7 +38,51 @@ const SCENE_LIBRARY = {
   },
 };
 
+const PAGE_DEFINITIONS = Object.freeze([
+  {
+    id: "home",
+    label: "Главная",
+    kicker: "Зал летописей",
+    title: (member) => `${member.displayName}, хроники открыты`,
+    lead:
+      "Перед вами короткий свод того, что требует внимания прямо сейчас: активные обеты, ближайший следующий обряд и общая картина круга.",
+  },
+  {
+    id: "rituals",
+    label: "Обряды",
+    kicker: "Путь обряда",
+    title: () => "Обряды, вердикты и недавние свершения",
+    lead:
+      "Здесь собраны завершённые свершения, звёздные вердикты и всё, что связано с ритуалами порядка и их исходом.",
+  },
+  {
+    id: "adventures",
+    label: "Походы",
+    kicker: "Свод походов",
+    title: () => "Сходки у стола и карта будущих встреч",
+    lead:
+      "В этом разделе круг ведёт грядущие партии, правит записи хронистов и следит, чтобы события не сталкивались с обрядами.",
+  },
+  {
+    id: "circle",
+    label: "Круг",
+    kicker: "Свиток братства",
+    title: () => "Звания, слава и имена круга",
+    lead:
+      "Здесь виден весь состав братства, путь возвышения каждого соратника и общая лестница званий ордена.",
+  },
+  {
+    id: "council",
+    label: "Совет",
+    kicker: "Собор круга",
+    title: () => "Сенешаль, собор и палата повелений",
+    lead:
+      "Здесь решается судьба печати Сенешаля, открываются выборные круги и, когда нужно, Магистр отдаёт новые повеления.",
+  },
+]);
+
 const root = document.querySelector("#app");
+window.addEventListener("hashchange", syncPageFromLocation);
 
 boot().catch((error) => {
   console.error(error);
@@ -48,6 +93,7 @@ boot().catch((error) => {
 
 async function boot() {
   state.config = await api("/api/config");
+  syncPageFromLocation();
 
   const sessionResponse = await api("/api/me", { allow401: true });
 
@@ -81,11 +127,7 @@ function render() {
 function renderSiteHeader() {
   const appName = escapeHtml(state.config?.appName || "Duty Guild");
   const userLabel = state.me
-    ? `
-      <div class="header-user">
-        <span class="header-user__name">${escapeHtml(state.me.displayName)}</span>
-      </div>
-    `
+    ? renderHeaderUserMenu()
     : '<span class="header-user__meta">Закрытый зал ордена</span>';
 
   return `
@@ -101,6 +143,43 @@ function renderSiteHeader() {
         ${userLabel}
       </div>
     </header>
+  `;
+}
+
+function renderHeaderUserMenu() {
+  const member = state.me;
+  if (!member) {
+    return "";
+  }
+
+  return `
+    <div class="header-user">
+      <button class="header-user__trigger" type="button" aria-haspopup="true">
+        <span class="header-user__name">${escapeHtml(member.displayName)}</span>
+      </button>
+      <div class="header-user__card">
+        <div class="header-user__card-head">
+          <strong>${escapeHtml(member.displayName)}</strong>
+          <span>${escapeHtml(memberRankTitle(member))}</span>
+        </div>
+        <div class="header-user__details">
+          <div class="header-user__detail">
+            <span class="header-user__detail-label">Сан</span>
+            <span>${escapeHtml(roleLabel(member.role))}</span>
+          </div>
+          <div class="header-user__detail">
+            <span class="header-user__detail-label">Звание</span>
+            <span>${escapeHtml(memberRankTitle(member))}</span>
+          </div>
+          <div class="header-user__detail">
+            <span class="header-user__detail-label">Почта</span>
+            <span>${escapeHtml(member.email)}</span>
+          </div>
+        </div>
+        <p class="header-user__hint">${escapeHtml(memberRankProgress(member))}</p>
+        <button id="logout-button" class="button button--primary header-user__logout" type="button">Покинуть зал</button>
+      </div>
+    </div>
   `;
 }
 
@@ -247,6 +326,7 @@ function renderVerifyCard() {
 
 function renderDashboard() {
   const stats = getStats();
+  const page = getCurrentPageDefinition();
   const currentCycle = renderCyclePanel(
     "Текущий обряд",
     state.dashboard.currentCycle,
@@ -262,62 +342,110 @@ function renderDashboard() {
     <section class="hero-stage">
       <article class="feature-card feature-card--dashboard">
         <div class="feature-card__content">
-          <p class="section-tag">Зал летописей</p>
-          <h1>${escapeHtml(state.me.displayName)}, хроники открыты</h1>
-          <p class="feature-card__lead">
-            Здесь видно, кто сейчас несёт обет порядка, какие вердикты уже вынес круг, кому пора передавать опыт и какие походы у стола приближаются следом.
-          </p>
-          <div class="feature-badges">
-            <span class="feature-badge">${roleLabel(state.me.role)}</span>
-            <span class="feature-badge">${escapeHtml(memberRankTitle(state.me))}</span>
-            <span class="feature-badge">${escapeHtml(state.me.email)}</span>
-          </div>
-          <div class="button-row feature-card__actions">
-            <button id="logout-button" class="button button--primary" type="button">Покинуть зал</button>
-          </div>
+          <p class="section-tag">${escapeHtml(page.kicker)}</p>
+          <h1>${escapeHtml(page.title(state.me))}</h1>
+          <p class="feature-card__lead">${escapeHtml(page.lead)}</p>
         </div>
       </article>
+      ${renderPageNavigation()}
+      ${renderDashboardPage(state.page, { stats, currentCycle, nextCycle })}
+    </section>
+  `;
+}
 
-      <section class="stats-band">
-        <article class="stat-card">
-          <span class="stat-card__label">Братство</span>
-          <strong>${stats.memberCount}</strong>
-          <p>Соратников в активном круге</p>
-        </article>
-        <article class="stat-card">
-          <span class="stat-card__label">Обряды</span>
-          <strong>${stats.cycleCount}</strong>
-          <p>Последних обрядов видно на доске</p>
-        </article>
-        <article class="stat-card">
-          <span class="stat-card__label">Вердикты</span>
-          <strong>${stats.pendingReviewCount}</strong>
-          <p>Обрядов ещё ждут ваш голос</p>
-        </article>
-        <article class="stat-card">
-          <span class="stat-card__label">Походы</span>
-          <strong>${stats.gameCount}</strong>
-          <p>Сходок у стола впереди</p>
-        </article>
-        <article class="stat-card">
-          <span class="stat-card__label">Слава</span>
-          <strong>${stats.averageRating}</strong>
-          <p>Средний вердикт летописи</p>
-        </article>
-      </section>
+function renderPageNavigation() {
+  return `
+    <nav class="page-nav" aria-label="Разделы летописи">
+      ${getAvailablePages()
+        .map(
+          (page) => `
+            <a
+              class="page-nav__link ${state.page === page.id ? "page-nav__link--active" : ""}"
+              href="#${escapeHtml(page.id)}"
+              ${state.page === page.id ? 'aria-current="page"' : ""}
+            >
+              ${escapeHtml(page.label)}
+            </a>
+          `,
+        )
+        .join("")}
+    </nav>
+  `;
+}
 
+function renderDashboardPage(pageId, context) {
+  if (pageId === "rituals") {
+    return `
       <section class="content-grid">
-        ${currentCycle}
-        ${nextCycle}
-        ${renderSceneGalleryPanel()}
-        ${renderRecentRitualsPanel()}
-        ${renderAdventurePanel()}
         ${renderReviewPanel()}
+        ${renderRecentRitualsPanel()}
+      </section>
+    `;
+  }
+
+  if (pageId === "adventures") {
+    return `
+      <section class="content-grid">
+        ${renderAdventurePanel()}
+      </section>
+    `;
+  }
+
+  if (pageId === "circle") {
+    return `
+      <section class="content-grid">
         ${renderRankGuidePanel()}
-        ${renderCouncilElectionPanel()}
         ${renderRosterPanel()}
+      </section>
+    `;
+  }
+
+  if (pageId === "council") {
+    return `
+      <section class="content-grid">
+        ${renderCouncilElectionPanel()}
         ${state.me.permissions?.canManageCycles ? renderAdminPanel() : ""}
       </section>
+    `;
+  }
+
+  return `
+    ${renderStatsBand(context.stats)}
+    <section class="content-grid">
+      ${context.currentCycle}
+      ${context.nextCycle}
+    </section>
+  `;
+}
+
+function renderStatsBand(stats) {
+  return `
+    <section class="stats-band">
+      <article class="stat-card">
+        <span class="stat-card__label">Братство</span>
+        <strong>${stats.memberCount}</strong>
+        <p>Соратников в активном круге</p>
+      </article>
+      <article class="stat-card">
+        <span class="stat-card__label">Обряды</span>
+        <strong>${stats.cycleCount}</strong>
+        <p>Последних обрядов видно на доске</p>
+      </article>
+      <article class="stat-card">
+        <span class="stat-card__label">Вердикты</span>
+        <strong>${stats.pendingReviewCount}</strong>
+        <p>Обрядов ещё ждут ваш голос</p>
+      </article>
+      <article class="stat-card">
+        <span class="stat-card__label">Походы</span>
+        <strong>${stats.gameCount}</strong>
+        <p>Сходок у стола впереди</p>
+      </article>
+      <article class="stat-card">
+        <span class="stat-card__label">Слава</span>
+        <strong>${stats.averageRating}</strong>
+        <p>Средний вердикт летописи</p>
+      </article>
     </section>
   `;
 }
@@ -726,46 +854,6 @@ function renderRecentRitualsPanel() {
   `;
 }
 
-function renderSceneGalleryPanel() {
-  const sceneKeys = ["siege", "citadel", "wildwood"];
-  return `
-    <article class="panel panel--wide panel--gallery">
-      <div class="panel__header">
-        <p class="section-tag">Атлас преданий</p>
-        <h2>Знамения дальних земель</h2>
-      </div>
-      <p class="panel__intro">
-        Облик ордена теперь держится не только на тексте: по залу расставлены сцены осад, бастионов и зачарованных рощ, чтобы летопись ощущалась как живая фэнтези-энциклопедия.
-      </p>
-      <div class="scene-gallery">
-        ${sceneKeys.map((key) => renderSceneGalleryCard(key)).join("")}
-      </div>
-    </article>
-  `;
-}
-
-function renderSceneGalleryCard(kind) {
-  const scene = SCENE_LIBRARY[kind] || SCENE_LIBRARY.citadel;
-  return `
-    <article class="scene-gallery-card">
-      <div class="scene-gallery-card__media">
-        <img
-          class="scene-gallery-card__image"
-          src="${escapeHtml(scene.src)}"
-          alt="${escapeHtml(scene.alt)}"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-      <div class="scene-gallery-card__body">
-        <span class="scene-gallery-card__tag">${escapeHtml(scene.kicker)}</span>
-        <h3>${escapeHtml(scene.title)}</h3>
-        <p>${escapeHtml(scene.blurb)}</p>
-      </div>
-    </article>
-  `;
-}
-
 function renderRankGuidePanel() {
   const ladder = getRankLadder()
     .map((rank) => {
@@ -1070,7 +1158,6 @@ function bindEvents() {
     render();
   });
 
-  document.querySelector("#refresh-dashboard")?.addEventListener("click", refreshDashboard);
   document.querySelector("#logout-button")?.addEventListener("click", onLogout);
   document.querySelector("#generate-cycle-button")?.addEventListener("click", onGenerateCycle);
   document.querySelector("#invite-member-form")?.addEventListener("submit", onInviteMember);
@@ -1139,20 +1226,12 @@ async function onVerifyCode(event) {
   });
 }
 
-async function refreshDashboard() {
-  await withBusy(async () => {
-    await hydrateDashboard();
-    state.notice = "Летопись обновлена.";
-    state.error = "";
-    render();
-  });
-}
-
 async function onLogout() {
   await withBusy(async () => {
     await api("/api/auth/logout", { method: "POST" });
     state.me = null;
     state.dashboard = null;
+    state.page = "home";
     state.notice = "Вы покинули зал ордена.";
     state.error = "";
     render();
@@ -1443,9 +1522,37 @@ async function hydrateDashboard(options = {}) {
 function resetSessionState() {
   state.me = null;
   state.dashboard = null;
+  state.page = "home";
   state.pendingEmail = "";
   state.loginCode = "";
   state.debugCode = "";
+}
+
+function syncPageFromLocation() {
+  state.page = resolvePageFromHash(window.location.hash);
+  if (!state.loading) {
+    render();
+  }
+}
+
+function resolvePageFromHash(hashValue) {
+  const normalized = String(hashValue || "")
+    .replace(/^#\/?/, "")
+    .trim()
+    .toLowerCase();
+  const allowed = new Set(PAGE_DEFINITIONS.map((page) => page.id));
+  return allowed.has(normalized) ? normalized : "home";
+}
+
+function getAvailablePages() {
+  return PAGE_DEFINITIONS;
+}
+
+function getCurrentPageDefinition() {
+  return (
+    PAGE_DEFINITIONS.find((page) => page.id === state.page) ||
+    PAGE_DEFINITIONS[0]
+  );
 }
 
 function sleep(ms) {
@@ -1489,10 +1596,6 @@ function roleLabel(role) {
     return "Сенешаль Совета";
   }
   return "Соратник круга";
-}
-
-function isCouncilMember(member) {
-  return Boolean(member?.permissions?.canManageCycles);
 }
 
 function formatRatingValue(value) {
