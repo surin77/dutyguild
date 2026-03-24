@@ -1114,6 +1114,184 @@ th {
   line-height: 1.45;
 }
 
+.achievement-panel {
+  display: grid;
+  gap: 24px;
+}
+
+.achievement-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.achievement-summary-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(203, 188, 173, 0.9);
+  display: grid;
+  gap: 8px;
+}
+
+.achievement-summary-card strong {
+  font-size: 1.85rem;
+  color: var(--red-deep);
+}
+
+.achievement-summary-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.achievement-summary-card__label {
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+}
+
+.achievement-section {
+  display: grid;
+  gap: 16px;
+}
+
+.achievement-section__head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.achievement-section__head h3 {
+  margin: 0;
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.achievement-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  padding: 18px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(250, 245, 237, 0.98), rgba(239, 229, 216, 0.98));
+  border: 1px solid rgba(212, 199, 187, 0.94);
+  box-shadow: 0 18px 34px rgba(24, 15, 12, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.achievement-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(200, 140, 58, 0.14), transparent 34%);
+  pointer-events: none;
+}
+
+.achievement-card--earned {
+  border-color: rgba(200, 140, 58, 0.54);
+  box-shadow:
+    0 18px 34px rgba(24, 15, 12, 0.12),
+    0 0 0 1px rgba(200, 140, 58, 0.12) inset;
+}
+
+.achievement-card--hidden {
+  background: linear-gradient(180deg, rgba(33, 27, 34, 0.98), rgba(53, 39, 45, 0.98));
+  border-color: rgba(132, 105, 130, 0.45);
+}
+
+.achievement-card--hidden .achievement-card__copy p,
+.achievement-card--hidden .achievement-card__details span:last-child {
+  color: rgba(245, 235, 228, 0.82);
+}
+
+.achievement-card--hidden .achievement-card__label,
+.achievement-card--hidden .achievement-card__eyebrow {
+  color: rgba(224, 186, 115, 0.86);
+}
+
+.achievement-card--hidden h3 {
+  color: var(--white);
+}
+
+.achievement-card--gold .achievement-card__icon-shell,
+.achievement-card--mythic .achievement-card__icon-shell {
+  box-shadow: 0 12px 24px rgba(200, 140, 58, 0.22);
+}
+
+.achievement-card__icon-shell {
+  position: relative;
+  z-index: 1;
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  color: #7b291a;
+  background: linear-gradient(180deg, rgba(250, 232, 204, 0.98), rgba(227, 197, 148, 0.96));
+  border: 1px solid rgba(200, 140, 58, 0.32);
+}
+
+.achievement-card--hidden .achievement-card__icon-shell {
+  color: #f4d89f;
+  background: linear-gradient(180deg, rgba(86, 62, 85, 0.96), rgba(50, 35, 49, 0.98));
+  border-color: rgba(160, 128, 164, 0.38);
+}
+
+.achievement-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.achievement-card__copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 12px;
+}
+
+.achievement-card__head {
+  display: flex;
+  gap: 12px;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.achievement-card__head h3 {
+  margin: 4px 0 0;
+}
+
+.achievement-card__eyebrow,
+.achievement-card__label {
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.7rem;
+}
+
+.achievement-card__copy p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+
+.achievement-card__details {
+  display: grid;
+  gap: 10px;
+}
+
+.achievement-card__details div {
+  display: grid;
+  gap: 4px;
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1467,6 +1645,8 @@ th {
   .review-grid,
   .council-grid,
   .election-summary-grid,
+  .achievement-summary-grid,
+  .achievement-grid,
   .rank-summary-grid,
   .rank-ladder {
     grid-template-columns: 1fr;
@@ -1515,7 +1695,9 @@ th {
 
   .review-form__head,
   .event-edit-form__header,
-  .election-stage__head {
+  .election-stage__head,
+  .achievement-card__head,
+  .achievement-section__head {
     flex-direction: column;
     align-items: flex-start;
   }

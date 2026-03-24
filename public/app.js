@@ -38,6 +38,93 @@ const SCENE_LIBRARY = {
   },
 };
 
+const ACHIEVEMENT_ICON_LIBRARY = Object.freeze({
+  initiated: `
+    <circle cx="32" cy="32" r="18"></circle>
+    <path d="M32 12l3.5 8.5L44 24l-8.5 3.5L32 36l-3.5-8.5L20 24l8.5-3.5Z"></path>
+  `,
+  first_oath: `
+    <path d="M32 11c-5 6-8 12-8 17 0 6 3.6 10 8 10s8-4 8-10c0-5-3-11-8-17Z"></path>
+    <path d="M23 46h18"></path>
+    <path d="M27 52h10"></path>
+  `,
+  third_bell: `
+    <path d="M20 22c0-7 5-12 12-12s12 5 12 12"></path>
+    <path d="M20 22v8l-4 6h32l-4-6v-8"></path>
+    <path d="M26 44h12"></path>
+    <path d="M18 14h4"></path>
+    <path d="M42 14h4"></path>
+    <path d="M30 8h4"></path>
+  `,
+  steady_hand: `
+    <path d="M18 34l8-16 8 6 12-10"></path>
+    <path d="M18 46h28"></path>
+    <path d="M22 26l4 4"></path>
+    <path d="M34 24l4 4"></path>
+  `,
+  first_verdict: `
+    <path d="M18 46l10-10"></path>
+    <path d="M26 20l18 18"></path>
+    <path d="M30 16l4-4 14 14-4 4"></path>
+    <path d="M16 48l8-2-6-6Z"></path>
+  `,
+  scribe_of_circle: `
+    <path d="M18 18h12c4 0 6 2 8 5 2-3 4-5 8-5h2v28h-2c-4 0-6 2-8 5-2-3-4-5-8-5H18Z"></path>
+    <path d="M32 23v23"></path>
+  `,
+  pathfinder: `
+    <path d="M18 46l10-28 18 8-10 28Z"></path>
+    <path d="M28 18l3-7 5 5-5 2"></path>
+    <circle cx="34" cy="34" r="4"></circle>
+  `,
+  hall_host: `
+    <path d="M20 22h10v14a5 5 0 0 1-10 0Z"></path>
+    <path d="M30 24h5a4 4 0 0 1 0 8h-5"></path>
+    <path d="M38 26h8v10a4 4 0 0 1-8 0Z"></path>
+    <path d="M18 46h30"></path>
+  `,
+  golden_standard: `
+    <path d="M32 11l6 12 13 2-9.5 9.5 2.2 13.5L32 42l-11.7 6 2.2-13.5L13 25l13-2Z"></path>
+  `,
+  seal_of_council: `
+    <path d="M32 10l14 8v16l-14 8-14-8V18Z"></path>
+    <path d="M24 28h16"></path>
+    <path d="M28 22h8"></path>
+    <path d="M28 34h8"></path>
+  `,
+  midnight_oil: `
+    <path d="M40 14a12 12 0 1 0 8 20A14 14 0 1 1 40 14Z"></path>
+    <path d="M20 46h16"></path>
+    <path d="M24 46V31"></path>
+    <path d="M24 31c4 2 6 5 6 8s-2 5-6 5"></path>
+  `,
+  voice_in_margins: `
+    <path d="M18 48l10-10"></path>
+    <path d="M26 20l18 18"></path>
+    <path d="M30 16l4-4 14 14-4 4"></path>
+    <path d="M18 18h10"></path>
+    <path d="M16 26h8"></path>
+    <path d="M14 34h8"></path>
+  `,
+  legendary_ritualist: `
+    <path d="M32 10c-8 7-12 15-12 22 0 8 5 13 12 13s12-5 12-13c0-7-4-15-12-22Z"></path>
+    <path d="M32 18c-3 4-5 8-5 11 0 3 2 5 5 5s5-2 5-5c0-3-2-7-5-11Z"></path>
+  `,
+  unbroken_glow: `
+    <circle cx="32" cy="28" r="14"></circle>
+    <path d="M20 46h24"></path>
+    <path d="M24 52h16"></path>
+    <path d="M32 10V6"></path>
+    <path d="M45 15l3-3"></path>
+    <path d="M19 15l-3-3"></path>
+  `,
+  north_star: `
+    <path d="M32 10l4.5 13.5L50 28l-13.5 4.5L32 46l-4.5-13.5L14 28l13.5-4.5Z"></path>
+    <circle cx="32" cy="28" r="4"></circle>
+    <path d="M32 46v8"></path>
+  `,
+});
+
 const PAGE_DEFINITIONS = Object.freeze([
   {
     id: "home",
@@ -70,6 +157,14 @@ const PAGE_DEFINITIONS = Object.freeze([
     title: () => "Звания, слава и имена круга",
     lead:
       "Здесь виден весь состав братства, путь возвышения каждого соратника и общая лестница званий ордена.",
+  },
+  {
+    id: "achievements",
+    label: "Знамения",
+    kicker: "Книга достижений",
+    title: () => "Открытые знаки, тайные трофеи и путь славы",
+    lead:
+      "Здесь собраны все знамения ордена: видимые для круга достижения и сокрытые трофеи, которые открываются только самым внимательным глазам.",
   },
   {
     id: "council",
@@ -446,6 +541,14 @@ function renderDashboardPage(pageId, context) {
       <section class="content-grid">
         ${renderRankGuidePanel()}
         ${renderRosterPanel()}
+      </section>
+    `;
+  }
+
+  if (pageId === "achievements") {
+    return `
+      <section class="content-grid">
+        ${renderAchievementCodexPanel()}
       </section>
     `;
   }
@@ -1074,6 +1177,141 @@ function renderRankGuidePanel() {
         ${ladder}
       </div>
     </article>
+  `;
+}
+
+function renderAchievementCodexPanel() {
+  const codex = state.dashboard?.achievementCodex;
+  if (!codex) {
+    return "";
+  }
+
+  const publicCards = codex.publicAchievements
+    .map((achievement) => renderAchievementCard(achievement))
+    .join("");
+  const hiddenCards = codex.hiddenAchievements
+    .map((achievement) => renderAchievementCard(achievement))
+    .join("");
+
+  return `
+    <article class="panel panel--wide achievement-panel">
+      <div class="panel__header">
+        <p class="section-tag">Книга достижений</p>
+        <h2>Знамения ордена и тайные трофеи</h2>
+      </div>
+      <p class="panel__intro">
+        ${
+          codex.canViewHidden
+            ? "Здесь живут все пятнадцать знаков ордена: открытые знамения для круга и сокрытые трофеи, доступные только вашему взгляду."
+            : "Здесь живут открытые знамения ордена: вехи служения, славы и походов, которые видит весь круг."
+        }
+      </p>
+      <div class="achievement-summary-grid">
+        <article class="achievement-summary-card">
+          <span class="achievement-summary-card__label">Открытые знамения</span>
+          <strong>${escapeHtml(String(codex.publicEarnedCount))} / ${escapeHtml(String(codex.publicCount))}</strong>
+          <p>Видны всему кругу и раскрываются по мере службы, славы и походов.</p>
+        </article>
+        <article class="achievement-summary-card">
+          <span class="achievement-summary-card__label">${escapeHtml(codex.canViewHidden ? "Сокрытые трофеи" : "Глубина книги")}</span>
+          <strong>${escapeHtml(codex.canViewHidden ? `${codex.hiddenEarnedCount} / ${codex.hiddenCount}` : "Не всё видно")}</strong>
+          <p>${
+            codex.canViewHidden
+              ? "Эти знаки открыты только вашему взору и не показываются остальным соратникам."
+              : "Летопись показывает только те страницы, которые положено видеть всему кругу."
+          }</p>
+        </article>
+        <article class="achievement-summary-card">
+          <span class="achievement-summary-card__label">Общий размах</span>
+          <strong>${escapeHtml(String(codex.publicEarnedCount + codex.hiddenEarnedCount))}</strong>
+          <p>Столько знаков уже откликнулось на ваш путь в ордене.</p>
+        </article>
+      </div>
+      <section class="achievement-section">
+        <div class="achievement-section__head">
+          <div>
+            <p class="section-tag">Открытый свод</p>
+            <h3>Знамения, видимые всему кругу</h3>
+          </div>
+          <span class="status-pill status-pill--ghost">${escapeHtml(String(codex.publicCount))} знаков</span>
+        </div>
+        <div class="achievement-grid">
+          ${publicCards}
+        </div>
+      </section>
+      ${
+        codex.canViewHidden
+          ? `
+            <section class="achievement-section achievement-section--hidden">
+              <div class="achievement-section__head">
+                <div>
+                  <p class="section-tag">Тайный раздел</p>
+                  <h3>Сокрытые трофеи Магистра</h3>
+                </div>
+                <span class="status-pill status-pill--ghost">${escapeHtml(String(codex.hiddenCount))} тайных знаков</span>
+              </div>
+              <p class="panel__aside-note">
+                Эти страницы открыты только вам. Для остального круга они просто не существуют.
+              </p>
+              <div class="achievement-grid achievement-grid--hidden">
+                ${hiddenCards}
+              </div>
+            </section>
+          `
+          : ""
+      }
+    </article>
+  `;
+}
+
+function renderAchievementCard(achievement) {
+  const classes = [
+    "achievement-card",
+    achievement.earned ? "achievement-card--earned" : "",
+    achievement.hidden ? "achievement-card--hidden" : "",
+    achievement.rarity ? `achievement-card--${achievement.rarity}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return `
+    <article class="${classes}">
+      <div class="achievement-card__icon-shell">
+        ${renderAchievementIcon(achievement.icon, achievement.title)}
+      </div>
+      <div class="achievement-card__copy">
+        <div class="achievement-card__head">
+          <div>
+            <span class="achievement-card__eyebrow">${escapeHtml(achievement.hidden ? "Скрытый трофей" : "Знамение ордена")}</span>
+            <h3>${escapeHtml(achievement.title)}</h3>
+          </div>
+          <span class="status-pill ${achievement.earned ? "status-pill--done" : "status-pill--ghost"}">${escapeHtml(achievement.stateLabel)}</span>
+        </div>
+        <p>${escapeHtml(achievement.description)}</p>
+        <div class="achievement-card__details">
+          <div>
+            <span class="achievement-card__label">Критерий</span>
+            <span>${escapeHtml(achievement.criteria)}</span>
+          </div>
+          <div>
+            <span class="achievement-card__label">Прогресс</span>
+            <span>${escapeHtml(achievement.progressLabel)}</span>
+          </div>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderAchievementIcon(iconId, title) {
+  const body = ACHIEVEMENT_ICON_LIBRARY[iconId] || ACHIEVEMENT_ICON_LIBRARY.initiated;
+  return `
+    <svg class="achievement-icon" viewBox="0 0 64 64" aria-hidden="true" role="img" focusable="false">
+      <title>${escapeHtml(title)}</title>
+      <g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        ${body}
+      </g>
+    </svg>
   `;
 }
 

@@ -255,6 +255,144 @@ const RITUAL_OUTCOME_LADDER = Object.freeze([
   },
 ]);
 
+const ACHIEVEMENT_LIBRARY = Object.freeze([
+  {
+    id: "initiated",
+    icon: "initiated",
+    hidden: false,
+    rarity: "ember",
+    title: "Принят в круг",
+    description: "Имя внесено в свиток братства, а врата ордена больше не закрыты.",
+    criteria: "Получить одобрение Совета и впервые войти в летопись.",
+  },
+  {
+    id: "first_oath",
+    icon: "first_oath",
+    hidden: false,
+    rarity: "ember",
+    title: "Первая клятва",
+    description: "Первый завершённый обряд закрепил ваше место среди хранителей порядка.",
+    criteria: "Завершить 1 обряд.",
+  },
+  {
+    id: "third_bell",
+    icon: "third_bell",
+    hidden: false,
+    rarity: "bronze",
+    title: "Три удара колокола",
+    description: "Круг уже знает вашу руку и не удивляется, когда жребий зовёт именно вас.",
+    criteria: "Завершить 3 обряда.",
+  },
+  {
+    id: "steady_hand",
+    icon: "steady_hand",
+    hidden: false,
+    rarity: "silver",
+    title: "Надёжная рука зала",
+    description: "Служение стало привычной силой: на вас можно опереться без лишних слов.",
+    criteria: "Завершить 7 обрядов.",
+  },
+  {
+    id: "first_verdict",
+    icon: "first_verdict",
+    hidden: false,
+    rarity: "ember",
+    title: "Первый вердикт хрониста",
+    description: "Вы впервые оставили голос в летописи и помогли кругу вынести общий суд.",
+    criteria: "Оставить 1 звёздный вердикт.",
+  },
+  {
+    id: "scribe_of_circle",
+    icon: "scribe_of_circle",
+    hidden: false,
+    rarity: "bronze",
+    title: "Хронист круга",
+    description: "Ваше перо уже не молчит: оно регулярно направляет славу и память ордена.",
+    criteria: "Оставить 5 звёздных вердиктов.",
+  },
+  {
+    id: "pathfinder",
+    icon: "pathfinder",
+    hidden: false,
+    rarity: "ember",
+    title: "Знамя похода",
+    description: "Вы первым подняли знамя приключения и созвали круг к столу.",
+    criteria: "Вписать в свод 1 встречу или поход.",
+  },
+  {
+    id: "hall_host",
+    icon: "hall_host",
+    hidden: false,
+    rarity: "silver",
+    title: "Хозяин длинного стола",
+    description: "Вы не просто приходите на встречи, а помогаете ордену держать ритм походов.",
+    criteria: "Вписать в свод 4 встречи или похода.",
+  },
+  {
+    id: "golden_standard",
+    icon: "golden_standard",
+    hidden: false,
+    rarity: "gold",
+    title: "Золотой стандарт",
+    description: "Круг выносит вам высокий вердикт снова и снова, и имя это уже замечают.",
+    criteria: "Набрать славу 4.5+ при минимум 3 свидетельствах.",
+  },
+  {
+    id: "seal_of_council",
+    icon: "seal_of_council",
+    hidden: false,
+    rarity: "gold",
+    title: "Печать совета",
+    description: "Вы несёте один из управных санов ордена и вправе направлять его ход.",
+    criteria: "Стать Магистром или Сенешалем Совета.",
+  },
+  {
+    id: "midnight_oil",
+    icon: "midnight_oil",
+    hidden: true,
+    rarity: "mythic",
+    title: "После полуночи",
+    description: "Не каждый поход умеет дотянуться до нового дня. Этот сумел.",
+    criteria: "Вписать событие, которое уходит за полночь на следующий день.",
+  },
+  {
+    id: "voice_in_margins",
+    icon: "voice_in_margins",
+    hidden: true,
+    rarity: "mythic",
+    title: "Шёпот на полях",
+    description: "Ваши пометки не теряются в летописи: они становятся её живым голосом.",
+    criteria: "Оставить 7 вердиктов с текстовым комментарием.",
+  },
+  {
+    id: "legendary_ritualist",
+    icon: "legendary_ritualist",
+    hidden: true,
+    rarity: "mythic",
+    title: "Белое пламя",
+    description: "Легендарные исходы не случаются сами собой. Их зажигают те, кто держит меру без дрожи.",
+    criteria: "Провести 3 обряда с легендарным исходом.",
+  },
+  {
+    id: "unbroken_glow",
+    icon: "unbroken_glow",
+    hidden: true,
+    rarity: "mythic",
+    title: "Нерушимое сияние",
+    description: "Служение, слава и признание круга сошлись в одну линию без излома.",
+    criteria: "Завершить 10 обрядов и удержать славу 4.8+ при 10 свидетельствах.",
+  },
+  {
+    id: "north_star",
+    icon: "north_star",
+    hidden: true,
+    rarity: "mythic",
+    title: "Полярная звезда ордена",
+    description: "Ваше имя не просто в числе лучших: на него равняются как на единственный яркий ориентир.",
+    criteria: "Стать единоличным лидером по славе при значении 4.7+ и минимум 5 свидетельствах.",
+  },
+]);
+
 export async function handleRequest(request, env) {
   try {
     return withSecurityHeaders(await handleFetch(request, env), request);
@@ -1184,6 +1322,7 @@ async function buildDashboard(env, member) {
     feedback,
     rawRoster,
     currentStewardMemberId,
+    achievementStats,
   ] = await Promise.all([
     first(
       env,
@@ -1279,6 +1418,7 @@ async function buildDashboard(env, member) {
     ),
     loadRoster(env),
     getCurrentStewardMemberId(env),
+    loadMemberAchievementStats(env, member.id),
   ]);
 
   const roster = decorateCouncilRoster(rawRoster, currentStewardMemberId);
@@ -1301,43 +1441,271 @@ async function buildDashboard(env, member) {
     ),
   );
 
+  const currentCycle = currentCycleRow
+    ? await hydrateCycle(env, currentCycleRow, member.id)
+    : null;
+  const nextCycle = nextCycleRow
+    ? await hydrateCycle(env, nextCycleRow, member.id)
+    : null;
+  const recentCycles = await Promise.all(
+    recentCycleRows.map((row) => hydrateCycle(env, row, member.id)),
+  );
+  const pendingReviewCycles = await Promise.all(
+    pendingReviewRows.map((row) => hydrateCycle(env, row, member.id)),
+  );
+  const upcomingGamesClient = upcomingGames.map((row) => ({
+    id: row.id,
+    title: row.title,
+    eventDate: row.event_date,
+    endDate: row.end_date || row.event_date,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    notes: row.notes,
+    status: row.status,
+    createdByMemberId: row.created_by_member_id,
+    createdByName: row.created_by_name,
+    canManage: canManageGameEventLocally(me, row),
+  }));
+  const recentFeedback = feedback.map((row, index) => ({
+    id: row.id,
+    rating: Number(row.rating),
+    comment: row.comment,
+    createdAt: row.created_at,
+    authorName: row.author_name,
+    targetName:
+      feedbackCycles[index]?.assignees?.map((entry) => entry.displayName).join(" и ") ||
+      "Созванная пара",
+    cycleOutcome: feedbackCycles[index]?.outcome || null,
+  }));
+  const achievementCodex = buildAchievementCodex(env, {
+    member: me,
+    roster,
+    currentCycle,
+    upcomingGames: upcomingGamesClient,
+    achievementStats,
+  });
+
   return {
     me,
-    currentCycle: currentCycleRow ? await hydrateCycle(env, currentCycleRow, member.id) : null,
-    nextCycle: nextCycleRow ? await hydrateCycle(env, nextCycleRow, member.id) : null,
-    recentCycles: await Promise.all(
-      recentCycleRows.map((row) => hydrateCycle(env, row, member.id)),
-    ),
-    pendingReviewCycles: await Promise.all(
-      pendingReviewRows.map((row) => hydrateCycle(env, row, member.id)),
-    ),
-    upcomingGames: upcomingGames.map((row) => ({
-      id: row.id,
-      title: row.title,
-      eventDate: row.event_date,
-      endDate: row.end_date || row.event_date,
-      startsAt: row.starts_at,
-      endsAt: row.ends_at,
-      notes: row.notes,
-      status: row.status,
-      createdByMemberId: row.created_by_member_id,
-      createdByName: row.created_by_name,
-      canManage: canManageGameEventLocally(me, row),
-    })),
-    recentFeedback: feedback.map((row, index) => ({
-      id: row.id,
-      rating: Number(row.rating),
-      comment: row.comment,
-      createdAt: row.created_at,
-      authorName: row.author_name,
-      targetName:
-        feedbackCycles[index]?.assignees?.map((entry) => entry.displayName).join(" и ") ||
-        "Созванная пара",
-      cycleOutcome: feedbackCycles[index]?.outcome || null,
-    })),
+    currentCycle,
+    nextCycle,
+    recentCycles,
+    pendingReviewCycles,
+    upcomingGames: upcomingGamesClient,
+    recentFeedback,
     roster,
     councilElection,
+    achievementCodex,
   };
+}
+
+async function loadMemberAchievementStats(env, memberId) {
+  const [reviewStats, eventStats, ritualStats] = await Promise.all([
+    first(
+      env,
+      `
+        SELECT
+          COUNT(*) AS authored_review_count,
+          SUM(CASE WHEN TRIM(COALESCE(comment, '')) != '' THEN 1 ELSE 0 END) AS commented_review_count
+        FROM cycle_reviews
+        WHERE author_member_id = ?
+      `,
+      [memberId],
+    ),
+    first(
+      env,
+      `
+        SELECT
+          COUNT(*) AS created_event_count,
+          SUM(CASE WHEN COALESCE(end_date, event_date) > event_date THEN 1 ELSE 0 END) AS overnight_event_count
+        FROM game_events
+        WHERE created_by_member_id = ?
+      `,
+      [memberId],
+    ),
+    first(
+      env,
+      `
+        SELECT
+          SUM(CASE WHEN average_rating >= 4.8 THEN 1 ELSE 0 END) AS legendary_cycle_count
+        FROM (
+          SELECT
+            c.id,
+            AVG(r.rating) AS average_rating
+          FROM cleaning_cycles c
+          JOIN cycle_assignments a ON a.cycle_id = c.id
+          LEFT JOIN cycle_reviews r ON r.cycle_id = c.id
+          WHERE a.member_id = ?
+            AND c.status = 'completed'
+          GROUP BY c.id
+        ) rated_cycles
+      `,
+      [memberId],
+    ),
+  ]);
+
+  return {
+    authoredReviewsCount: Number(reviewStats?.authored_review_count || 0),
+    commentedReviewsCount: Number(reviewStats?.commented_review_count || 0),
+    createdEventsCount: Number(eventStats?.created_event_count || 0),
+    overnightEventsCount: Number(eventStats?.overnight_event_count || 0),
+    legendaryCyclesCount: Number(ritualStats?.legendary_cycle_count || 0),
+  };
+}
+
+function buildAchievementCodex(env, context) {
+  const viewerCanSeeHidden = canViewHiddenAchievements(context.member, env);
+  const resolvedAchievements = ACHIEVEMENT_LIBRARY.map((entry) =>
+    resolveAchievementState(entry, context),
+  );
+  const publicAchievements = resolvedAchievements.filter((entry) => !entry.hidden);
+  const hiddenAchievements = viewerCanSeeHidden
+    ? resolvedAchievements.filter((entry) => entry.hidden)
+    : [];
+
+  return {
+    canViewHidden: viewerCanSeeHidden,
+    publicCount: publicAchievements.length,
+    publicEarnedCount: publicAchievements.filter((entry) => entry.earned).length,
+    hiddenCount: hiddenAchievements.length,
+    hiddenEarnedCount: hiddenAchievements.filter((entry) => entry.earned).length,
+    publicAchievements,
+    hiddenAchievements,
+  };
+}
+
+function resolveAchievementState(definition, context) {
+  const dutyCount = Number(context.member?.dutyCount || 0);
+  const averageRating =
+    context.member?.averageRating === null || context.member?.averageRating === undefined
+      ? null
+      : Number(context.member.averageRating);
+  const feedbackCount = Number(context.member?.feedbackCount || 0);
+  const authoredReviewsCount = Number(context.achievementStats?.authoredReviewsCount || 0);
+  const commentedReviewsCount = Number(context.achievementStats?.commentedReviewsCount || 0);
+  const createdEventsCount = Number(context.achievementStats?.createdEventsCount || 0);
+  const overnightEventsCount = Number(context.achievementStats?.overnightEventsCount || 0);
+  const legendaryCyclesCount = Number(context.achievementStats?.legendaryCyclesCount || 0);
+  const effectiveRole = String(context.member?.role || "member");
+  const isUniqueRatingLeader = isUniqueRatingLeaderForMember(context.member, context.roster);
+  const ratingLabel = formatRatingLabel(averageRating);
+
+  let earned = false;
+  let progressLabel = "Знамение ещё не раскрыто.";
+
+  switch (definition.id) {
+    case "initiated":
+      earned = true;
+      progressLabel = "Печать допуска уже признана, имя внесено в братский свиток.";
+      break;
+    case "first_oath":
+      earned = dutyCount >= 1;
+      progressLabel = `${Math.min(dutyCount, 1)} из 1 завершённого обряда.`;
+      break;
+    case "third_bell":
+      earned = dutyCount >= 3;
+      progressLabel = `${Math.min(dutyCount, 3)} из 3 завершённых обрядов.`;
+      break;
+    case "steady_hand":
+      earned = dutyCount >= 7;
+      progressLabel = `${Math.min(dutyCount, 7)} из 7 завершённых обрядов.`;
+      break;
+    case "first_verdict":
+      earned = authoredReviewsCount >= 1;
+      progressLabel = `${Math.min(authoredReviewsCount, 1)} из 1 вынесенного вердикта.`;
+      break;
+    case "scribe_of_circle":
+      earned = authoredReviewsCount >= 5;
+      progressLabel = `${Math.min(authoredReviewsCount, 5)} из 5 вынесенных вердиктов.`;
+      break;
+    case "pathfinder":
+      earned = createdEventsCount >= 1;
+      progressLabel = `${Math.min(createdEventsCount, 1)} из 1 вписанного события.`;
+      break;
+    case "hall_host":
+      earned = createdEventsCount >= 4;
+      progressLabel = `${Math.min(createdEventsCount, 4)} из 4 вписанных событий.`;
+      break;
+    case "golden_standard":
+      earned = averageRating !== null && averageRating >= 4.5 && feedbackCount >= 3;
+      progressLabel = `Слава ${ratingLabel} из 4.5 · свидетельств ${Math.min(feedbackCount, 3)} из 3.`;
+      break;
+    case "seal_of_council":
+      earned = effectiveRole === "admin" || effectiveRole === "steward";
+      progressLabel = earned
+        ? `Сан признан: ${effectiveRole === "admin" ? "Магистр Совета" : "Сенешаль Совета"}.`
+        : "Нужен управный сан Совета.";
+      break;
+    case "midnight_oil":
+      earned = overnightEventsCount >= 1;
+      progressLabel = `${Math.min(overnightEventsCount, 1)} из 1 ночного похода через полночь.`;
+      break;
+    case "voice_in_margins":
+      earned = commentedReviewsCount >= 7;
+      progressLabel = `${Math.min(commentedReviewsCount, 7)} из 7 вердиктов с комментарием.`;
+      break;
+    case "legendary_ritualist":
+      earned = legendaryCyclesCount >= 3;
+      progressLabel = `${Math.min(legendaryCyclesCount, 3)} из 3 легендарных исходов.`;
+      break;
+    case "unbroken_glow":
+      earned =
+        dutyCount >= 10 &&
+        averageRating !== null &&
+        averageRating >= 4.8 &&
+        feedbackCount >= 10;
+      progressLabel = `Обряды ${Math.min(dutyCount, 10)} из 10 · слава ${ratingLabel} из 4.8 · свидетельств ${Math.min(feedbackCount, 10)} из 10.`;
+      break;
+    case "north_star":
+      earned =
+        averageRating !== null &&
+        averageRating >= 4.7 &&
+        feedbackCount >= 5 &&
+        isUniqueRatingLeader;
+      progressLabel = `Слава ${ratingLabel} из 4.7 · свидетельств ${Math.min(feedbackCount, 5)} из 5 · лидерство ${isUniqueRatingLeader ? "единоличное" : "ещё делится"}.`;
+      break;
+    default:
+      progressLabel = "Путь к этому знамению пока не раскрыт.";
+  }
+
+  return {
+    ...definition,
+    earned,
+    progressLabel,
+    stateLabel: earned ? "Знамение раскрыто" : "Пока не раскрыто",
+  };
+}
+
+function canViewHiddenAchievements(member, env) {
+  const viewers = getHiddenAchievementViewerEmails(env);
+  return viewers.includes(normalizeEmail(member?.email));
+}
+
+function getHiddenAchievementViewerEmails(env) {
+  const configured = parseEmailList(env.HIDDEN_ACHIEVEMENT_VIEWERS, []);
+  if (configured.length) {
+    return configured;
+  }
+
+  return parseEmailList(env.ADMIN_BOOTSTRAP_EMAILS, []).slice(0, 1);
+}
+
+function isUniqueRatingLeaderForMember(member, roster) {
+  const ratedMembers = (roster || []).filter(
+    (entry) => entry.averageRating !== null && Number(entry.feedbackCount || 0) >= 5,
+  );
+  if (!ratedMembers.length || member?.averageRating === null || member?.averageRating === undefined) {
+    return false;
+  }
+
+  const topRating = ratedMembers.reduce(
+    (highest, entry) => Math.max(highest, Number(entry.averageRating || 0)),
+    0,
+  );
+  const leaders = ratedMembers.filter(
+    (entry) => Number(entry.averageRating || 0) === topRating,
+  );
+  return leaders.length === 1 && leaders[0].id === member.id;
 }
 
 async function handleCalendarFeed(env) {
@@ -3959,6 +4327,15 @@ function parseWeekdayList(value, fallback) {
     .split(",")
     .map((chunk) => Number.parseInt(chunk.trim(), 10))
     .filter((item) => Number.isInteger(item) && item >= 0 && item <= 6);
+
+  return items.length ? items : fallback;
+}
+
+function parseEmailList(value, fallback = []) {
+  const items = String(value || "")
+    .split(",")
+    .map((chunk) => normalizeEmail(chunk))
+    .filter(Boolean);
 
   return items.length ? items : fallback;
 }
