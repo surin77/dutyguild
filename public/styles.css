@@ -136,6 +136,17 @@ td {
   position: relative;
   display: grid;
   justify-items: end;
+  padding-bottom: 12px;
+  margin-bottom: -12px;
+}
+
+.header-user::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: min(360px, calc(100vw - 32px));
+  height: 18px;
 }
 
 .header-user__trigger {
@@ -154,7 +165,7 @@ td {
 
 .header-user__card {
   position: absolute;
-  top: calc(100% + 12px);
+  top: calc(100% + 6px);
   right: 0;
   width: min(360px, calc(100vw - 32px));
   padding: 18px;
