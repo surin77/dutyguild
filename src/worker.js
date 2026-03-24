@@ -2946,6 +2946,7 @@ async function sendAssignmentEmail(env, details) {
     "Ритуал зачтётся только после того, как оба участника подтвердят завершение на сайте.",
     details.calendarUrl ? `Подписной календарь ордена: ${details.calendarUrl}` : null,
     details.calendarWebcalUrl ? `Ссылка для подписки: ${details.calendarWebcalUrl}` : null,
+    details.calendarWebcalUrl ? "Обновление календарного свитка: примерно каждые 5 минут." : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -2985,6 +2986,7 @@ async function sendReminderEmail(env, details) {
     "Не забудьте после завершения подтвердить обряд в летописи.",
     details.calendarUrl ? `Подписной календарь ордена: ${details.calendarUrl}` : null,
     details.calendarWebcalUrl ? `Ссылка для подписки: ${details.calendarWebcalUrl}` : null,
+    details.calendarWebcalUrl ? "Обновление календарного свитка: примерно каждые 5 минут." : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -3059,6 +3061,7 @@ async function sendGameEventEmail(env, details) {
     details.notes ? `Пометка хрониста: ${details.notes}` : null,
     details.calendarUrl ? `Подписной календарь ордена: ${details.calendarUrl}` : null,
     details.calendarWebcalUrl ? `Ссылка для подписки: ${details.calendarWebcalUrl}` : null,
+    details.calendarWebcalUrl ? "Обновление календарного свитка: примерно каждые 5 минут." : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -3437,7 +3440,7 @@ function renderCalendarSubscriptionCallout(calendarUrl, calendarWebcalUrl) {
     <div style="margin-top:18px;padding:16px 18px;border-radius:18px;background:#f6ecdf;border:1px solid #ead9c3;color:#5e4b41;line-height:1.65;">
       <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9e5b2e;">Календарный свиток</div>
       <div style="margin-top:8px;">
-        Чтобы не потерять походы и встречи круга, держите личную подписку на календарный свиток под рукой.
+        Чтобы не потерять походы и встречи круга, держите личную подписку на календарный свиток под рукой. Новые записи появляются в нём примерно каждые 5 минут.
       </div>
       <div style="margin-top:10px;">${subscriptionLinks}</div>
     </div>
