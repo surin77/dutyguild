@@ -610,7 +610,7 @@ function renderAdventureCalendarCard() {
         <button class="button button--primary" type="button" data-calendar-copy="true">Скопировать ссылку</button>
       </div>
       <p class="panel__aside-note">
-        Свиток личный. Делитесь им только внутри круга. Напоминания уже вложены: за 2 дня и за 1 день до события.
+        Свиток общий. Его можно передавать друзьям и союзникам круга. Напоминания уже вложены: за 2 дня и за 1 день до события.
       </p>
     </article>
   `;
@@ -1405,7 +1405,7 @@ async function onCopyCalendarLink() {
 
   try {
     await navigator.clipboard.writeText(calendarUrl);
-    state.notice = "Ссылка на календарный свиток скопирована.";
+    state.notice = "Ссылка на общий календарный свиток скопирована.";
     state.error = "";
     render();
   } catch {

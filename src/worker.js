@@ -287,9 +287,12 @@ async function handleFetch(request, env) {
     return new Response(null, { status: 204 });
   }
 
-  const calendarFeedMatch = pathname.match(/^\/calendar\/([^/]+)\.ics$/);
-  if (calendarFeedMatch && request.method === "GET") {
-    return handleCalendarFeed(env, calendarFeedMatch[1]);
+  const legacyCalendarFeedMatch = pathname.match(/^\/calendar\/([^/]+)\.ics$/);
+  if (
+    request.method === "GET" &&
+    (pathname === "/calendar.ics" || pathname === "/calendar/events.ics" || legacyCalendarFeedMatch)
+  ) {
+    return handleCalendarFeed(env);
   }
 
   if (!pathname.startsWith("/api/")) {
@@ -331,7 +334,7 @@ async function handleFetch(request, env) {
     if (!member) {
       return json({ member: null }, 401);
     }
-    return json({ member: decorateSelfMember(memberToClient(member), env, member.calendar_token) });
+    return json({ member: decorateSelfMember(memberToClient(member), env) });
   }
 
   if (pathname === "/api/dashboard" && request.method === "GET") {
@@ -592,11 +595,7 @@ async function handleVerifyCode(request, env) {
   return json(
     {
       ok: true,
-      member: decorateSelfMember(
-        memberToClient(member),
-        env,
-        await ensureCalendarTokenValue(env, member.id, member.calendar_token),
-      ),
+      member: decorateSelfMember(memberToClient(member), env),
     },
     200,
     {
@@ -660,20 +659,13 @@ async function handleCreateMember(request, env) {
       env,
       `
         INSERT INTO members (id, email, display_name, role, status, approved_at, updated_at)
-        VALUES (?, ?, ?, ?, 'active', ?, ?, ?)
+        VALUES (?, ?, ?, ?, 'active', ?, ?)
       `,
-      [crypto.randomUUID(), email, displayName, role, now, now, randomToken()],
+      [crypto.randomUUID(), email, displayName, role, now, now],
     );
   }
 
   const memberRow = await first(env, "SELECT * FROM members WHERE email = ? LIMIT 1", [email]);
-  if (memberRow) {
-    memberRow.calendar_token = await ensureCalendarTokenValue(
-      env,
-      memberRow.id,
-      memberRow.calendar_token,
-    );
-  }
 
   return json({
     ok: true,
@@ -1291,7 +1283,7 @@ async function buildDashboard(env, member) {
 
   const roster = decorateCouncilRoster(rawRoster, currentStewardMemberId);
   const meBase = roster.find((entry) => entry.id === member.id) || memberToClient(member);
-  const me = decorateSelfMember(meBase, env, member.calendar_token);
+  const me = decorateSelfMember(meBase, env);
   const councilElection = await loadCouncilElectionState(
     env,
     me,
@@ -1348,41 +1340,19 @@ async function buildDashboard(env, member) {
   };
 }
 
-async function handleCalendarFeed(env, token) {
-  const member = await first(
-    env,
-    `
-      SELECT id, display_name, status
-      FROM members
-      WHERE calendar_token = ?
-        AND status = 'active'
-      LIMIT 1
-    `,
-    [String(token || "").trim()],
-  );
-
-  if (!member) {
-    return new Response("Календарный свиток не найден.", {
-      status: 404,
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-store",
-      },
-    });
-  }
-
-  const feedBody = await buildCalendarFeed(env, member);
+async function handleCalendarFeed(env) {
+  const feedBody = await buildCalendarFeed(env);
   return new Response(feedBody, {
     status: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Cache-Control": "private, max-age=300",
+      "Cache-Control": "public, max-age=300",
       "Content-Disposition": 'inline; filename="duty-guild-calendar.ics"',
     },
   });
 }
 
-async function buildCalendarFeed(env, member) {
+async function buildCalendarFeed(env) {
   const config = getConfig(env);
   const today = todayInTimeZone(config.timeZone);
   const cancelledLookbackDate = addDays(today, -14);
@@ -1427,7 +1397,7 @@ async function buildCalendarFeed(env, member) {
     "METHOD:PUBLISH",
     "PRODID:-//Duty Guild//Calendar//RU",
     `X-WR-CALNAME:${escapeIcsText("Duty Guild — походы круга")}`,
-    `X-WR-CALDESC:${escapeIcsText(`Личный календарный свиток походов и встреч для ${member.display_name}.`)}`,
+    `X-WR-CALDESC:${escapeIcsText("Общий календарный свиток походов и встреч Duty Guild.")}`,
     `X-WR-TIMEZONE:${escapeIcsText(config.timeZone)}`,
     "REFRESH-INTERVAL;VALUE=DURATION:PT6H",
     "X-PUBLISHED-TTL:PT6H",
@@ -2679,13 +2649,12 @@ async function ensureBootstrapMembers(env) {
           role,
           status,
           approved_at,
-          updated_at,
-          calendar_token
+          updated_at
         )
-        VALUES (?, ?, ?, 'admin', 'active', ?, ?, ?)
+        VALUES (?, ?, ?, 'admin', 'active', ?, ?)
         ON CONFLICT (email) DO NOTHING
       `,
-      [crypto.randomUUID(), email, displayName, now, now, randomToken()],
+      [crypto.randomUUID(), email, displayName, now, now],
     );
 
     await run(
@@ -2697,15 +2666,6 @@ async function ensureBootstrapMembers(env) {
       `,
       [now, now, email],
     );
-
-    const adminRow = await first(
-      env,
-      "SELECT id, calendar_token FROM members WHERE email = ? LIMIT 1",
-      [email],
-    );
-    if (adminRow) {
-      await ensureCalendarTokenValue(env, adminRow.id, adminRow.calendar_token);
-    }
   }
 }
 
@@ -2752,7 +2712,6 @@ async function getCurrentMember(request, env) {
     [new Date().toISOString(), row.session_id],
   );
 
-  row.calendar_token = await ensureCalendarTokenValue(env, row.id, row.calendar_token);
   return row;
 }
 
@@ -2797,49 +2756,20 @@ function memberToClient(member) {
   };
 }
 
-function decorateSelfMember(member, env, calendarToken) {
+function decorateSelfMember(member, env) {
   return {
     ...member,
-    calendarSubscriptionUrl: buildCalendarSubscriptionUrl(env, calendarToken),
-    calendarSubscriptionWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, calendarToken),
+    calendarSubscriptionUrl: buildCalendarSubscriptionUrl(env),
+    calendarSubscriptionWebcalUrl: buildCalendarSubscriptionWebcalUrl(env),
   };
 }
 
-async function ensureCalendarTokenValue(env, memberId, currentToken = null) {
-  if (currentToken) {
-    return currentToken;
-  }
-
-  const proposedToken = randomToken();
-  await run(
-    env,
-    `
-      UPDATE members
-      SET calendar_token = COALESCE(calendar_token, ?), updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
-    [proposedToken, memberId],
-  );
-
-  const row = await first(
-    env,
-    "SELECT calendar_token FROM members WHERE id = ? LIMIT 1",
-    [memberId],
-  );
-
-  return row?.calendar_token || proposedToken;
+function buildCalendarSubscriptionUrl(env) {
+  return new URL("/calendar.ics", getAppOrigin(env)).toString();
 }
 
-function buildCalendarSubscriptionUrl(env, token) {
-  if (!token) {
-    return null;
-  }
-
-  return new URL(`/calendar/${encodeURIComponent(token)}.ics`, getAppOrigin(env)).toString();
-}
-
-function buildCalendarSubscriptionWebcalUrl(env, token) {
-  const httpsUrl = buildCalendarSubscriptionUrl(env, token);
+function buildCalendarSubscriptionWebcalUrl(env) {
+  const httpsUrl = buildCalendarSubscriptionUrl(env);
   if (!httpsUrl) {
     return null;
   }
@@ -3311,11 +3241,6 @@ async function notifyGameEventCreated(env, actor, event) {
   });
 
   for (const recipient of recipients) {
-    const calendarToken = await ensureCalendarTokenValue(
-      env,
-      recipient.id,
-      recipient.calendar_token,
-    );
     const delivery = await sendGameEventEmail(env, {
       email: recipient.email,
       displayName: recipient.display_name,
@@ -3324,8 +3249,8 @@ async function notifyGameEventCreated(env, actor, event) {
       scheduleLabel,
       notes: event.notes,
       actorName: actor.display_name,
-      calendarUrl: buildCalendarSubscriptionUrl(env, calendarToken),
-      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, calendarToken),
+      calendarUrl: buildCalendarSubscriptionUrl(env),
+      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env),
     });
 
     await logNotification(env, {
@@ -3342,11 +3267,6 @@ async function notifyGameEventUpdated(env, actor, previousEvent, nextEvent) {
   const previousScheduleLabel = formatEventSchedule(previousEvent);
 
   for (const recipient of recipients) {
-    const calendarToken = await ensureCalendarTokenValue(
-      env,
-      recipient.id,
-      recipient.calendar_token,
-    );
     const delivery = await sendGameEventEmail(env, {
       email: recipient.email,
       displayName: recipient.display_name,
@@ -3358,8 +3278,8 @@ async function notifyGameEventUpdated(env, actor, previousEvent, nextEvent) {
       notes: nextEvent.notes,
       previousNotes: previousEvent.notes,
       actorName: actor.display_name,
-      calendarUrl: buildCalendarSubscriptionUrl(env, calendarToken),
-      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, calendarToken),
+      calendarUrl: buildCalendarSubscriptionUrl(env),
+      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env),
     });
 
     await logNotification(env, {
@@ -3375,11 +3295,6 @@ async function notifyGameEventCancelled(env, actor, event) {
   const scheduleLabel = formatEventSchedule(event);
 
   for (const recipient of recipients) {
-    const calendarToken = await ensureCalendarTokenValue(
-      env,
-      recipient.id,
-      recipient.calendar_token,
-    );
     const delivery = await sendGameEventEmail(env, {
       email: recipient.email,
       displayName: recipient.display_name,
@@ -3388,8 +3303,8 @@ async function notifyGameEventCancelled(env, actor, event) {
       scheduleLabel,
       notes: event.notes,
       actorName: actor.display_name,
-      calendarUrl: buildCalendarSubscriptionUrl(env, calendarToken),
-      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, calendarToken),
+      calendarUrl: buildCalendarSubscriptionUrl(env),
+      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env),
     });
 
     await logNotification(env, {
@@ -3404,7 +3319,7 @@ async function loadGameEventNotificationRecipients(env) {
   return all(
     env,
     `
-      SELECT id, email, display_name, calendar_token
+      SELECT id, email, display_name
       FROM members
       WHERE status = 'active'
       ORDER BY display_name ASC
@@ -3600,7 +3515,7 @@ function renderCalendarSubscriptionCallout(calendarUrl, calendarWebcalUrl) {
     <div style="margin-top:18px;padding:16px 18px;border-radius:18px;background:#f6ecdf;border:1px solid #ead9c3;color:#5e4b41;line-height:1.65;">
       <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9e5b2e;">Календарный свиток</div>
       <div style="margin-top:8px;">
-        Чтобы не потерять походы и встречи круга, держите личную подписку на календарный свиток под рукой. Новые записи появляются в нём примерно каждые 5 минут, а напоминания уже вложены за 2 дня и за 1 день до события.
+        Это общий календарный свиток Duty Guild. Им можно делиться с друзьями и союзниками круга. Новые записи появляются в нём примерно каждые 5 минут, а напоминания уже вложены за 2 дня и за 1 день до события.
       </div>
       <div style="margin-top:10px;">${subscriptionLinks}</div>
     </div>
