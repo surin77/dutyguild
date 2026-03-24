@@ -746,6 +746,19 @@ select:focus {
   margin-top: 12px;
 }
 
+.adventure-grid .list-card__actions {
+  width: min(100%, 420px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  justify-content: center;
+  gap: 10px;
+  margin: 12px auto 0;
+}
+
+.adventure-grid .list-card__actions .button {
+  width: 100%;
+}
+
 .adventure-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
