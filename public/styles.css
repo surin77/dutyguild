@@ -769,6 +769,9 @@ select:focus {
 .adventure-calendar-card {
   display: grid;
   gap: 14px;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
 }
 
 .adventure-calendar-card h3,
@@ -781,6 +784,19 @@ select:focus {
   margin: 0;
   color: var(--ink-soft);
   line-height: 1.65;
+}
+
+.adventure-calendar-card .button-row {
+  width: min(100%, 320px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: stretch;
+  gap: 10px;
+  margin: 0 auto;
+}
+
+.adventure-calendar-card .button {
+  width: 100%;
 }
 
 .event-edit-form {
