@@ -86,8 +86,8 @@ td {
 
 .ember {
   position: absolute;
-  left: var(--ember-left);
-  bottom: -12vh;
+  left: calc(var(--ember-origin-x) - (var(--ember-size) / 2));
+  bottom: var(--ember-origin-y);
   width: var(--ember-size);
   height: var(--ember-size);
   border-radius: 999px;
@@ -98,12 +98,28 @@ td {
     0 0 14px rgba(255, 161, 76, 0.42),
     0 0 28px rgba(194, 73, 28, 0.18);
   filter: blur(var(--ember-blur));
-  transform: translate3d(0, 0, 0) scale(0.42);
+  transform-origin: center;
+  transform: translate3d(0, 0, 0) rotate(var(--ember-rotation)) scale(0.24);
   will-change: transform, opacity;
   animation:
     ember-rise var(--ember-duration) linear infinite,
     ember-flicker 2.6s ease-in-out infinite;
   animation-delay: var(--ember-delay), var(--ember-delay);
+}
+
+.ember::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 42%;
+  width: calc(var(--ember-size) * 3.8);
+  height: max(1px, calc(var(--ember-size) * 0.52));
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 230, 184, 0), rgba(255, 203, 122, 0.6), rgba(198, 73, 33, 0));
+  transform: translateY(-50%) rotate(-16deg);
+  transform-origin: right center;
+  opacity: 0.32;
+  filter: blur(calc(var(--ember-blur) + 0.22px));
 }
 
 .ember::after {
@@ -1336,21 +1352,42 @@ th {
 
 @keyframes ember-rise {
   0% {
-    transform: translate3d(0, 0, 0) scale(0.35);
+    transform: translate3d(0, 0, 0) rotate(var(--ember-rotation)) scale(0.18);
     opacity: 0;
   }
 
-  10% {
-    opacity: var(--ember-opacity);
+  4% {
+    opacity: 0;
   }
 
-  72% {
+  12% {
+    opacity: var(--ember-opacity);
+    transform: translate3d(calc(var(--ember-travel-x) * 0.18), calc(var(--ember-travel-y) * 0.16), 0)
+      rotate(calc(var(--ember-rotation) - 4deg)) scale(0.48);
+  }
+
+  22% {
+    opacity: calc(var(--ember-opacity) * 0.92);
+    transform: translate3d(calc(var(--ember-travel-x) * 0.46), calc(var(--ember-travel-y) * 0.44), 0)
+      rotate(calc(var(--ember-rotation) + 3deg)) scale(0.72);
+  }
+
+  32% {
     opacity: calc(var(--ember-opacity) * 0.78);
+    transform: translate3d(calc(var(--ember-travel-x) * 0.76), calc(var(--ember-travel-y) * 0.8), 0)
+      rotate(calc(var(--ember-rotation) + 9deg)) scale(var(--ember-scale-end));
+  }
+
+  42% {
+    opacity: 0;
+    transform: translate3d(var(--ember-travel-x), var(--ember-travel-y), 0)
+      rotate(calc(var(--ember-rotation) + 14deg)) scale(calc(var(--ember-scale-end) * 1.04));
   }
 
   100% {
-    transform: translate3d(var(--ember-drift), -118vh, 0) scale(1.18);
     opacity: 0;
+    transform: translate3d(var(--ember-travel-x), var(--ember-travel-y), 0)
+      rotate(calc(var(--ember-rotation) + 14deg)) scale(calc(var(--ember-scale-end) * 1.04));
   }
 }
 

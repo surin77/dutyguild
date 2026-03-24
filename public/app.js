@@ -83,18 +83,18 @@ const PAGE_DEFINITIONS = Object.freeze([
 
 const BRAND_MARK_SRC = "/assets/brand/dutyguild-mark.svg";
 const EMBER_FIELD = Object.freeze([
-  { left: "4%", drift: "5vw", duration: "22s", delay: "-3s", size: "5px", opacity: "0.82", blur: "0.2px" },
-  { left: "12%", drift: "2vw", duration: "18s", delay: "-9s", size: "4px", opacity: "0.72", blur: "0.15px" },
-  { left: "19%", drift: "7vw", duration: "26s", delay: "-14s", size: "6px", opacity: "0.88", blur: "0.25px" },
-  { left: "27%", drift: "3vw", duration: "20s", delay: "-6s", size: "3px", opacity: "0.66", blur: "0.1px" },
-  { left: "35%", drift: "8vw", duration: "24s", delay: "-17s", size: "5px", opacity: "0.8", blur: "0.18px" },
-  { left: "46%", drift: "4vw", duration: "19s", delay: "-1s", size: "4px", opacity: "0.7", blur: "0.12px" },
-  { left: "54%", drift: "6vw", duration: "28s", delay: "-11s", size: "6px", opacity: "0.92", blur: "0.3px" },
-  { left: "63%", drift: "2vw", duration: "17s", delay: "-5s", size: "3px", opacity: "0.64", blur: "0.08px" },
-  { left: "71%", drift: "5vw", duration: "23s", delay: "-15s", size: "4px", opacity: "0.74", blur: "0.14px" },
-  { left: "79%", drift: "7vw", duration: "27s", delay: "-7s", size: "5px", opacity: "0.86", blur: "0.24px" },
-  { left: "88%", drift: "3vw", duration: "21s", delay: "-12s", size: "4px", opacity: "0.68", blur: "0.12px" },
-  { left: "95%", drift: "6vw", duration: "25s", delay: "-19s", size: "5px", opacity: "0.84", blur: "0.22px" },
+  { originX: "11%", originY: "5vh", travelX: "13vw", travelY: "-34vh", duration: "12.8s", delay: "-1.10s", size: "3px", opacity: "0.74", blur: "0.08px", scaleEnd: "0.96", rotation: "9deg" },
+  { originX: "11.8%", originY: "6vh", travelX: "19vw", travelY: "-48vh", duration: "12.8s", delay: "-1.24s", size: "5px", opacity: "0.9", blur: "0.16px", scaleEnd: "1.2", rotation: "14deg" },
+  { originX: "12.4%", originY: "5.4vh", travelX: "24vw", travelY: "-58vh", duration: "12.8s", delay: "-1.37s", size: "4px", opacity: "0.84", blur: "0.12px", scaleEnd: "1.06", rotation: "20deg" },
+  { originX: "10.7%", originY: "5.8vh", travelX: "16vw", travelY: "-41vh", duration: "12.8s", delay: "-1.52s", size: "2px", opacity: "0.62", blur: "0.04px", scaleEnd: "0.86", rotation: "6deg" },
+  { originX: "13.2%", originY: "6.2vh", travelX: "27vw", travelY: "-64vh", duration: "12.8s", delay: "-5.78s", size: "6px", opacity: "0.94", blur: "0.24px", scaleEnd: "1.28", rotation: "24deg" },
+  { originX: "12%", originY: "5.6vh", travelX: "18vw", travelY: "-44vh", duration: "12.8s", delay: "-5.92s", size: "3px", opacity: "0.7", blur: "0.08px", scaleEnd: "0.94", rotation: "11deg" },
+  { originX: "11.4%", originY: "5vh", travelX: "15vw", travelY: "-37vh", duration: "12.8s", delay: "-6.04s", size: "2px", opacity: "0.58", blur: "0.03px", scaleEnd: "0.78", rotation: "4deg" },
+  { originX: "13.8%", originY: "6vh", travelX: "22vw", travelY: "-53vh", duration: "12.8s", delay: "-6.18s", size: "4px", opacity: "0.82", blur: "0.14px", scaleEnd: "1.02", rotation: "17deg" },
+  { originX: "12.8%", originY: "5.2vh", travelX: "17vw", travelY: "-39vh", duration: "12.8s", delay: "-10.42s", size: "3px", opacity: "0.68", blur: "0.06px", scaleEnd: "0.88", rotation: "8deg" },
+  { originX: "11.2%", originY: "6.1vh", travelX: "21vw", travelY: "-50vh", duration: "12.8s", delay: "-10.56s", size: "4px", opacity: "0.8", blur: "0.12px", scaleEnd: "1.04", rotation: "15deg" },
+  { originX: "13.5%", originY: "5.7vh", travelX: "29vw", travelY: "-67vh", duration: "12.8s", delay: "-10.72s", size: "5px", opacity: "0.92", blur: "0.2px", scaleEnd: "1.26", rotation: "27deg" },
+  { originX: "10.5%", originY: "5.3vh", travelX: "14vw", travelY: "-33vh", duration: "12.8s", delay: "-10.86s", size: "2px", opacity: "0.54", blur: "0.03px", scaleEnd: "0.74", rotation: "5deg" },
 ]);
 
 const root = document.querySelector("#app");
@@ -149,13 +149,17 @@ function renderEmberField() {
       <span
         class="ember ember--${index % 3}"
         style="
-          --ember-left:${ember.left};
-          --ember-drift:${ember.drift};
+          --ember-origin-x:${ember.originX};
+          --ember-origin-y:${ember.originY};
+          --ember-travel-x:${ember.travelX};
+          --ember-travel-y:${ember.travelY};
           --ember-duration:${ember.duration};
           --ember-delay:${ember.delay};
           --ember-size:${ember.size};
           --ember-opacity:${ember.opacity};
           --ember-blur:${ember.blur};
+          --ember-scale-end:${ember.scaleEnd};
+          --ember-rotation:${ember.rotation};
         "
       ></span>
     `,
