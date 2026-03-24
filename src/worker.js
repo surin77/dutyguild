@@ -3054,32 +3054,28 @@ function renderEmailShell(env, details) {
         </div>
       `
       : "";
-  const sceneBlock = scene
-    ? `
-      <div style="padding:0 28px 0;">
-        <img
-          src="${escapeHtml(scene.src)}"
-          alt="${escapeHtml(scene.alt)}"
-          style="display:block;width:100%;height:auto;max-height:240px;object-fit:cover;border-radius:0 0 24px 24px;"
-        />
-      </div>
-    `
+  const headerStyle = scene
+    ? `padding:22px 22px;background:#130f10 url('${escapeHtml(scene.src)}') center center / cover no-repeat;color:#fffaf4;`
+    : "padding:26px 28px;background:linear-gradient(120deg,#130f10,#2b1816 55%,#7f2212);color:#fffaf4;";
+  const headerInnerStyle = scene
+    ? "padding:24px 24px;border-radius:22px;background:linear-gradient(120deg,rgba(19,15,16,0.84),rgba(43,24,22,0.76) 55%,rgba(127,34,18,0.78));box-shadow:inset 0 0 0 1px rgba(255,244,230,0.08);"
     : "";
 
   return `
     <div style="margin:0;padding:24px 12px;background:#16110f;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:#231b17;">
       <div style="max-width:680px;margin:0 auto;border-radius:28px;overflow:hidden;background:linear-gradient(180deg,#f8f1e7 0%,#f0e4d4 100%);border:1px solid #d8c1a5;box-shadow:0 24px 48px rgba(0,0,0,0.18);">
-        <div style="padding:26px 28px;background:linear-gradient(120deg,#130f10,#2b1816 55%,#7f2212);color:#fffaf4;">
-          <div style="display:flex;align-items:center;gap:14px;">
-            <div style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,rgba(200,140,58,0.28),rgba(178,53,29,0.96));display:grid;place-items:center;font-weight:800;">DG</div>
-            <div>
-              <div style="font-size:12px;letter-spacing:0.24em;text-transform:uppercase;color:#f0d39f;">${escapeHtml(details.kicker || "Duty Guild")}</div>
-              <div style="margin-top:4px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.05;">${escapeHtml(details.title)}</div>
+        <div style="${headerStyle}">
+          <div style="${headerInnerStyle}">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,rgba(200,140,58,0.28),rgba(178,53,29,0.96));display:grid;place-items:center;font-weight:800;">DG</div>
+              <div>
+                <div style="font-size:12px;letter-spacing:0.24em;text-transform:uppercase;color:#f0d39f;">${escapeHtml(details.kicker || "Duty Guild")}</div>
+                <div style="margin-top:4px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.05;">${escapeHtml(details.title)}</div>
+              </div>
             </div>
+            <p style="margin:18px 0 0;color:rgba(255,249,242,0.9);font-size:16px;line-height:1.7;">${escapeHtml(details.lead || "")}</p>
           </div>
-          <p style="margin:18px 0 0;color:rgba(255,249,242,0.86);font-size:16px;line-height:1.7;">${escapeHtml(details.lead || "")}</p>
         </div>
-        ${sceneBlock}
         <div style="padding:28px;">
           ${details.bodyHtml || ""}
           ${ctaBlock}
