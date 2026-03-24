@@ -1423,8 +1423,21 @@ function renderIcsEvent(entry, stamp) {
     }
   }
 
+  lines.push(...renderIcsDisplayAlarm(entry.summary, "P2D"));
+  lines.push(...renderIcsDisplayAlarm(entry.summary, "P1D"));
   lines.push("END:VEVENT");
   return lines;
+}
+
+function renderIcsDisplayAlarm(summary, duration) {
+  const title = String(summary || "Событие Duty Guild").trim() || "Событие Duty Guild";
+  return [
+    "BEGIN:VALARM",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${escapeIcsText(`Напоминание Duty Guild: ${title}`)}`,
+    `TRIGGER:-${duration}`,
+    "END:VALARM",
+  ];
 }
 
 async function loadRoster(env) {
@@ -3440,7 +3453,7 @@ function renderCalendarSubscriptionCallout(calendarUrl, calendarWebcalUrl) {
     <div style="margin-top:18px;padding:16px 18px;border-radius:18px;background:#f6ecdf;border:1px solid #ead9c3;color:#5e4b41;line-height:1.65;">
       <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9e5b2e;">Календарный свиток</div>
       <div style="margin-top:8px;">
-        Чтобы не потерять походы и встречи круга, держите личную подписку на календарный свиток под рукой. Новые записи появляются в нём примерно каждые 5 минут.
+        Чтобы не потерять походы и встречи круга, держите личную подписку на календарный свиток под рукой. Новые записи появляются в нём примерно каждые 5 минут, а напоминания уже вложены за 2 дня и за 1 день до события.
       </div>
       <div style="margin-top:10px;">${subscriptionLinks}</div>
     </div>

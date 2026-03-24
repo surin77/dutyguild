@@ -610,7 +610,7 @@ function renderAdventureCalendarCard() {
         <button class="button button--primary" type="button" data-calendar-copy="true">Скопировать ссылку</button>
       </div>
       <p class="panel__aside-note">
-        Свиток личный. Делитесь им только внутри круга.
+        Свиток личный. Делитесь им только внутри круга. Напоминания уже вложены: за 2 дня и за 1 день до события.
       </p>
     </article>
   `;
