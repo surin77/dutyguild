@@ -377,6 +377,7 @@ function renderDashboardPage(pageId, context) {
   if (pageId === "rituals") {
     return `
       <section class="content-grid">
+        ${context.nextCycle}
         ${renderReviewPanel()}
         ${renderRecentRitualsPanel()}
       </section>
@@ -413,7 +414,7 @@ function renderDashboardPage(pageId, context) {
     ${renderStatsBand(context.stats)}
     <section class="content-grid">
       ${context.currentCycle}
-      ${context.nextCycle}
+      ${renderUpcomingAdventuresPreviewPanel()}
     </section>
   `;
 }
@@ -568,6 +569,66 @@ function renderAdventurePanel() {
           <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>Внести в летопись</button>
         </form>
       </div>
+    </article>
+  `;
+}
+
+function renderUpcomingAdventuresPreviewPanel() {
+  const upcomingGames = state.dashboard?.upcomingGames || [];
+  const previewItems = upcomingGames
+    .slice(0, 3)
+    .map(
+      (event) => `
+        <li class="list-card">
+          <div class="list-card__head">
+            <strong>${escapeHtml(event.title)}</strong>
+            <span>${formatEventDate(event)}</span>
+          </div>
+          ${
+            event.notes
+              ? `<p>${escapeHtml(event.notes)}</p>`
+              : '<p>Хронист пока не оставил пометок, но знамя похода уже поднято.</p>'
+          }
+          <div class="list-card__meta-row">
+            <span class="list-card__meta">Вписал в свод: ${escapeHtml(event.createdByName || "Неизвестный хронист")}</span>
+          </div>
+        </li>
+      `,
+    )
+    .join("");
+
+  if (!previewItems) {
+    return `
+      <article class="panel">
+        <div class="panel__header">
+          <p class="section-tag">Предстоящие приключения</p>
+          <h2>Горизонт пока тих</h2>
+        </div>
+        <p class="panel__intro">
+          Когда в летописи нет новых походов, это верный знак: пора выбрать вечер, собрать круг и наметить следующее приключение.
+        </p>
+        <p class="panel__aside-note">
+          Мудрость ордена: даже великая сага начинается с одного вписанного вечера.
+        </p>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="panel">
+      <div class="panel__header">
+        <p class="section-tag">Предстоящие приключения</p>
+        <h2>Ближайшие встречи круга</h2>
+      </div>
+      <p class="panel__intro">
+        Здесь собраны ближайшие походы, чтобы орден сразу видел, какие вечера уже зовут к столу.
+      </p>
+      <ul class="list-stack">${previewItems}</ul>
+      ${
+        upcomingGames.length > 3
+          ? '<p class="panel__aside-note">Остальные встречи уже ждут вас в полном своде походов.</p>'
+          : ""
+      }
     </article>
   `;
 }
