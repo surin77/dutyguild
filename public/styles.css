@@ -244,12 +244,18 @@ td {
 
 .feature-card--dashboard {
   --feature-art: url("/assets/fantasy-scenes/castle-dragon-battle.jpg");
+  grid-template-columns: 1fr;
 }
 
 .feature-card__content,
-.feature-rail {
+.feature-rail,
+.hero-metrics {
   position: relative;
   z-index: 2;
+}
+
+.feature-card--dashboard .feature-card__content {
+  max-width: 74ch;
 }
 
 .feature-card h1 {
@@ -304,11 +310,34 @@ td {
   gap: 14px;
 }
 
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
 .rail-card {
   border-radius: var(--radius-lg);
   padding: 18px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-metrics .rail-card {
+  min-height: 118px;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(41, 30, 28, 0.72), rgba(74, 45, 35, 0.54));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.hero-metrics .rail-metric {
+  color: var(--white);
+}
+
+.hero-metrics .rail-label {
+  color: rgba(255, 249, 242, 0.82);
 }
 
 .rail-card--compact {
@@ -1228,6 +1257,7 @@ th {
   .election-summary-grid,
   .rank-summary-grid,
   .rank-ladder,
+  .hero-metrics,
   .scene-gallery {
     grid-template-columns: 1fr;
   }

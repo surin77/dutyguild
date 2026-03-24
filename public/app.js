@@ -280,10 +280,7 @@ function renderDashboard() {
             <span class="feature-badge">${escapeHtml(state.me.email)}</span>
           </div>
         </div>
-        <aside class="feature-rail feature-rail--art">
-          <div class="illustration-card illustration-card--wide">
-            ${renderSceneIllustration("citadel")}
-          </div>
+        <div class="hero-metrics">
           <div class="rail-card rail-card--compact">
             <span class="rail-metric">${stats.memberCount}</span>
             <span class="rail-label">имен во свитке братства</span>
@@ -296,7 +293,7 @@ function renderDashboard() {
             <span class="rail-metric">${stats.gameCount}</span>
             <span class="rail-label">походов уже вписано впереди</span>
           </div>
-        </aside>
+        </div>
       </article>
 
       <section class="toolbar">
