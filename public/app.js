@@ -421,7 +421,12 @@ function renderDashboardPage(pageId, context) {
   if (pageId === "rituals") {
     return `
       <section class="content-grid">
-        ${context.nextCycle}
+        ${renderCyclePanel(
+          "Следующий обряд",
+          state.dashboard.nextCycle,
+          "Следующий обряд ещё не вписан в летопись.",
+          "panel--wide",
+        )}
         ${renderReviewPanel()}
         ${renderRecentRitualsPanel()}
       </section>
@@ -495,10 +500,11 @@ function renderStatsBand(stats) {
   `;
 }
 
-function renderCyclePanel(title, cycle, emptyText) {
+function renderCyclePanel(title, cycle, emptyText, panelClass = "") {
+  const panelClasses = ["panel", panelClass].filter(Boolean).join(" ");
   if (!cycle) {
     return `
-      <article class="panel">
+      <article class="${panelClasses}">
         <div class="panel__header">
           <p class="section-tag">${escapeHtml(title)}</p>
           <h2>Призыв ещё не совершен</h2>
@@ -545,7 +551,7 @@ function renderCyclePanel(title, cycle, emptyText) {
     : `Вердикт круга: ${cycle.averageRating.toFixed(1)} · ${escapeHtml(cycle.outcome.title)}`;
 
   return `
-    <article class="panel">
+    <article class="${panelClasses}">
       <div class="panel__header">
         <p class="section-tag">${escapeHtml(title)}</p>
         <h2>${formatDate(cycle.plannedCleaningDate)}</h2>
@@ -555,7 +561,7 @@ function renderCyclePanel(title, cycle, emptyText) {
       </p>
       <div class="status-row">
         <span class="status-pill status-pill--${escapeHtml(cycleStatusTone(cycle))}">${escapeHtml(cycleStatusLabel(cycle))}</span>
-        <span class="status-pill status-pill--ghost">${escapeHtml(cycle.status === "completed" ? cycle.outcome.shortTitle : "Вердикт впереди")}</span>
+        <span class="status-pill status-pill--ghost">${escapeHtml(cycle.status === "completed" ? cycle.outcome.shortTitle : "Вердикт ещё не вынесен")}</span>
       </div>
       <p class="panel__aside-note">${escapeHtml(verdict)}</p>
       <div class="assignment-list">${badges || '<span class="muted">Герои ещё не названы</span>'}</div>
@@ -991,7 +997,7 @@ function renderRecentRitualsPanel() {
     .join("");
 
   return `
-    <article class="panel">
+    <article class="panel panel--wide">
       <div class="panel__header">
         <p class="section-tag">Архив обрядов</p>
         <h2>Недавние свершения и их исход</h2>
@@ -1853,7 +1859,7 @@ function cycleStatusLabel(cycle) {
   if (cycle.myAssignmentCompleted) {
     return "Ждёт второго знака";
   }
-  return "Обряд в пути";
+  return "Обряд совершается";
 }
 
 function cycleStatusTone(cycle) {
