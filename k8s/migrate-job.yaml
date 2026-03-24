@@ -11,7 +11,7 @@ spec:
       containers:
         - name: migrate
           image: ghcr.io/surin77/dutyguild:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command:
             - npm
             - run
