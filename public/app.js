@@ -546,33 +546,72 @@ function renderAdventurePanel() {
               : '<p class="panel__intro">Пока ни одна встреча не вписана в свод походов.</p>'
           }
         </div>
-        <form id="game-event-form" class="stack-form adventure-form">
-          <h3>Вписать новое событие</h3>
-          <label>
-            <span>Название</span>
-            <input name="title" placeholder="Root: реванш за лесной трон" />
-          </label>
-          <label>
-            <span>Дата</span>
-            <input name="eventDate" type="date" />
-          </label>
-          <div class="split-fields">
+        <div class="adventure-side">
+          ${renderAdventureCalendarCard()}
+          <form id="game-event-form" class="stack-form adventure-form">
+            <h3>Вписать новое событие</h3>
             <label>
-              <span>Начало</span>
-              <input name="startsAt" type="time" />
+              <span>Название</span>
+              <input name="title" placeholder="Root: реванш за лесной трон" />
             </label>
+            <div class="split-fields">
+              <label>
+                <span>День начала</span>
+                <input name="eventDate" type="date" />
+              </label>
+              <label>
+                <span>День завершения</span>
+                <input name="endDate" type="date" />
+              </label>
+            </div>
+            <div class="split-fields">
+              <label>
+                <span>Время начала</span>
+                <input name="startsAt" type="time" />
+              </label>
+              <label>
+                <span>Время завершения</span>
+                <input name="endsAt" type="time" />
+              </label>
+            </div>
+            <p class="panel__aside-note">
+              Если партия уходит за полночь, укажите следующий день завершения.
+            </p>
             <label>
-              <span>Конец</span>
-              <input name="endsAt" type="time" />
+              <span>Пометка хрониста</span>
+              <textarea name="notes" rows="3" placeholder="Например: кто ведёт партию, сколько героев зовётся и нужен ли большой стол"></textarea>
             </label>
-          </div>
-          <label>
-            <span>Пометка хрониста</span>
-            <textarea name="notes" rows="3" placeholder="Например: кто ведёт партию, сколько героев зовётся и нужен ли большой стол"></textarea>
-          </label>
-          <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>Внести в летопись</button>
-        </form>
+            <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>Внести в летопись</button>
+          </form>
+        </div>
       </div>
+    </article>
+  `;
+}
+
+function renderAdventureCalendarCard() {
+  if (!state.me?.calendarSubscriptionUrl) {
+    return "";
+  }
+
+  return `
+    <article class="adventure-calendar-card">
+      <p class="section-tag">Календарный свиток</p>
+      <h3>Подписка на события ордена</h3>
+      <p>
+        В этом свитке живут и походы, и ритуалы. Подпишите его один раз, и новые даты сами будут приходить в ваш календарь.
+      </p>
+      <div class="button-row">
+        ${
+          state.me.calendarSubscriptionWebcalUrl
+            ? `<a class="button button--secondary" href="${escapeHtml(state.me.calendarSubscriptionWebcalUrl)}">Подписать календарь</a>`
+            : ""
+        }
+        <button class="button button--primary" type="button" data-calendar-copy="true">Скопировать ссылку</button>
+      </div>
+      <p class="panel__aside-note">
+        Свиток личный. Делитесь им только внутри круга.
+      </p>
     </article>
   `;
 }
@@ -681,19 +720,26 @@ function renderAdventureEvent(event) {
           <input name="title" value="${escapeHtml(event.title)}" />
         </label>
         <label>
-          <span>Дата</span>
+          <span>День начала</span>
           <input name="eventDate" type="date" value="${escapeHtml(event.eventDate)}" />
+        </label>
+        <label>
+          <span>День завершения</span>
+          <input name="endDate" type="date" value="${escapeHtml(event.endDate || event.eventDate)}" />
         </label>
         <div class="split-fields">
           <label>
-            <span>Начало</span>
+            <span>Время начала</span>
             <input name="startsAt" type="time" value="${escapeHtml(event.startsAt || "")}" />
           </label>
           <label>
-            <span>Конец</span>
+            <span>Время завершения</span>
             <input name="endsAt" type="time" value="${escapeHtml(event.endsAt || "")}" />
           </label>
         </div>
+        <p class="panel__aside-note">
+          Если встреча уходит за полночь, укажите следующий день завершения.
+        </p>
         <label>
           <span>Пометка хрониста</span>
           <textarea name="notes" rows="3">${escapeHtml(event.notes || "")}</textarea>
@@ -1227,6 +1273,7 @@ function bindEvents() {
   document.querySelector("#generate-cycle-button")?.addEventListener("click", onGenerateCycle);
   document.querySelector("#invite-member-form")?.addEventListener("submit", onInviteMember);
   document.querySelector("#game-event-form")?.addEventListener("submit", onCreateGameEvent);
+  document.querySelector("[data-calendar-copy]")?.addEventListener("click", onCopyCalendarLink);
   document.querySelector("[data-steward-election-start]")?.addEventListener("click", onStartStewardElection);
   document.querySelectorAll("[data-steward-election-vote]").forEach((button) => {
     button.addEventListener("click", onCastStewardElectionVote);
@@ -1332,6 +1379,7 @@ async function onCreateGameEvent(event) {
       body: {
         title: formData.get("title"),
         eventDate: formData.get("eventDate"),
+        endDate: formData.get("endDate") || formData.get("eventDate"),
         startsAt: formData.get("startsAt"),
         endsAt: formData.get("endsAt"),
         notes: formData.get("notes"),
@@ -1344,6 +1392,27 @@ async function onCreateGameEvent(event) {
     state.error = "";
     render();
   });
+}
+
+async function onCopyCalendarLink() {
+  const calendarUrl = String(state.me?.calendarSubscriptionUrl || "").trim();
+  if (!calendarUrl) {
+    state.error = "Свиток календаря пока не раскрыт.";
+    state.notice = "";
+    render();
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(calendarUrl);
+    state.notice = "Ссылка на календарный свиток скопирована.";
+    state.error = "";
+    render();
+  } catch {
+    state.error = "Не удалось скопировать ссылку. Попробуйте ещё раз.";
+    state.notice = "";
+    render();
+  }
 }
 
 function onStartEditGameEvent(event) {
@@ -1374,6 +1443,7 @@ async function onUpdateGameEvent(event) {
       body: {
         title: formData.get("title"),
         eventDate: formData.get("eventDate"),
+        endDate: formData.get("endDate") || formData.get("eventDate"),
         startsAt: formData.get("startsAt"),
         endsAt: formData.get("endsAt"),
         notes: formData.get("notes"),
@@ -1793,13 +1863,28 @@ function formatDateTime(dateTime) {
 }
 
 function formatEventDate(event) {
-  const dateLabel = formatDate(event.eventDate);
-  if (!event.startsAt && !event.endsAt) {
-    return dateLabel;
+  const startDateLabel = formatDate(event.eventDate);
+  const endDateLabel = formatDate(event.endDate || event.eventDate);
+
+  if (event.eventDate !== (event.endDate || event.eventDate)) {
+    const startLabel = event.startsAt ? `${startDateLabel}, ${event.startsAt}` : startDateLabel;
+    const endLabel = event.endsAt ? `${endDateLabel}, ${event.endsAt}` : endDateLabel;
+    return `${startLabel} - ${endLabel}`;
   }
 
-  const timeRange = [event.startsAt, event.endsAt].filter(Boolean).join(" - ");
-  return `${dateLabel}, ${timeRange}`;
+  if (event.startsAt && event.endsAt) {
+    return `${startDateLabel}, ${event.startsAt} - ${event.endsAt}`;
+  }
+
+  if (event.startsAt) {
+    return `${startDateLabel}, с ${event.startsAt}`;
+  }
+
+  if (event.endsAt) {
+    return `${startDateLabel}, до ${event.endsAt}`;
+  }
+
+  return startDateLabel;
 }
 
 function escapeHtml(value) {

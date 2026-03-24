@@ -597,8 +597,12 @@ select:focus {
   border-radius: 12px;
   min-height: 44px;
   padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   font-weight: 700;
+  text-decoration: none;
   transition: transform 140ms ease, filter 140ms ease;
 }
 
@@ -681,6 +685,12 @@ select:focus {
   align-items: start;
 }
 
+.adventure-side {
+  display: grid;
+  gap: 16px;
+}
+
+.adventure-calendar-card,
 .adventure-form {
   padding: 18px;
   border-radius: 18px;
@@ -688,9 +698,21 @@ select:focus {
   border: 1px solid rgba(203, 188, 173, 0.9);
 }
 
+.adventure-calendar-card {
+  display: grid;
+  gap: 14px;
+}
+
+.adventure-calendar-card h3,
 .adventure-form h3 {
   margin-top: 0;
   margin-bottom: 14px;
+}
+
+.adventure-calendar-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.65;
 }
 
 .event-edit-form {

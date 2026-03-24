@@ -287,6 +287,11 @@ async function handleFetch(request, env) {
     return new Response(null, { status: 204 });
   }
 
+  const calendarFeedMatch = pathname.match(/^\/calendar\/([^/]+)\.ics$/);
+  if (calendarFeedMatch && request.method === "GET") {
+    return handleCalendarFeed(env, calendarFeedMatch[1]);
+  }
+
   if (!pathname.startsWith("/api/")) {
     return serveStaticAsset(pathname);
   }
@@ -326,7 +331,7 @@ async function handleFetch(request, env) {
     if (!member) {
       return json({ member: null }, 401);
     }
-    return json({ member: memberToClient(member) });
+    return json({ member: decorateSelfMember(memberToClient(member), env, member.calendar_token) });
   }
 
   if (pathname === "/api/dashboard" && request.method === "GET") {
@@ -587,7 +592,11 @@ async function handleVerifyCode(request, env) {
   return json(
     {
       ok: true,
-      member: memberToClient(member),
+      member: decorateSelfMember(
+        memberToClient(member),
+        env,
+        await ensureCalendarTokenValue(env, member.id, member.calendar_token),
+      ),
     },
     200,
     {
@@ -651,17 +660,24 @@ async function handleCreateMember(request, env) {
       env,
       `
         INSERT INTO members (id, email, display_name, role, status, approved_at, updated_at)
-        VALUES (?, ?, ?, ?, 'active', ?, ?)
+        VALUES (?, ?, ?, ?, 'active', ?, ?, ?)
       `,
-      [crypto.randomUUID(), email, displayName, role, now, now],
+      [crypto.randomUUID(), email, displayName, role, now, now, randomToken()],
+    );
+  }
+
+  const memberRow = await first(env, "SELECT * FROM members WHERE email = ? LIMIT 1", [email]);
+  if (memberRow) {
+    memberRow.calendar_token = await ensureCalendarTokenValue(
+      env,
+      memberRow.id,
+      memberRow.calendar_token,
     );
   }
 
   return json({
     ok: true,
-    member: memberToClient(
-      await first(env, "SELECT * FROM members WHERE email = ? LIMIT 1", [email]),
-    ),
+    member: memberRow ? memberToClient(memberRow) : null,
   });
 }
 
@@ -669,12 +685,24 @@ async function handleCreateGameEvent(request, env, actor) {
   const body = await readJson(request);
   const title = String(body?.title || "").trim();
   const eventDate = String(body?.eventDate || "").trim();
+  const endDate = String(body?.endDate || body?.eventDate || "").trim();
   const startsAt = normalizeTime(body?.startsAt);
   const endsAt = normalizeTime(body?.endsAt);
   const notes = String(body?.notes || "").trim();
 
-  if (!title || !isDateOnly(eventDate)) {
-    return json({ error: "Заполните название события и дату." }, 400);
+  if (!title || !isDateOnly(eventDate) || !isDateOnly(endDate)) {
+    return json({ error: "Заполните название события, день начала и день завершения." }, 400);
+  }
+
+  if (endDate < eventDate) {
+    return json({ error: "День завершения не может быть раньше дня начала." }, 400);
+  }
+
+  if (startsAt && endsAt && endDate === eventDate && endsAt <= startsAt) {
+    return json(
+      { error: "Если встреча уходит за полночь, укажите следующий день завершения." },
+      400,
+    );
   }
 
   const eventId = crypto.randomUUID();
@@ -682,16 +710,17 @@ async function handleCreateGameEvent(request, env, actor) {
   await run(
     env,
     `
-      INSERT INTO game_events (id, title, event_date, starts_at, ends_at, notes, status, created_by_member_id)
-      VALUES (?, ?, ?, ?, ?, ?, 'confirmed', ?)
+      INSERT INTO game_events (id, title, event_date, end_date, starts_at, ends_at, notes, status, created_by_member_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)
     `,
-    [eventId, title, eventDate, startsAt, endsAt, notes, actor.id],
+    [eventId, title, eventDate, endDate, startsAt, endsAt, notes, actor.id],
   );
 
   await notifyGameEventCreated(env, actor, {
     id: eventId,
     title,
     eventDate,
+    endDate,
     startsAt,
     endsAt,
     notes,
@@ -723,22 +752,34 @@ async function handleUpdateGameEvent(request, env, actor, gameEventId) {
   const body = await readJson(request);
   const title = String(body?.title || "").trim();
   const eventDate = String(body?.eventDate || "").trim();
+  const endDate = String(body?.endDate || body?.eventDate || "").trim();
   const startsAt = normalizeTime(body?.startsAt);
   const endsAt = normalizeTime(body?.endsAt);
   const notes = String(body?.notes || "").trim();
 
-  if (!title || !isDateOnly(eventDate)) {
-    return json({ error: "Заполните название события и дату." }, 400);
+  if (!title || !isDateOnly(eventDate) || !isDateOnly(endDate)) {
+    return json({ error: "Заполните название события, день начала и день завершения." }, 400);
+  }
+
+  if (endDate < eventDate) {
+    return json({ error: "День завершения не может быть раньше дня начала." }, 400);
+  }
+
+  if (startsAt && endsAt && endDate === eventDate && endsAt <= startsAt) {
+    return json(
+      { error: "Если встреча уходит за полночь, укажите следующий день завершения." },
+      400,
+    );
   }
 
   await run(
     env,
     `
       UPDATE game_events
-      SET title = ?, event_date = ?, starts_at = ?, ends_at = ?, notes = ?, status = 'confirmed'
+      SET title = ?, event_date = ?, end_date = ?, starts_at = ?, ends_at = ?, notes = ?, status = 'confirmed'
       WHERE id = ?
     `,
-    [title, eventDate, startsAt, endsAt, notes, gameEventId],
+    [title, eventDate, endDate, startsAt, endsAt, notes, gameEventId],
   );
 
   return json({ ok: true });
@@ -1149,6 +1190,7 @@ async function buildDashboard(env, member) {
           g.id,
           g.title,
           g.event_date,
+          g.end_date,
           g.starts_at,
           g.ends_at,
           g.notes,
@@ -1157,8 +1199,8 @@ async function buildDashboard(env, member) {
           creator.display_name AS created_by_name
         FROM game_events g
         LEFT JOIN members creator ON creator.id = g.created_by_member_id
-        WHERE g.event_date >= ? AND g.status != 'cancelled'
-        ORDER BY g.event_date ASC
+        WHERE COALESCE(g.end_date, g.event_date) >= ? AND g.status != 'cancelled'
+        ORDER BY g.event_date ASC, COALESCE(g.starts_at, '23:59') ASC
         LIMIT 8
       `,
       [today],
@@ -1184,7 +1226,8 @@ async function buildDashboard(env, member) {
   ]);
 
   const roster = decorateCouncilRoster(rawRoster, currentStewardMemberId);
-  const me = roster.find((entry) => entry.id === member.id) || memberToClient(member);
+  const meBase = roster.find((entry) => entry.id === member.id) || memberToClient(member);
+  const me = decorateSelfMember(meBase, env, member.calendar_token);
   const councilElection = await loadCouncilElectionState(
     env,
     me,
@@ -1216,6 +1259,7 @@ async function buildDashboard(env, member) {
       id: row.id,
       title: row.title,
       eventDate: row.event_date,
+      endDate: row.end_date || row.event_date,
       startsAt: row.starts_at,
       endsAt: row.ends_at,
       notes: row.notes,
@@ -1238,6 +1282,189 @@ async function buildDashboard(env, member) {
     roster,
     councilElection,
   };
+}
+
+async function handleCalendarFeed(env, token) {
+  const member = await first(
+    env,
+    `
+      SELECT id, display_name, status
+      FROM members
+      WHERE calendar_token = ?
+        AND status = 'active'
+      LIMIT 1
+    `,
+    [String(token || "").trim()],
+  );
+
+  if (!member) {
+    return new Response("Календарный свиток не найден.", {
+      status: 404,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  const feedBody = await buildCalendarFeed(env, member);
+  return new Response(feedBody, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/calendar; charset=utf-8",
+      "Cache-Control": "private, max-age=300",
+      "Content-Disposition": 'inline; filename="duty-guild-calendar.ics"',
+    },
+  });
+}
+
+async function buildCalendarFeed(env, member) {
+  const config = getConfig(env);
+  const today = todayInTimeZone(config.timeZone);
+  const [cycleRows, gameRows] = await Promise.all([
+    all(
+      env,
+      `
+        SELECT *
+        FROM cleaning_cycles
+        WHERE ends_on >= ?
+          AND status = 'scheduled'
+        ORDER BY planned_cleaning_date ASC
+        LIMIT 24
+      `,
+      [today],
+    ),
+    all(
+      env,
+      `
+        SELECT
+          id,
+          title,
+          event_date,
+          COALESCE(end_date, event_date) AS end_date,
+          starts_at,
+          ends_at,
+          notes
+        FROM game_events
+        WHERE COALESCE(end_date, event_date) >= ?
+          AND status != 'cancelled'
+        ORDER BY event_date ASC, COALESCE(starts_at, '23:59') ASC
+        LIMIT 40
+      `,
+      [today],
+    ),
+  ]);
+
+  const cycles = await Promise.all(
+    cycleRows.map((row) => hydrateCycle(env, row)),
+  );
+
+  const calendarEvents = [
+    ...cycles.map((cycle) => buildCycleCalendarEntry(env, cycle)),
+    ...gameRows.map((row) => buildGameEventCalendarEntry(env, row, config.timeZone)),
+  ].filter(Boolean);
+
+  const nowStamp = formatIcsDateTimeUtc(new Date());
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "PRODID:-//Duty Guild//Calendar//RU",
+    `X-WR-CALNAME:${escapeIcsText("Duty Guild — летопись событий")}`,
+    `X-WR-CALDESC:${escapeIcsText(`Личный календарный свиток для ${member.display_name}.`)}`,
+    `X-WR-TIMEZONE:${escapeIcsText(config.timeZone)}`,
+    "REFRESH-INTERVAL;VALUE=DURATION:PT6H",
+    "X-PUBLISHED-TTL:PT6H",
+    ...calendarEvents.flatMap((entry) => renderIcsEvent(entry, nowStamp)),
+    "END:VCALENDAR",
+    "",
+  ];
+
+  return lines.map(foldIcsLine).join("\r\n");
+}
+
+function buildCycleCalendarEntry(env, cycle) {
+  if (!cycle) {
+    return null;
+  }
+
+  const assigneeNames = cycle.assignees?.map((entry) => entry.displayName).join(" и ") || "Пара будет названа позже";
+  return {
+    uid: `ritual-${cycle.id}@dutyguild.ru`,
+    summary: "Ритуал Порядка",
+    description: [
+      `Хранители: ${assigneeNames}`,
+      `День свершения: ${formatHumanDate(cycle.plannedCleaningDate)}`,
+      `Промежуток обряда: ${formatHumanDate(cycle.startsOn)} - ${formatHumanDate(cycle.endsOn)}`,
+      `Статус: ${cycle.status === "completed" ? "завершён" : "ожидается"}`,
+    ].join("\n"),
+    url: getAppOrigin(env),
+    allDayStart: cycle.plannedCleaningDate,
+    allDayEndExclusive: addDays(cycle.plannedCleaningDate, 1),
+  };
+}
+
+function buildGameEventCalendarEntry(env, event, timeZone) {
+  if (!event) {
+    return null;
+  }
+
+  const endDate = event.end_date || event.event_date;
+  const entry = {
+    uid: `game-${event.id}@dutyguild.ru`,
+    summary: event.title,
+    description: [
+      `Когда: ${formatEventSchedule({
+        eventDate: event.event_date,
+        endDate,
+        startsAt: event.starts_at,
+        endsAt: event.ends_at,
+      })}`,
+      event.notes ? `Пометка хрониста: ${event.notes}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    url: getAppOrigin(env),
+  };
+
+  if (!event.starts_at) {
+    entry.allDayStart = event.event_date;
+    entry.allDayEndExclusive = addDays(endDate, 1);
+    return entry;
+  }
+
+  entry.startsAtUtc = zonedDateTimeToUtc(event.event_date, event.starts_at, timeZone);
+  if (event.ends_at) {
+    entry.endsAtUtc = zonedDateTimeToUtc(endDate, event.ends_at, timeZone);
+  }
+
+  return entry;
+}
+
+function renderIcsEvent(entry, stamp) {
+  const lines = [
+    "BEGIN:VEVENT",
+    `UID:${escapeIcsText(entry.uid)}`,
+    `DTSTAMP:${stamp}`,
+    `SUMMARY:${escapeIcsText(entry.summary)}`,
+    `DESCRIPTION:${escapeIcsText(entry.description || "")}`,
+    `URL:${escapeIcsText(entry.url || "")}`,
+    "STATUS:CONFIRMED",
+  ];
+
+  if (entry.allDayStart && entry.allDayEndExclusive) {
+    lines.push(`DTSTART;VALUE=DATE:${formatIcsDate(entry.allDayStart)}`);
+    lines.push(`DTEND;VALUE=DATE:${formatIcsDate(entry.allDayEndExclusive)}`);
+  } else if (entry.startsAtUtc) {
+    lines.push(`DTSTART:${formatIcsDateTimeUtc(entry.startsAtUtc)}`);
+    if (entry.endsAtUtc) {
+      lines.push(`DTEND:${formatIcsDateTimeUtc(entry.endsAtUtc)}`);
+    }
+  }
+
+  lines.push("END:VEVENT");
+  return lines;
 }
 
 async function loadRoster(env) {
@@ -2026,13 +2253,18 @@ async function createNextCycle(env, createdByMemberId) {
   const gameRows = await all(
     env,
     `
-      SELECT event_date
+      SELECT event_date, COALESCE(end_date, event_date) AS end_date
       FROM game_events
-      WHERE event_date >= ? AND event_date <= ? AND status != 'cancelled'
+      WHERE event_date <= ? AND COALESCE(end_date, event_date) >= ? AND status != 'cancelled'
     `,
-    [startsOn, endsOn],
+    [endsOn, startsOn],
   );
-  const gameDates = new Set(gameRows.map((row) => row.event_date));
+  const gameDates = new Set();
+  for (const row of gameRows) {
+    for (const date of eachDateInRange(row.event_date, row.end_date || row.event_date)) {
+      gameDates.add(date);
+    }
+  }
 
   const members = await all(
     env,
@@ -2044,6 +2276,7 @@ async function createNextCycle(env, createdByMemberId) {
         m.role,
         m.status,
         m.duty_count,
+        m.calendar_token,
         COUNT(r.id) AS review_count,
         ROUND(AVG(r.rating), 2) AS average_rating
       FROM members m
@@ -2087,6 +2320,7 @@ async function createNextCycle(env, createdByMemberId) {
       id: row.id,
       email: row.email,
       displayName: row.display_name,
+      calendarToken: row.calendar_token,
       dutyCount: Number(row.duty_count || 0),
       averageRating:
         row.average_rating === null || row.average_rating === undefined
@@ -2146,6 +2380,8 @@ async function createNextCycle(env, createdByMemberId) {
       startsOn,
       endsOn,
       plannedCleaningDate,
+      calendarUrl: buildCalendarSubscriptionUrl(env, assignee.calendarToken),
+      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, assignee.calendarToken),
       counterpartName:
         assignees.find((entry) => entry.id !== assignee.id)?.displayName || "парный соратник",
     });
@@ -2300,7 +2536,8 @@ async function sendSameDayReminders(env) {
         c.ends_on,
         m.id AS member_id,
         m.email,
-        m.display_name
+        m.display_name,
+        m.calendar_token
       FROM cleaning_cycles c
       JOIN cycle_assignments a ON a.cycle_id = c.id
       JOIN members m ON m.id = a.member_id
@@ -2333,6 +2570,8 @@ async function sendSameDayReminders(env) {
       plannedCleaningDate: row.planned_cleaning_date,
       startsOn: row.starts_on,
       endsOn: row.ends_on,
+      calendarUrl: buildCalendarSubscriptionUrl(env, row.calendar_token),
+      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, row.calendar_token),
     });
 
     await logNotification(env, {
@@ -2384,12 +2623,13 @@ async function ensureBootstrapMembers(env) {
           role,
           status,
           approved_at,
-          updated_at
+          updated_at,
+          calendar_token
         )
-        VALUES (?, ?, ?, 'admin', 'active', ?, ?)
+        VALUES (?, ?, ?, 'admin', 'active', ?, ?, ?)
         ON CONFLICT (email) DO NOTHING
       `,
-      [crypto.randomUUID(), email, displayName, now, now],
+      [crypto.randomUUID(), email, displayName, now, now, randomToken()],
     );
 
     await run(
@@ -2401,6 +2641,15 @@ async function ensureBootstrapMembers(env) {
       `,
       [now, now, email],
     );
+
+    const adminRow = await first(
+      env,
+      "SELECT id, calendar_token FROM members WHERE email = ? LIMIT 1",
+      [email],
+    );
+    if (adminRow) {
+      await ensureCalendarTokenValue(env, adminRow.id, adminRow.calendar_token);
+    }
   }
 }
 
@@ -2425,6 +2674,7 @@ async function getCurrentMember(request, env) {
         m.role,
         m.status,
         m.duty_count,
+        m.calendar_token,
         s.id AS session_id
       FROM sessions s
       JOIN members m ON m.id = s.member_id
@@ -2446,6 +2696,7 @@ async function getCurrentMember(request, env) {
     [new Date().toISOString(), row.session_id],
   );
 
+  row.calendar_token = await ensureCalendarTokenValue(env, row.id, row.calendar_token);
   return row;
 }
 
@@ -2488,6 +2739,58 @@ function memberToClient(member) {
     dutyCount,
     rank,
   };
+}
+
+function decorateSelfMember(member, env, calendarToken) {
+  return {
+    ...member,
+    calendarSubscriptionUrl: buildCalendarSubscriptionUrl(env, calendarToken),
+    calendarSubscriptionWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, calendarToken),
+  };
+}
+
+async function ensureCalendarTokenValue(env, memberId, currentToken = null) {
+  if (currentToken) {
+    return currentToken;
+  }
+
+  const proposedToken = randomToken();
+  await run(
+    env,
+    `
+      UPDATE members
+      SET calendar_token = COALESCE(calendar_token, ?), updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+    [proposedToken, memberId],
+  );
+
+  const row = await first(
+    env,
+    "SELECT calendar_token FROM members WHERE id = ? LIMIT 1",
+    [memberId],
+  );
+
+  return row?.calendar_token || proposedToken;
+}
+
+function buildCalendarSubscriptionUrl(env, token) {
+  if (!token) {
+    return null;
+  }
+
+  return new URL(`/calendar/${encodeURIComponent(token)}.ics`, getAppOrigin(env)).toString();
+}
+
+function buildCalendarSubscriptionWebcalUrl(env, token) {
+  const httpsUrl = buildCalendarSubscriptionUrl(env, token);
+  if (!httpsUrl) {
+    return null;
+  }
+
+  const url = new URL(httpsUrl);
+  url.protocol = "webcal:";
+  return url.toString();
 }
 
 function getMemberRank({ dutyCount, averageRating }) {
@@ -2681,7 +2984,11 @@ async function sendAssignmentEmail(env, details) {
     `День свершения: ${details.plannedCleaningDate}`,
     "",
     "Ритуал зачтётся только после того, как оба участника подтвердят завершение на сайте.",
-  ].join("\n");
+    details.calendarUrl ? `Подписной календарь ордена: ${details.calendarUrl}` : null,
+    details.calendarWebcalUrl ? `Ссылка для подписки: ${details.calendarWebcalUrl}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   return sendEmail(env, {
     to: details.email,
@@ -2700,7 +3007,7 @@ async function sendAssignmentEmail(env, details) {
         <p style="margin:18px 0 0;color:#5e4b41;line-height:1.65;">
           Подвиг зачтётся только тогда, когда оба участника отметят завершение обряда в летописи.
         </p>
-      `,
+      ` + renderCalendarSubscriptionCallout(details.calendarUrl, details.calendarWebcalUrl),
       ctaLabel: "Открыть летопись",
       ctaHref: getAppOrigin(env),
     }),
@@ -2716,7 +3023,11 @@ async function sendReminderEmail(env, details) {
     `День свершения: ${details.plannedCleaningDate}`,
     "",
     "Не забудьте после завершения подтвердить обряд в летописи.",
-  ].join("\n");
+    details.calendarUrl ? `Подписной календарь ордена: ${details.calendarUrl}` : null,
+    details.calendarWebcalUrl ? `Ссылка для подписки: ${details.calendarWebcalUrl}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   return sendEmail(env, {
     to: details.email,
@@ -2730,7 +3041,7 @@ async function sendReminderEmail(env, details) {
       bodyHtml: renderEmailDetailRows([
         ["Промежуток обряда", `${details.startsOn} - ${details.endsOn}`],
         ["День свершения", details.plannedCleaningDate],
-      ]),
+      ]) + renderCalendarSubscriptionCallout(details.calendarUrl, details.calendarWebcalUrl),
       ctaLabel: "Подтвердить после свершения",
       ctaHref: getAppOrigin(env),
     }),
@@ -2783,10 +3094,11 @@ async function sendGameEventEmail(env, details) {
     "",
     "В летопись внесено новое событие круга.",
     `Название: ${details.title}`,
-    `Дата: ${details.eventDate}`,
-    details.timeLabel ? `Время: ${details.timeLabel}` : null,
+    `Когда: ${details.scheduleLabel}`,
     `Вписал: ${details.createdByName}`,
     details.notes ? `Пометка хрониста: ${details.notes}` : null,
+    details.calendarUrl ? `Подписной календарь ордена: ${details.calendarUrl}` : null,
+    details.calendarWebcalUrl ? `Ссылка для подписки: ${details.calendarWebcalUrl}` : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -2803,13 +3115,13 @@ async function sendGameEventEmail(env, details) {
       bodyHtml:
         renderEmailDetailRows([
           ["Название", details.title],
-          ["Дата", details.eventDate],
-          ...(details.timeLabel ? [["Время", details.timeLabel]] : []),
+          ["Когда", details.scheduleLabel],
           ["Хронист", details.createdByName],
         ]) +
         (details.notes
           ? `<p style="margin:18px 0 0;color:#5e4b41;line-height:1.65;"><strong>Пометка хрониста:</strong> ${escapeHtml(details.notes)}</p>`
-          : ""),
+          : "") +
+        renderCalendarSubscriptionCallout(details.calendarUrl, details.calendarWebcalUrl),
       ctaLabel: "Открыть летопись",
       ctaHref: getAppOrigin(env),
     }),
@@ -2939,23 +3251,34 @@ async function notifyGameEventCreated(env, actor, event) {
   const recipients = await all(
     env,
     `
-      SELECT id, email, display_name
+      SELECT id, email, display_name, calendar_token
       FROM members
       WHERE status = 'active'
       ORDER BY display_name ASC
     `,
   );
-  const timeLabel = [event.startsAt, event.endsAt].filter(Boolean).join(" - ");
+  const scheduleLabel = formatEventSchedule({
+    eventDate: event.eventDate,
+    endDate: event.endDate,
+    startsAt: event.startsAt,
+    endsAt: event.endsAt,
+  });
 
   for (const recipient of recipients) {
+    const calendarToken = await ensureCalendarTokenValue(
+      env,
+      recipient.id,
+      recipient.calendar_token,
+    );
     const delivery = await sendGameEventEmail(env, {
       email: recipient.email,
       displayName: recipient.display_name,
       title: event.title,
-      eventDate: event.eventDate,
-      timeLabel: timeLabel || "",
+      scheduleLabel,
       notes: event.notes,
       createdByName: actor.display_name,
+      calendarUrl: buildCalendarSubscriptionUrl(env, calendarToken),
+      calendarWebcalUrl: buildCalendarSubscriptionWebcalUrl(env, calendarToken),
     });
 
     await logNotification(env, {
@@ -3132,6 +3455,31 @@ function renderEmailDetailRows(rows) {
           `,
         )
         .join("")}
+    </div>
+  `;
+}
+
+function renderCalendarSubscriptionCallout(calendarUrl, calendarWebcalUrl) {
+  if (!calendarUrl) {
+    return "";
+  }
+
+  const subscriptionLinks = [
+    calendarWebcalUrl
+      ? `<a href="${escapeHtml(calendarWebcalUrl)}" style="color:#8f311c;text-decoration:none;font-weight:700;">Подписать через календарь</a>`
+      : null,
+    `<a href="${escapeHtml(calendarUrl)}" style="color:#8f311c;text-decoration:none;font-weight:700;">Открыть .ics-свиток</a>`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return `
+    <div style="margin-top:18px;padding:16px 18px;border-radius:18px;background:#f6ecdf;border:1px solid #ead9c3;color:#5e4b41;line-height:1.65;">
+      <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9e5b2e;">Календарный свиток</div>
+      <div style="margin-top:8px;">
+        Чтобы не потерять походы и обряды, держите личную подписку на календарь ордена под рукой.
+      </div>
+      <div style="margin-top:10px;">${subscriptionLinks}</div>
     </div>
   `;
 }
@@ -3463,9 +3811,148 @@ function addDays(dateOnly, delta) {
   return date.toISOString().slice(0, 10);
 }
 
+function eachDateInRange(startsOn, endsOn) {
+  const dates = [];
+  for (let date = startsOn; date <= endsOn; date = addDays(date, 1)) {
+    dates.push(date);
+  }
+  return dates;
+}
+
 function dateToUtcDate(dateOnly) {
   const [year, month, day] = dateOnly.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+}
+
+function formatEventSchedule(event) {
+  const startDate = event?.eventDate;
+  const endDate = event?.endDate || startDate;
+  const startsAt = event?.startsAt || null;
+  const endsAt = event?.endsAt || null;
+
+  if (!startDate) {
+    return "Дата пока не назначена";
+  }
+
+  const startDateLabel = formatHumanDate(startDate);
+  const endDateLabel = formatHumanDate(endDate);
+
+  if (startDate === endDate) {
+    if (startsAt && endsAt) {
+      return `${startDateLabel}, ${startsAt} - ${endsAt}`;
+    }
+    if (startsAt) {
+      return `${startDateLabel}, с ${startsAt}`;
+    }
+    if (endsAt) {
+      return `${startDateLabel}, до ${endsAt}`;
+    }
+    return startDateLabel;
+  }
+
+  const startLabel = startsAt ? `${startDateLabel}, ${startsAt}` : startDateLabel;
+  const endLabel = endsAt ? `${endDateLabel}, ${endsAt}` : endDateLabel;
+  return `${startLabel} - ${endLabel}`;
+}
+
+function formatHumanDate(dateOnly) {
+  if (!dateOnly) {
+    return "Дата пока не назначена";
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(dateToUtcDate(dateOnly));
+}
+
+function escapeIcsText(value) {
+  return String(value || "")
+    .replaceAll("\\", "\\\\")
+    .replaceAll(";", "\\;")
+    .replaceAll(",", "\\,")
+    .replaceAll(/\r?\n/g, "\\n");
+}
+
+function foldIcsLine(line) {
+  const value = String(line || "");
+  if (value.length <= 73) {
+    return value;
+  }
+
+  const parts = [];
+  for (let index = 0; index < value.length; index += 73) {
+    parts.push(index === 0 ? value.slice(index, index + 73) : ` ${value.slice(index, index + 73)}`);
+  }
+  return parts.join("\r\n");
+}
+
+function formatIcsDate(dateOnly) {
+  return String(dateOnly || "").replaceAll("-", "");
+}
+
+function formatIcsDateTimeUtc(date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+  return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+}
+
+function zonedDateTimeToUtc(dateOnly, timeValue, timeZone) {
+  const [year, month, day] = String(dateOnly || "").split("-").map(Number);
+  const [hours, minutes] = String(timeValue || "00:00").split(":").map(Number);
+  const desiredUtcEquivalent = Date.UTC(year, month - 1, day, hours, minutes, 0);
+  let guess = new Date(desiredUtcEquivalent);
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const actual = getZonedDateTimeParts(guess, timeZone);
+    const actualUtcEquivalent = Date.UTC(
+      actual.year,
+      actual.month - 1,
+      actual.day,
+      actual.hour,
+      actual.minute,
+      actual.second,
+    );
+    const diff = desiredUtcEquivalent - actualUtcEquivalent;
+    if (diff === 0) {
+      break;
+    }
+    guess = new Date(guess.getTime() + diff);
+  }
+
+  return guess;
+}
+
+function getZonedDateTimeParts(date, timeZone) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+    second: Number(parts.second),
+  };
 }
 
 function escapeHtml(value) {
