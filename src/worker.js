@@ -343,6 +343,22 @@ async function handleFetch(request, env) {
     return handleGenerateCycle(env, member);
   }
 
+  if (pathname === "/api/admin/steward-election/start" && request.method === "POST") {
+    const member = await requireAdmin(request, env);
+    if (member instanceof Response) {
+      return member;
+    }
+    return handleStartStewardElection(env, member);
+  }
+
+  if (pathname === "/api/council/steward-election/vote" && request.method === "POST") {
+    const member = await requireCouncil(request, env);
+    if (member instanceof Response) {
+      return member;
+    }
+    return handleStewardElectionVote(request, env, member);
+  }
+
   const completionMatch = pathname.match(/^\/api\/cycles\/([^/]+)\/complete$/);
   if (completionMatch && request.method === "POST") {
     const member = await requireMember(request, env);
@@ -697,11 +713,121 @@ async function handleDeleteGameEvent(env, actor, gameEventId) {
   }
 
   if (!(await canManageGameEvent(env, actor, gameEvent))) {
-    return json({ error: "Стереть это событие может только его хронист или совет." }, 403);
+    return json({ error: "Изгладить это событие может только его хронист или совет." }, 403);
   }
 
   await run(env, "DELETE FROM game_events WHERE id = ?", [gameEventId]);
   return json({ ok: true });
+}
+
+async function handleStartStewardElection(env, actor) {
+  const activeElection = await getActiveStewardElection(env);
+  if (activeElection) {
+    return json(
+      { error: "Выборный собор уже открыт. Сначала завершите текущий круг голосования." },
+      400,
+    );
+  }
+
+  const roster = await loadRoster(env);
+  const candidates = pickInitialStewardCandidates(roster);
+
+  if (!candidates.length) {
+    return json(
+      { error: "Сейчас некого выдвинуть: в круге нет активных соратников вне совета." },
+      400,
+    );
+  }
+
+  const electionId = crypto.randomUUID();
+  await run(
+    env,
+    `
+      INSERT INTO council_elections (id, role, status, round_number, launched_by_member_id)
+      VALUES (?, 'steward', 'active', 1, ?)
+    `,
+    [electionId, actor.id],
+  );
+
+  await insertElectionCandidates(env, electionId, 1, candidates);
+
+  const currentStewardMemberId = await getCurrentStewardMemberId(env);
+  const councilMembers = await loadCouncilVoterRoster(env, currentStewardMemberId);
+  const requiredVotes = getElectionMajorityCount(councilMembers.length);
+
+  await notifyCouncilElectionStage(env, {
+    kind: "steward-election-started",
+    subject: "Duty Guild: Совет созвал выборный собор",
+    kicker: "Выборный собор",
+    title: "Открыт круг выборов Сенешаля",
+    lead: "Магистр созвал совет, чтобы выбрать того, кто понесёт печать Сенешаля рядом с ним.",
+    rows: [
+      ["Круг голосования", "Первый круг"],
+      ["Созвал собор", actor.display_name],
+      ["Кандидаты", formatCandidateNames(candidates)],
+      ["Нужно для избрания", `${requiredVotes} из ${councilMembers.length || 1} голос${pluralizeRussian(requiredVotes, ["", "а", "ов"])}`],
+    ],
+    note:
+      "Если ни одно имя не соберёт большинства голосов совета, летопись сама откроет следующий круг и сузит выбор до сильнейших претендентов.",
+  });
+
+  return json({ ok: true, electionId });
+}
+
+async function handleStewardElectionVote(request, env, actor) {
+  const activeElection = await getActiveStewardElection(env);
+  if (!activeElection) {
+    return json({ error: "Сейчас нет открытого выборного собора." }, 400);
+  }
+
+  const body = await readJson(request);
+  const candidateId = String(body?.candidateId || "").trim();
+  if (!candidateId) {
+    return json({ error: "Выберите кандидата, прежде чем отдавать голос." }, 400);
+  }
+
+  const candidate = await first(
+    env,
+    `
+      SELECT member_id
+      FROM council_election_candidates
+      WHERE election_id = ?
+        AND round_number = ?
+        AND member_id = ?
+      LIMIT 1
+    `,
+    [activeElection.id, activeElection.round_number, candidateId],
+  );
+
+  if (!candidate) {
+    return json({ error: "Такое имя не участвует в текущем круге выборов." }, 404);
+  }
+
+  if (candidate.member_id === actor.id) {
+    return json({ error: "Отдать голос самому себе нельзя." }, 400);
+  }
+
+  await run(
+    env,
+    `
+      INSERT INTO council_election_votes (
+        id,
+        election_id,
+        round_number,
+        voter_member_id,
+        candidate_member_id
+      )
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT (election_id, round_number, voter_member_id)
+      DO UPDATE SET
+        candidate_member_id = EXCLUDED.candidate_member_id,
+        created_at = CURRENT_TIMESTAMP
+    `,
+    [crypto.randomUUID(), activeElection.id, activeElection.round_number, actor.id, candidateId],
+  );
+
+  const resolution = await resolveStewardElectionRound(env, activeElection.id);
+  return json({ ok: true, resolution });
 }
 
 async function handleGenerateCycle(env, actor) {
@@ -899,6 +1025,7 @@ async function buildDashboard(env, member) {
     upcomingGames,
     feedback,
     rawRoster,
+    currentStewardMemberId,
   ] = await Promise.all([
     first(
       env,
@@ -992,10 +1119,17 @@ async function buildDashboard(env, member) {
       `,
     ),
     loadRoster(env),
+    getCurrentStewardMemberId(env),
   ]);
 
-  const roster = decorateCouncilRoster(rawRoster);
+  const roster = decorateCouncilRoster(rawRoster, currentStewardMemberId);
   const me = roster.find((entry) => entry.id === member.id) || memberToClient(member);
+  const councilElection = await loadCouncilElectionState(
+    env,
+    me,
+    roster,
+    currentStewardMemberId,
+  );
 
   const feedbackCycles = await Promise.all(
     feedback.map(async (row) =>
@@ -1041,6 +1175,7 @@ async function buildDashboard(env, member) {
       cycleOutcome: feedbackCycles[index]?.outcome || null,
     })),
     roster,
+    councilElection,
   };
 }
 
@@ -1081,41 +1216,13 @@ async function loadRoster(env) {
 }
 
 async function loadCouncilRoster(env) {
-  return decorateCouncilRoster(await loadRoster(env));
+  return decorateCouncilRoster(await loadRoster(env), await getCurrentStewardMemberId(env));
 }
 
-function decorateCouncilRoster(roster) {
-  const stewardMemberId = pickStewardMemberId(roster);
-
+function decorateCouncilRoster(roster, stewardMemberId = null) {
   return roster
     .map((member) => decorateCouncilMember(member, stewardMemberId))
     .sort(compareCouncilMembers);
-}
-
-function pickStewardMemberId(roster) {
-  const candidates = roster
-    .filter(
-      (member) =>
-        member.status === "active" &&
-        member.baseRole !== "admin" &&
-        member.role !== "admin" &&
-        typeof member.averageRating === "number" &&
-        member.feedbackCount > 0,
-    )
-    .sort((left, right) => {
-      if (left.averageRating !== right.averageRating) {
-        return right.averageRating - left.averageRating;
-      }
-      if (left.feedbackCount !== right.feedbackCount) {
-        return right.feedbackCount - left.feedbackCount;
-      }
-      if (left.dutyCount !== right.dutyCount) {
-        return right.dutyCount - left.dutyCount;
-      }
-      return left.displayName.localeCompare(right.displayName, "ru");
-    });
-
-  return candidates[0]?.id || null;
 }
 
 function decorateCouncilMember(member, stewardMemberId) {
@@ -1165,8 +1272,439 @@ async function getEffectiveMemberRole(env, member) {
     return "admin";
   }
 
-  const stewardMemberId = pickStewardMemberId(await loadRoster(env));
+  const stewardMemberId = await getCurrentStewardMemberId(env);
   return member.id === stewardMemberId ? "steward" : "member";
+}
+
+async function getCurrentStewardMemberId(env) {
+  const row = await first(
+    env,
+    `
+      SELECT e.winner_member_id
+      FROM council_elections e
+      JOIN members m ON m.id = e.winner_member_id
+      WHERE e.role = 'steward'
+        AND e.status = 'completed'
+        AND e.winner_member_id IS NOT NULL
+        AND m.status = 'active'
+        AND m.role = 'member'
+      ORDER BY COALESCE(e.completed_at, e.started_at) DESC, e.started_at DESC
+      LIMIT 1
+    `,
+  );
+
+  return row?.winner_member_id || null;
+}
+
+async function getActiveStewardElection(env) {
+  return first(
+    env,
+    `
+      SELECT
+        e.*,
+        launcher.display_name AS launched_by_name
+      FROM council_elections e
+      LEFT JOIN members launcher ON launcher.id = e.launched_by_member_id
+      WHERE e.role = 'steward'
+        AND e.status = 'active'
+      ORDER BY e.started_at DESC
+      LIMIT 1
+    `,
+  );
+}
+
+async function loadCouncilElectionState(env, viewer, roster, currentStewardMemberId = null) {
+  const stewardMemberId =
+    currentStewardMemberId === undefined || currentStewardMemberId === null
+      ? await getCurrentStewardMemberId(env)
+      : currentStewardMemberId;
+  const currentSteward = stewardMemberId
+    ? roster.find((member) => member.id === stewardMemberId) || null
+    : null;
+  const lastCompletedElection = await first(
+    env,
+    `
+      SELECT
+        e.id,
+        e.round_number,
+        e.completed_at,
+        winner.display_name AS winner_name
+      FROM council_elections e
+      LEFT JOIN members winner ON winner.id = e.winner_member_id
+      WHERE e.role = 'steward'
+        AND e.status = 'completed'
+      ORDER BY COALESCE(e.completed_at, e.started_at) DESC
+      LIMIT 1
+    `,
+  );
+  const activeElection = await getActiveStewardElection(env);
+
+  const summary = {
+    currentSteward: currentSteward
+      ? {
+          id: currentSteward.id,
+          displayName: currentSteward.displayName,
+          rankTitle: currentSteward.rank?.title || "",
+          averageRating: currentSteward.averageRating,
+        }
+      : null,
+    canStartElection: Boolean(viewer?.permissions?.canManageMembers),
+    activeElection: null,
+    lastCompletedElection: lastCompletedElection
+      ? {
+          id: lastCompletedElection.id,
+          roundNumber: Number(lastCompletedElection.round_number || 1),
+          completedAt: lastCompletedElection.completed_at,
+          winnerName: lastCompletedElection.winner_name || "Неизвестный соратник",
+        }
+      : null,
+  };
+
+  if (!activeElection) {
+    return summary;
+  }
+
+  const [candidateRows, voteRows] = await Promise.all([
+    all(
+      env,
+      `
+        SELECT
+          member_id,
+          rating_snapshot,
+          feedback_count_snapshot,
+          duty_count_snapshot
+        FROM council_election_candidates
+        WHERE election_id = ?
+          AND round_number = ?
+        ORDER BY created_at ASC
+      `,
+      [activeElection.id, activeElection.round_number],
+    ),
+    all(
+      env,
+      `
+        SELECT voter_member_id, candidate_member_id
+        FROM council_election_votes
+        WHERE election_id = ?
+          AND round_number = ?
+      `,
+      [activeElection.id, activeElection.round_number],
+    ),
+  ]);
+
+  const rosterById = new Map(roster.map((member) => [member.id, member]));
+  const councilMembers = roster.filter((member) => member.permissions?.canManageCycles);
+  const votesByCandidate = new Map();
+  for (const vote of voteRows) {
+    votesByCandidate.set(
+      vote.candidate_member_id,
+      Number(votesByCandidate.get(vote.candidate_member_id) || 0) + 1,
+    );
+  }
+
+  const myVoteCandidateId = viewer
+    ? voteRows.find((vote) => vote.voter_member_id === viewer.id)?.candidate_member_id || null
+    : null;
+  const votedCouncilIds = new Set(voteRows.map((vote) => vote.voter_member_id));
+  const candidates = candidateRows
+    .map((candidate) => {
+      const member = rosterById.get(candidate.member_id);
+      const ratingValue =
+        candidate.rating_snapshot === null || candidate.rating_snapshot === undefined
+          ? member?.averageRating ?? null
+          : Number(candidate.rating_snapshot);
+
+      return {
+        id: candidate.member_id,
+        displayName: member?.displayName || "Неизвестный соратник",
+        rankTitle: member?.rank?.title || "Соратник круга",
+        averageRating: ratingValue,
+        feedbackCount: Number(candidate.feedback_count_snapshot || member?.feedbackCount || 0),
+        dutyCount: Number(candidate.duty_count_snapshot || member?.dutyCount || 0),
+        voteCount: Number(votesByCandidate.get(candidate.member_id) || 0),
+        isMyVote: myVoteCandidateId === candidate.member_id,
+        canReceiveVote: Boolean(viewer?.permissions?.canManageCycles) && viewer.id !== candidate.member_id,
+      };
+    })
+    .sort(compareElectionCandidates);
+
+  return {
+    ...summary,
+    activeElection: {
+      id: activeElection.id,
+      roundNumber: Number(activeElection.round_number || 1),
+      startedAt: activeElection.started_at,
+      launchedByName: activeElection.launched_by_name || "Неизвестный Магистр",
+      councilSize: councilMembers.length,
+      requiredVotes: getElectionMajorityCount(councilMembers.length),
+      votesCast: voteRows.length,
+      allCouncilVoted:
+        councilMembers.length > 0 &&
+        councilMembers.every((member) => votedCouncilIds.has(member.id)),
+      myVoteCandidateId,
+      canVote: Boolean(viewer?.permissions?.canManageCycles),
+      candidates,
+    },
+  };
+}
+
+function pickInitialStewardCandidates(roster) {
+  const eligibleMembers = roster.filter((member) => member.status === "active" && member.baseRole !== "admin");
+  if (!eligibleMembers.length) {
+    return [];
+  }
+
+  const topRating = eligibleMembers.reduce(
+    (highest, member) => Math.max(highest, getElectionRatingScore(member.averageRating)),
+    Number.NEGATIVE_INFINITY,
+  );
+
+  return eligibleMembers
+    .filter((member) => getElectionRatingScore(member.averageRating) === topRating)
+    .sort((left, right) => left.displayName.localeCompare(right.displayName, "ru"))
+    .map(buildElectionCandidateSnapshot);
+}
+
+function buildElectionCandidateSnapshot(member) {
+  return {
+    id: member.id,
+    displayName: member.displayName,
+    averageRating: member.averageRating,
+    feedbackCount: Number(member.feedbackCount || 0),
+    dutyCount: Number(member.dutyCount || 0),
+  };
+}
+
+async function insertElectionCandidates(env, electionId, roundNumber, candidates) {
+  for (const candidate of candidates) {
+    await run(
+      env,
+      `
+        INSERT INTO council_election_candidates (
+          id,
+          election_id,
+          round_number,
+          member_id,
+          rating_snapshot,
+          feedback_count_snapshot,
+          duty_count_snapshot
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        crypto.randomUUID(),
+        electionId,
+        roundNumber,
+        candidate.id,
+        candidate.averageRating,
+        candidate.feedbackCount,
+        candidate.dutyCount,
+      ],
+    );
+  }
+}
+
+async function resolveStewardElectionRound(env, electionId) {
+  const election = await first(
+    env,
+    `
+      SELECT *
+      FROM council_elections
+      WHERE id = ?
+        AND status = 'active'
+      LIMIT 1
+    `,
+    [electionId],
+  );
+
+  if (!election) {
+    return { status: "settled" };
+  }
+
+  const currentStewardMemberId = await getCurrentStewardMemberId(env);
+  const councilMembers = await loadCouncilVoterRoster(env, currentStewardMemberId);
+  const [candidateRows, voteRows] = await Promise.all([
+    all(
+      env,
+      `
+        SELECT
+          c.member_id,
+          c.rating_snapshot,
+          c.feedback_count_snapshot,
+          c.duty_count_snapshot,
+          m.display_name
+        FROM council_election_candidates c
+        JOIN members m ON m.id = c.member_id
+        WHERE c.election_id = ?
+          AND c.round_number = ?
+        ORDER BY c.created_at ASC
+      `,
+      [election.id, election.round_number],
+    ),
+    all(
+      env,
+      `
+        SELECT voter_member_id, candidate_member_id
+        FROM council_election_votes
+        WHERE election_id = ?
+          AND round_number = ?
+      `,
+      [election.id, election.round_number],
+    ),
+  ]);
+
+  const votesByCandidate = new Map();
+  for (const vote of voteRows) {
+    votesByCandidate.set(
+      vote.candidate_member_id,
+      Number(votesByCandidate.get(vote.candidate_member_id) || 0) + 1,
+    );
+  }
+
+  const rankedCandidates = candidateRows
+    .map((candidate) => ({
+      id: candidate.member_id,
+      displayName: candidate.display_name,
+      averageRating:
+        candidate.rating_snapshot === null || candidate.rating_snapshot === undefined
+          ? null
+          : Number(candidate.rating_snapshot),
+      feedbackCount: Number(candidate.feedback_count_snapshot || 0),
+      dutyCount: Number(candidate.duty_count_snapshot || 0),
+      voteCount: Number(votesByCandidate.get(candidate.member_id) || 0),
+    }))
+    .sort(compareElectionCandidates);
+
+  const requiredVotes = getElectionMajorityCount(councilMembers.length);
+  const winner = rankedCandidates.find((candidate) => candidate.voteCount >= requiredVotes);
+
+  if (winner) {
+    const previousStewardMemberId = currentStewardMemberId;
+    await run(
+      env,
+      `
+        UPDATE council_elections
+        SET status = 'completed',
+            winner_member_id = ?,
+            completed_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `,
+      [winner.id, election.id],
+    );
+
+    await notifyCouncilElectionStage(env, {
+      kind: "steward-election-completed",
+      subject: "Duty Guild: Совет избрал Сенешаля",
+      kicker: "Итог выборов",
+      title: "Сенешаль назван советом",
+      lead: "Голоса сошлись, и теперь у Магистра есть избранный соратник, которому доверена печать Сенешаля.",
+      rows: [
+        ["Избранный Сенешаль", winner.displayName],
+        ["Круг голосования", `Круг ${Number(election.round_number || 1)}`],
+        ["Голоса совета", `${winner.voteCount} из ${councilMembers.length || 1}`],
+      ],
+      note:
+        "Новый Сенешаль уже может править свод походов и помогать совету созывать новые обряды.",
+      extraMemberIds: [winner.id, previousStewardMemberId].filter(Boolean),
+    });
+
+    return { status: "completed", winnerMemberId: winner.id };
+  }
+
+  const votedCouncilIds = new Set(voteRows.map((vote) => vote.voter_member_id));
+  const allCouncilVoted =
+    councilMembers.length > 0 &&
+    councilMembers.every((member) => votedCouncilIds.has(member.id));
+
+  if (!allCouncilVoted) {
+    return { status: "pending", votesCast: voteRows.length, requiredVotes };
+  }
+
+  const nextRoundNumber = Number(election.round_number || 1) + 1;
+  const runoffCandidates = pickRunoffCandidates(rankedCandidates);
+
+  await run(
+    env,
+    `
+      UPDATE council_elections
+      SET round_number = ?
+      WHERE id = ?
+    `,
+    [nextRoundNumber, election.id],
+  );
+  await insertElectionCandidates(env, election.id, nextRoundNumber, runoffCandidates);
+
+  await notifyCouncilElectionStage(env, {
+    kind: "steward-election-runoff",
+    subject: "Duty Guild: совет открывает новый круг голосования",
+    kicker: "Следующий круг",
+    title: "Большинство не найдено",
+    lead: "Прошлый круг не дал имени, за которое высказалось бы более половины совета. Летопись открывает новый круг среди сильнейших претендентов.",
+    rows: [
+      ["Новый круг", `Круг ${nextRoundNumber}`],
+      ["Кандидаты", formatCandidateNames(runoffCandidates)],
+      ["Нужно для избрания", `${requiredVotes} из ${councilMembers.length || 1}`],
+    ],
+    note:
+      "За себя голосовать по-прежнему нельзя. Если голоса снова разойдутся, летопись удержит лишь сильнейшие имена и откроет ещё один круг.",
+  });
+
+  return {
+    status: "runoff",
+    roundNumber: nextRoundNumber,
+    candidateCount: runoffCandidates.length,
+  };
+}
+
+function compareElectionCandidates(left, right) {
+  if (right.voteCount !== left.voteCount) {
+    return right.voteCount - left.voteCount;
+  }
+  const rightRating = getElectionRatingScore(right.averageRating);
+  const leftRating = getElectionRatingScore(left.averageRating);
+  if (rightRating !== leftRating) {
+    return rightRating - leftRating;
+  }
+  if (right.feedbackCount !== left.feedbackCount) {
+    return right.feedbackCount - left.feedbackCount;
+  }
+  if (right.dutyCount !== left.dutyCount) {
+    return right.dutyCount - left.dutyCount;
+  }
+  return left.displayName.localeCompare(right.displayName, "ru");
+}
+
+function pickRunoffCandidates(candidates) {
+  return [...candidates]
+    .sort(compareElectionCandidates)
+    .slice(0, Math.min(3, candidates.length))
+    .map((candidate) => ({
+      id: candidate.id,
+      displayName: candidate.displayName,
+      averageRating: candidate.averageRating,
+      feedbackCount: candidate.feedbackCount,
+      dutyCount: candidate.dutyCount,
+    }));
+}
+
+function getElectionRatingScore(value) {
+  return value === null || value === undefined ? 0 : Number(value);
+}
+
+function getElectionMajorityCount(councilSize) {
+  return Math.floor(Number(councilSize || 0) / 2) + 1;
+}
+
+async function loadCouncilVoterRoster(env, currentStewardMemberId = null) {
+  const roster = decorateCouncilRoster(
+    await loadRoster(env),
+    currentStewardMemberId ?? (await getCurrentStewardMemberId(env)),
+  );
+  return roster.filter((member) => member.permissions?.canManageCycles);
+}
+
+function formatCandidateNames(candidates) {
+  return candidates.map((candidate) => candidate.displayName).join(", ");
 }
 
 async function requireCouncil(request, env) {
@@ -2130,6 +2668,81 @@ async function sendGameEventEmail(env, details) {
       ctaHref: getAppOrigin(env),
     }),
   });
+}
+
+async function sendCouncilElectionEmail(env, details) {
+  const text = [
+    `${details.displayName}, приветствую.`,
+    "",
+    details.lead,
+    ...details.rows.map(([label, value]) => `${label}: ${value}`),
+    "",
+    details.note,
+  ].join("\n");
+
+  return sendEmail(env, {
+    to: details.email,
+    subject: details.subject,
+    text,
+    html: renderEmailShell(env, {
+      kicker: details.kicker,
+      title: details.title,
+      lead: details.lead,
+      bodyHtml:
+        renderEmailDetailRows(details.rows) +
+        `
+          <p style="margin:18px 0 0;color:#5e4b41;line-height:1.65;">
+            ${escapeHtml(details.note)}
+          </p>
+        `,
+      ctaLabel: details.ctaLabel || "Открыть зал совета",
+      ctaHref: getAppOrigin(env),
+    }),
+  });
+}
+
+async function notifyCouncilElectionStage(env, details) {
+  const recipients = await loadCouncilNotificationRecipients(env, details.extraMemberIds || []);
+
+  for (const recipient of recipients) {
+    const delivery = await sendCouncilElectionEmail(env, {
+      email: recipient.email,
+      displayName: recipient.display_name,
+      subject: details.subject,
+      kicker: details.kicker,
+      title: details.title,
+      lead: details.lead,
+      rows: details.rows,
+      note: details.note,
+      ctaLabel: details.ctaLabel,
+    });
+
+    await logNotification(env, {
+      kind: details.kind,
+      memberId: recipient.id,
+      deliveryStatus: delivery.mode,
+    });
+  }
+}
+
+async function loadCouncilNotificationRecipients(env, extraMemberIds = []) {
+  const currentStewardMemberId = await getCurrentStewardMemberId(env);
+  const allowedIds = new Set(extraMemberIds.filter(Boolean));
+  if (currentStewardMemberId) {
+    allowedIds.add(currentStewardMemberId);
+  }
+
+  const rows = await all(
+    env,
+    `
+      SELECT id, email, display_name, role
+      FROM members
+      WHERE status = 'active'
+      ORDER BY display_name ASC
+    `,
+  );
+
+  return rows.filter((member) => member.role === "admin" || allowedIds.has(member.id));
 }
 
 async function notifyReviewRequest(env, cycleId, assignments) {

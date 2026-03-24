@@ -323,6 +323,7 @@ function renderDashboard() {
         ${renderAdventurePanel()}
         ${renderReviewPanel()}
         ${renderRankGuidePanel()}
+        ${renderCouncilElectionPanel()}
         ${renderRosterPanel()}
         ${state.me.permissions?.canManageCycles ? renderAdminPanel() : ""}
       </section>
@@ -463,7 +464,7 @@ function renderAdventureEvent(event) {
           data-game-edit-start="${escapeHtml(event.id)}"
           ${state.busy || isEditing ? "disabled" : ""}
         >
-          Исправить
+          Переписать
         </button>
         <button
           class="button button--danger"
@@ -471,7 +472,7 @@ function renderAdventureEvent(event) {
           data-game-delete="${escapeHtml(event.id)}"
           ${state.busy ? "disabled" : ""}
         >
-          Стереть
+          Изгладить
         </button>
       </div>
     `
@@ -481,14 +482,14 @@ function renderAdventureEvent(event) {
     ? `
       <form class="stack-form event-edit-form" data-game-update="${escapeHtml(event.id)}">
         <div class="event-edit-form__header">
-          <strong>Исправить запись в летописи</strong>
+          <strong>Переписать запись летописи</strong>
           <button
             class="button button--secondary"
             type="button"
             data-game-edit-cancel="${escapeHtml(event.id)}"
             ${state.busy ? "disabled" : ""}
           >
-            Отменить
+            Свернуть
           </button>
         </div>
         <label>
@@ -534,6 +535,165 @@ function renderAdventureEvent(event) {
       ${actions}
       ${editor}
     </li>
+  `;
+}
+
+function renderCouncilElectionPanel() {
+  const election = state.dashboard.councilElection;
+  if (!election) {
+    return "";
+  }
+
+  const currentSteward = election.currentSteward
+    ? `
+      <article class="election-summary-card">
+        <span class="rank-summary-card__label">Текущий Сенешаль</span>
+        <strong>${escapeHtml(election.currentSteward.displayName)}</strong>
+        <p>${escapeHtml(election.currentSteward.rankTitle)}</p>
+        <p class="election-summary-card__meta">Слава: ${escapeHtml(formatRatingValue(election.currentSteward.averageRating))}</p>
+      </article>
+    `
+    : `
+      <article class="election-summary-card">
+        <span class="rank-summary-card__label">Текущий Сенешаль</span>
+        <strong>Печать вакантна</strong>
+        <p>Совет ещё не назвал соратника, который понесёт этот сан.</p>
+      </article>
+    `;
+
+  const latestOutcome = election.lastCompletedElection
+    ? `
+      <article class="election-summary-card">
+        <span class="rank-summary-card__label">Последний исход</span>
+        <strong>${escapeHtml(election.lastCompletedElection.winnerName)}</strong>
+        <p>Кругов понадобилось: ${escapeHtml(String(election.lastCompletedElection.roundNumber || 1))}</p>
+        <p class="election-summary-card__meta">${escapeHtml(formatDateTime(election.lastCompletedElection.completedAt))}</p>
+      </article>
+    `
+    : `
+      <article class="election-summary-card">
+        <span class="rank-summary-card__label">Последний исход</span>
+        <strong>Первый собор впереди</strong>
+        <p>Как только Магистр созовёт выборы, здесь появится имя первого избранного Сенешаля.</p>
+      </article>
+    `;
+
+  const activeElection = election.activeElection;
+  const startAction = !activeElection && election.canStartElection
+    ? `
+      <div class="election-actions">
+        <button
+          class="button button--primary"
+          type="button"
+          data-steward-election-start="true"
+          ${state.busy ? "disabled" : ""}
+        >
+          Созвать выборный собор
+        </button>
+        <p class="panel__aside-note">
+          В первый круг попадут все соратники, которые делят вершину славы. За себя голосовать нельзя.
+        </p>
+      </div>
+    `
+    : "";
+
+  const activeBlock = activeElection
+    ? `
+      <div class="election-stage">
+        <div class="election-stage__head">
+          <div>
+            <p class="section-tag">Круг голосования</p>
+            <h3>Круг ${escapeHtml(String(activeElection.roundNumber))}</h3>
+          </div>
+          <div class="status-row">
+            <span class="status-pill status-pill--ghost">Нужно: ${escapeHtml(String(activeElection.requiredVotes))}</span>
+            <span class="status-pill status-pill--${activeElection.allCouncilVoted ? "waiting" : "live"}">
+              Голосов: ${escapeHtml(String(activeElection.votesCast))} из ${escapeHtml(String(activeElection.councilSize))}
+            </span>
+          </div>
+        </div>
+        <p class="panel__intro">
+          Собор созвал ${escapeHtml(activeElection.launchedByName)}. Для избрания нужно больше половины голосов совета.
+          Если большинство не найдётся, летопись автоматически откроет следующий круг среди сильнейших имён.
+        </p>
+        <div class="election-board">
+          ${activeElection.candidates.map((candidate) => renderElectionCandidate(activeElection, candidate)).join("")}
+        </div>
+      </div>
+    `
+    : `
+      <div class="election-stage election-stage--quiet">
+        <p class="panel__intro">
+          Сейчас выборный собор не открыт. Магистр может созвать его в любой момент, если сан Сенешаля пора обновить.
+        </p>
+      </div>
+    `;
+
+  return `
+    <article class="panel panel--wide panel--council">
+      <div class="panel__header">
+        <p class="section-tag">Собор Совета</p>
+        <h2>Печать Сенешаля и воля совета</h2>
+      </div>
+      <p class="panel__intro">
+        Сенешаль избирается среди соратников, которые делят вершину славы ритуалов. Совет решает исход голосами,
+        а летопись сама переводит собор в новый круг, если большинство не найдено.
+      </p>
+      <div class="council-grid">
+        <div>
+          <div class="election-summary-grid">
+            ${currentSteward}
+            ${latestOutcome}
+          </div>
+          ${activeBlock}
+          ${startAction}
+        </div>
+        <aside class="council-side-note">
+          <p class="rail-card__title">Закон собора</p>
+          <ul class="rail-list">
+            <li>В первый круг входят все имена, которые делят верхнюю ступень славы.</li>
+            <li>Для избрания нужно больше половины голосов действующего совета.</li>
+            <li>Если круг не выявил победителя, летопись оставит 2-3 сильнейших имени и откроет новый круг.</li>
+            <li>Каждый шаг собора сопровождается письмами для совета.</li>
+          </ul>
+        </aside>
+      </div>
+    </article>
+  `;
+}
+
+function renderElectionCandidate(activeElection, candidate) {
+  const action = activeElection.canVote
+    ? candidate.canReceiveVote
+      ? `
+        <button
+          class="button ${candidate.isMyVote ? "button--secondary" : "button--primary"}"
+          type="button"
+          data-steward-election-vote="${escapeHtml(candidate.id)}"
+          ${state.busy ? "disabled" : ""}
+        >
+          ${candidate.isMyVote ? "Ваш голос" : "Отдать голос"}
+        </button>
+      `
+      : '<span class="member-cell__meta">Свой клинок в собственную пользу не поднимают.</span>'
+    : '<span class="member-cell__meta">Этот круг решает действующий совет.</span>';
+
+  return `
+    <article class="election-card ${candidate.isMyVote ? "election-card--voted" : ""}">
+      <div class="election-card__head">
+        <strong>${escapeHtml(candidate.displayName)}</strong>
+        <span>${escapeHtml(candidate.rankTitle)}</span>
+      </div>
+      <div class="election-card__metrics">
+        <span>Слава: ${escapeHtml(formatRatingValue(candidate.averageRating))}</span>
+        <span>Служений: ${escapeHtml(String(candidate.dutyCount))}</span>
+        <span>Голосов: ${escapeHtml(String(candidate.voteCount))}</span>
+      </div>
+      <p class="member-cell__meta">
+        Свидетельств в летописи: ${escapeHtml(String(candidate.feedbackCount))}
+      </p>
+      ${action}
+    </article>
   `;
 }
 
@@ -880,6 +1040,10 @@ function bindEvents() {
   document.querySelector("#generate-cycle-button")?.addEventListener("click", onGenerateCycle);
   document.querySelector("#invite-member-form")?.addEventListener("submit", onInviteMember);
   document.querySelector("#game-event-form")?.addEventListener("submit", onCreateGameEvent);
+  document.querySelector("[data-steward-election-start]")?.addEventListener("click", onStartStewardElection);
+  document.querySelectorAll("[data-steward-election-vote]").forEach((button) => {
+    button.addEventListener("click", onCastStewardElectionVote);
+  });
   document.querySelectorAll("[data-game-edit-start]").forEach((button) => {
     button.addEventListener("click", onStartEditGameEvent);
   });
@@ -1050,7 +1214,7 @@ async function onDeleteGameEvent(event) {
     return;
   }
 
-  if (!window.confirm("Стереть это событие из свода приключений?")) {
+  if (!window.confirm("Изгладить это событие из свода приключений?")) {
     return;
   }
 
@@ -1062,7 +1226,7 @@ async function onDeleteGameEvent(event) {
       state.editingGameEventId = "";
     }
     await hydrateDashboard();
-    state.notice = "Событие стёрто из летописи походов.";
+    state.notice = "Событие изглажено из летописи походов.";
     state.error = "";
     render();
   });
@@ -1076,6 +1240,44 @@ async function onGenerateCycle() {
     });
     await hydrateDashboard();
     state.notice = "Новый обряд созван, а героям уже ушли свитки с назначением.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onStartStewardElection() {
+  await withBusy(async () => {
+    await api("/api/admin/steward-election/start", {
+      method: "POST",
+      body: {},
+    });
+    await hydrateDashboard();
+    state.notice = "Выборный собор открыт, а совет уже получил почтовые вести.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onCastStewardElectionVote(event) {
+  const candidateId = String(event.currentTarget?.dataset?.stewardElectionVote || "").trim();
+  if (!candidateId) {
+    return;
+  }
+
+  await withBusy(async () => {
+    const response = await api("/api/council/steward-election/vote", {
+      method: "POST",
+      body: {
+        candidateId,
+      },
+    });
+    await hydrateDashboard();
+    state.notice =
+      response.resolution?.status === "completed"
+        ? "Большинство найдено. Совет назвал нового Сенешаля."
+        : response.resolution?.status === "runoff"
+          ? "Круг завершился без большинства. Летопись открыла новый круг и вновь известила совет."
+          : "Голос внесён в летопись собора.";
     state.error = "";
     render();
   });
@@ -1254,6 +1456,10 @@ function roleLabel(role) {
 
 function isCouncilMember(member) {
   return Boolean(member?.permissions?.canManageCycles);
+}
+
+function formatRatingValue(value) {
+  return value === null || value === undefined ? "0.0" : Number(value).toFixed(1);
 }
 
 function memberRankTitle(member) {

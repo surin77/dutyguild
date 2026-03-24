@@ -587,6 +587,105 @@ select:focus {
   font-size: 1rem;
 }
 
+.council-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.election-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.election-summary-card,
+.council-side-note,
+.election-card,
+.election-stage {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.46);
+  border: 1px solid rgba(203, 188, 173, 0.9);
+}
+
+.election-summary-card strong {
+  display: block;
+  margin: 8px 0 10px;
+  color: var(--red-deep);
+  font-size: 1.1rem;
+}
+
+.election-summary-card p,
+.council-side-note p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.election-summary-card__meta {
+  margin-top: 10px;
+  color: var(--ink-muted);
+  font-size: 0.84rem;
+}
+
+.election-stage {
+  display: grid;
+  gap: 16px;
+}
+
+.election-stage--quiet {
+  margin-bottom: 0;
+}
+
+.election-stage__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.election-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.election-card {
+  display: grid;
+  gap: 12px;
+  background: linear-gradient(180deg, rgba(255, 251, 245, 0.92), rgba(239, 228, 211, 0.94));
+}
+
+.election-card--voted {
+  border-color: rgba(200, 140, 58, 0.72);
+  box-shadow: 0 10px 22px rgba(200, 140, 58, 0.16);
+}
+
+.election-card__head {
+  display: grid;
+  gap: 4px;
+}
+
+.election-card__head span {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.election-card__metrics {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.election-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -1008,6 +1107,8 @@ th {
   .admin-grid,
   .adventure-grid,
   .review-grid,
+  .council-grid,
+  .election-summary-grid,
   .rank-summary-grid,
   .rank-ladder {
     grid-template-columns: 1fr;
@@ -1053,7 +1154,8 @@ th {
 
   .assignment-card,
   .review-form__head,
-  .event-edit-form__header {
+  .event-edit-form__header,
+  .election-stage__head {
     flex-direction: column;
     align-items: flex-start;
   }
