@@ -29,11 +29,13 @@ spec:
             httpGet:
               path: /api/health
               port: http
+              scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /api/health
               port: http
+              scheme: HTTP
             initialDelaySeconds: 15
             periodSeconds: 20
