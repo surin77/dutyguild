@@ -1321,48 +1321,29 @@ async function handleCalendarFeed(env, token) {
 async function buildCalendarFeed(env, member) {
   const config = getConfig(env);
   const today = todayInTimeZone(config.timeZone);
-  const [cycleRows, gameRows] = await Promise.all([
-    all(
-      env,
-      `
-        SELECT *
-        FROM cleaning_cycles
-        WHERE ends_on >= ?
-          AND status = 'scheduled'
-        ORDER BY planned_cleaning_date ASC
-        LIMIT 24
-      `,
-      [today],
-    ),
-    all(
-      env,
-      `
-        SELECT
-          id,
-          title,
-          event_date,
-          COALESCE(end_date, event_date) AS end_date,
-          starts_at,
-          ends_at,
-          notes
-        FROM game_events
-        WHERE COALESCE(end_date, event_date) >= ?
-          AND status != 'cancelled'
-        ORDER BY event_date ASC, COALESCE(starts_at, '23:59') ASC
-        LIMIT 40
-      `,
-      [today],
-    ),
-  ]);
-
-  const cycles = await Promise.all(
-    cycleRows.map((row) => hydrateCycle(env, row)),
+  const gameRows = await all(
+    env,
+    `
+      SELECT
+        id,
+        title,
+        event_date,
+        COALESCE(end_date, event_date) AS end_date,
+        starts_at,
+        ends_at,
+        notes
+      FROM game_events
+      WHERE COALESCE(end_date, event_date) >= ?
+        AND status != 'cancelled'
+      ORDER BY event_date ASC, COALESCE(starts_at, '23:59') ASC
+      LIMIT 40
+    `,
+    [today],
   );
 
-  const calendarEvents = [
-    ...cycles.map((cycle) => buildCycleCalendarEntry(env, cycle)),
-    ...gameRows.map((row) => buildGameEventCalendarEntry(env, row, config.timeZone)),
-  ].filter(Boolean);
+  const calendarEvents = gameRows
+    .map((row) => buildGameEventCalendarEntry(env, row, config.timeZone))
+    .filter(Boolean);
 
   const nowStamp = formatIcsDateTimeUtc(new Date());
   const lines = [
@@ -1371,8 +1352,8 @@ async function buildCalendarFeed(env, member) {
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "PRODID:-//Duty Guild//Calendar//RU",
-    `X-WR-CALNAME:${escapeIcsText("Duty Guild — летопись событий")}`,
-    `X-WR-CALDESC:${escapeIcsText(`Личный календарный свиток для ${member.display_name}.`)}`,
+    `X-WR-CALNAME:${escapeIcsText("Duty Guild — походы круга")}`,
+    `X-WR-CALDESC:${escapeIcsText(`Личный календарный свиток походов и встреч для ${member.display_name}.`)}`,
     `X-WR-TIMEZONE:${escapeIcsText(config.timeZone)}`,
     "REFRESH-INTERVAL;VALUE=DURATION:PT6H",
     "X-PUBLISHED-TTL:PT6H",
@@ -1382,27 +1363,6 @@ async function buildCalendarFeed(env, member) {
   ];
 
   return lines.map(foldIcsLine).join("\r\n");
-}
-
-function buildCycleCalendarEntry(env, cycle) {
-  if (!cycle) {
-    return null;
-  }
-
-  const assigneeNames = cycle.assignees?.map((entry) => entry.displayName).join(" и ") || "Пара будет названа позже";
-  return {
-    uid: `ritual-${cycle.id}@dutyguild.ru`,
-    summary: "Ритуал Порядка",
-    description: [
-      `Хранители: ${assigneeNames}`,
-      `День свершения: ${formatHumanDate(cycle.plannedCleaningDate)}`,
-      `Промежуток обряда: ${formatHumanDate(cycle.startsOn)} - ${formatHumanDate(cycle.endsOn)}`,
-      `Статус: ${cycle.status === "completed" ? "завершён" : "ожидается"}`,
-    ].join("\n"),
-    url: getAppOrigin(env),
-    allDayStart: cycle.plannedCleaningDate,
-    allDayEndExclusive: addDays(cycle.plannedCleaningDate, 1),
-  };
 }
 
 function buildGameEventCalendarEntry(env, event, timeZone) {
@@ -3477,7 +3437,7 @@ function renderCalendarSubscriptionCallout(calendarUrl, calendarWebcalUrl) {
     <div style="margin-top:18px;padding:16px 18px;border-radius:18px;background:#f6ecdf;border:1px solid #ead9c3;color:#5e4b41;line-height:1.65;">
       <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9e5b2e;">Календарный свиток</div>
       <div style="margin-top:8px;">
-        Чтобы не потерять походы и обряды, держите личную подписку на календарь ордена под рукой.
+        Чтобы не потерять походы и встречи круга, держите личную подписку на календарный свиток под рукой.
       </div>
       <div style="margin-top:10px;">${subscriptionLinks}</div>
     </div>
