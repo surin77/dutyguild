@@ -275,24 +275,6 @@ const ACHIEVEMENT_LIBRARY = Object.freeze([
     criteria: "Завершить 1 обряд.",
   },
   {
-    id: "third_bell",
-    icon: "third_bell",
-    hidden: false,
-    rarity: "bronze",
-    title: "Три удара колокола",
-    description: "Круг уже знает вашу руку и не удивляется, когда жребий зовёт именно вас.",
-    criteria: "Завершить 3 обряда.",
-  },
-  {
-    id: "steady_hand",
-    icon: "steady_hand",
-    hidden: false,
-    rarity: "silver",
-    title: "Надёжная рука зала",
-    description: "Служение стало привычной силой: на вас можно опереться без лишних слов.",
-    criteria: "Завершить 7 обрядов.",
-  },
-  {
     id: "first_verdict",
     icon: "first_verdict",
     hidden: false,
@@ -300,15 +282,6 @@ const ACHIEVEMENT_LIBRARY = Object.freeze([
     title: "Первый вердикт хрониста",
     description: "Вы впервые оставили голос в летописи и помогли кругу вынести общий суд.",
     criteria: "Оставить 1 звёздный вердикт.",
-  },
-  {
-    id: "scribe_of_circle",
-    icon: "scribe_of_circle",
-    hidden: false,
-    rarity: "bronze",
-    title: "Хронист круга",
-    description: "Ваше перо уже не молчит: оно регулярно направляет славу и память ордена.",
-    criteria: "Оставить 5 звёздных вердиктов.",
   },
   {
     id: "pathfinder",
@@ -320,6 +293,60 @@ const ACHIEVEMENT_LIBRARY = Object.freeze([
     criteria: "Вписать в свод 1 встречу или поход.",
   },
   {
+    id: "third_bell",
+    icon: "third_bell",
+    hidden: false,
+    rarity: "bronze",
+    title: "Три удара колокола",
+    description: "Круг уже знает вашу руку и не удивляется, когда жребий зовёт именно вас.",
+    criteria: "Завершить 3 обряда.",
+  },
+  {
+    id: "open_ledger",
+    icon: "open_ledger",
+    hidden: false,
+    rarity: "bronze",
+    title: "Открытая книга",
+    description: "Поля летописи перестали быть пустыми: ваши заметки начали направлять круг.",
+    criteria: "Оставить 3 вердикта с текстовой пометкой.",
+  },
+  {
+    id: "chorus_of_witnesses",
+    icon: "chorus_of_witnesses",
+    hidden: false,
+    rarity: "bronze",
+    title: "Хор свидетелей",
+    description: "Круг уже не раз отметил ваш труд, и голоса свидетелей сложились в уверенный строй.",
+    criteria: "Собрать 5 свидетельств о ритуалах.",
+  },
+  {
+    id: "dawn_crossing",
+    icon: "dawn_crossing",
+    hidden: false,
+    rarity: "bronze",
+    title: "На границе суток",
+    description: "Поход протянулся за полночь и не оборвался на пороге нового дня.",
+    criteria: "Вписать 1 событие, которое уходит за полночь.",
+  },
+  {
+    id: "scribe_of_circle",
+    icon: "scribe_of_circle",
+    hidden: false,
+    rarity: "bronze",
+    title: "Хронист круга",
+    description: "Ваше перо уже не молчит: оно регулярно направляет славу и память ордена.",
+    criteria: "Оставить 5 звёздных вердиктов.",
+  },
+  {
+    id: "steady_hand",
+    icon: "steady_hand",
+    hidden: false,
+    rarity: "silver",
+    title: "Надёжная рука зала",
+    description: "Служение стало привычной силой: на вас можно опереться без лишних слов.",
+    criteria: "Завершить 7 обрядов.",
+  },
+  {
     id: "hall_host",
     icon: "hall_host",
     hidden: false,
@@ -327,6 +354,33 @@ const ACHIEVEMENT_LIBRARY = Object.freeze([
     title: "Хозяин длинного стола",
     description: "Вы не просто приходите на встречи, а помогаете ордену держать ритм походов.",
     criteria: "Вписать в свод 4 встречи или похода.",
+  },
+  {
+    id: "laureled_name",
+    icon: "laureled_name",
+    hidden: false,
+    rarity: "silver",
+    title: "Лавры круга",
+    description: "Высокая слава перестала быть случайной удачей и стала вашим устойчивым именем.",
+    criteria: "Держать славу 4.7+ при минимум 5 свидетельствах.",
+  },
+  {
+    id: "steady_chorus",
+    icon: "steady_chorus",
+    hidden: false,
+    rarity: "silver",
+    title: "Стройный хор",
+    description: "Вы не только служите, но и умеете раз за разом поддерживать живой голос летописи.",
+    criteria: "Завершить 5 обрядов и оставить 3 вердикта с пометкой.",
+  },
+  {
+    id: "silver_quill",
+    icon: "silver_quill",
+    hidden: false,
+    rarity: "silver",
+    title: "Серебряное перо",
+    description: "Ваше слово стало заметным инструментом круга, а не случайной строкой на полях.",
+    criteria: "Оставить 10 звёздных вердиктов.",
   },
   {
     id: "golden_standard",
@@ -338,6 +392,24 @@ const ACHIEVEMENT_LIBRARY = Object.freeze([
     criteria: "Набрать славу 4.5+ при минимум 3 свидетельствах.",
   },
   {
+    id: "torchbearer",
+    icon: "torchbearer",
+    hidden: false,
+    rarity: "gold",
+    title: "Факелоносец обряда",
+    description: "Ваш факел уже не зажигают за вас: вы сами удерживаете свет ритуала, когда он нужен кругу.",
+    criteria: "Завершить 12 обрядов.",
+  },
+  {
+    id: "road_captain",
+    icon: "road_captain",
+    hidden: false,
+    rarity: "gold",
+    title: "Капитан походов",
+    description: "Вы умеете не только прийти, но и собрать компанию, время и дорогу в один уверенный путь.",
+    criteria: "Вписать в свод 8 встреч или походов.",
+  },
+  {
     id: "seal_of_council",
     icon: "seal_of_council",
     hidden: false,
@@ -347,13 +419,31 @@ const ACHIEVEMENT_LIBRARY = Object.freeze([
     criteria: "Стать Магистром или Сенешалем Совета.",
   },
   {
+    id: "circle_pillar",
+    icon: "circle_pillar",
+    hidden: false,
+    rarity: "gold",
+    title: "Столп круга",
+    description: "В служении, летописи и походах ваше имя уже звучит как одна из опор ордена.",
+    criteria: "Завершить 10 обрядов, оставить 5 вердиктов и вписать 4 события.",
+  },
+  {
+    id: "hall_warden",
+    icon: "hall_warden",
+    hidden: false,
+    rarity: "mythic",
+    title: "Оплот ордена",
+    description: "Круг видит в вас не просто опытного соратника, а настоящую стену, на которую можно положиться.",
+    criteria: "Завершить 20 обрядов.",
+  },
+  {
     id: "midnight_oil",
     icon: "midnight_oil",
     hidden: true,
     rarity: "mythic",
     title: "После полуночи",
-    description: "Не каждый поход умеет дотянуться до нового дня. Этот сумел.",
-    criteria: "Вписать событие, которое уходит за полночь на следующий день.",
+    description: "Не каждый поход умеет трижды дотянуться до нового дня. Этот след уже пахнет легендой.",
+    criteria: "Вписать 3 события, которые уходят за полночь.",
   },
   {
     id: "voice_in_margins",
@@ -390,6 +480,51 @@ const ACHIEVEMENT_LIBRARY = Object.freeze([
     title: "Полярная звезда ордена",
     description: "Ваше имя не просто в числе лучших: на него равняются как на единственный яркий ориентир.",
     criteria: "Стать единоличным лидером по славе при значении 4.7+ и минимум 5 свидетельствах.",
+  },
+  {
+    id: "dragon_chronicler",
+    icon: "dragon_chronicler",
+    hidden: true,
+    rarity: "mythic",
+    title: "Драконье перо",
+    description: "Ваши записи стали столь многочисленны и точны, что ими уже можно осветить целую кампанию.",
+    criteria: "Оставить 15 вердиктов, из них 10 с текстовой пометкой.",
+  },
+  {
+    id: "eclipse_route",
+    icon: "eclipse_route",
+    hidden: true,
+    rarity: "mythic",
+    title: "Тропа затмения",
+    description: "Ваши походы знают, как долго горит стол и как далеко может уйти дорога за грань обычного вечера.",
+    criteria: "Вписать 10 событий, из них 2 через полночь.",
+  },
+  {
+    id: "white_sigil",
+    icon: "white_sigil",
+    hidden: true,
+    rarity: "mythic",
+    title: "Белая печать",
+    description: "Когда высокий сан встречает высокую славу, орден ставит особую печать, которую знают только свои.",
+    criteria: "Нести сан Магистра или Сенешаля и держать славу 4.6+ при 5 свидетельствах.",
+  },
+  {
+    id: "ember_archivist",
+    icon: "ember_archivist",
+    hidden: true,
+    rarity: "mythic",
+    title: "Пепельный архив",
+    description: "В ваших руках уже и служение, и запись, и зов к новым походам сложились в один цельный свод.",
+    criteria: "Завершить 20 обрядов, оставить 10 вердиктов и вписать 6 событий.",
+  },
+  {
+    id: "stormglass",
+    icon: "stormglass",
+    hidden: true,
+    rarity: "mythic",
+    title: "Грозовое стекло",
+    description: "Слишком чистая линия славы для обычной удачи: будто сам шторм застыл внутри кристалла и служит вам.",
+    criteria: "Завершить 12 обрядов и держать славу 4.9+ при 12 свидетельствах.",
   },
 ]);
 
@@ -1477,23 +1612,30 @@ async function buildDashboard(env, member) {
       "Созванная пара",
     cycleOutcome: feedbackCycles[index]?.outcome || null,
   }));
+  const rosterWithAchievements = await attachRosterAchievements(env, roster, {
+    currentCycle,
+    upcomingGames: upcomingGamesClient,
+    preloadedStats: new Map([[member.id, achievementStats]]),
+  });
+  const meWithAchievements =
+    rosterWithAchievements.find((entry) => entry.id === member.id) || decorateSelfMember(me, env);
   const achievementCodex = buildAchievementCodex(env, {
-    member: me,
-    roster,
+    member: meWithAchievements,
+    roster: rosterWithAchievements,
     currentCycle,
     upcomingGames: upcomingGamesClient,
     achievementStats,
   });
 
   return {
-    me,
+    me: decorateSelfMember(meWithAchievements, env),
     currentCycle,
     nextCycle,
     recentCycles,
     pendingReviewCycles,
     upcomingGames: upcomingGamesClient,
     recentFeedback,
-    roster,
+    roster: rosterWithAchievements,
     councilElection,
     achievementCodex,
   };
@@ -1594,14 +1736,16 @@ async function loadMemberAchievementStats(env, memberId) {
     .map((row) => row.created_at)
     .filter(Boolean);
   const eventDates = eventRows.map((row) => row.created_at).filter(Boolean);
-  const overnightEventDate =
-    eventRows.find((row) => row.end_date && row.end_date > row.event_date)?.created_at || null;
+  const overnightEventDates = eventRows
+    .filter((row) => row.end_date && row.end_date > row.event_date)
+    .map((row) => row.created_at)
+    .filter(Boolean);
 
   return {
     authoredReviewsCount: reviewDates.length,
     commentedReviewsCount: commentedReviewDates.length,
     createdEventsCount: eventDates.length,
-    overnightEventsCount: overnightEventDate ? 1 : 0,
+    overnightEventsCount: overnightEventDates.length,
     reviewDates,
     commentedReviewDates,
     completedCycleDates: completedCycleDates.map((row) => row.happened_at).filter(Boolean),
@@ -1612,9 +1756,44 @@ async function loadMemberAchievementStats(env, memberId) {
     legendaryCycleDates: legendaryCycleDates.map((row) => row.happened_at).filter(Boolean),
     legendaryCyclesCount: legendaryCycleDates.length,
     eventDates,
-    overnightEventDate,
+    overnightEventDate: overnightEventDates[0] || null,
+    overnightEventDates,
     stewardGrantedAt: stewardRecord?.happened_at || null,
   };
+}
+
+async function attachRosterAchievements(env, roster, { currentCycle, upcomingGames, preloadedStats } = {}) {
+  const statMap = new Map(preloadedStats || []);
+  const statsEntries = await Promise.all(
+    roster.map(async (member) => {
+      if (statMap.has(member.id)) {
+        return [member.id, statMap.get(member.id)];
+      }
+
+      return [member.id, await loadMemberAchievementStats(env, member.id)];
+    }),
+  );
+
+  for (const [memberId, stats] of statsEntries) {
+    statMap.set(memberId, stats);
+  }
+
+  return roster.map((member) => {
+    const codex = buildAchievementCodex(env, {
+      member,
+      roster,
+      currentCycle,
+      upcomingGames,
+      achievementStats: statMap.get(member.id) || {},
+    });
+    const publicAchievements = codex.publicAchievements.filter((entry) => entry.earned);
+
+    return {
+      ...member,
+      publicAchievements,
+      publicAchievementCount: publicAchievements.length,
+    };
+  });
 }
 
 function buildAchievementCodex(env, context) {
@@ -1623,8 +1802,9 @@ function buildAchievementCodex(env, context) {
     resolveAchievementState(entry, context),
   );
   const publicAchievements = resolvedAchievements.filter((entry) => !entry.hidden);
+  const allHiddenAchievements = resolvedAchievements.filter((entry) => entry.hidden);
   const hiddenAchievements = viewerCanSeeHidden
-    ? resolvedAchievements.filter((entry) => entry.hidden)
+    ? allHiddenAchievements
     : [];
 
   return {
@@ -1632,6 +1812,7 @@ function buildAchievementCodex(env, context) {
     publicCount: publicAchievements.length,
     publicEarnedCount: publicAchievements.filter((entry) => entry.earned).length,
     hiddenCount: hiddenAchievements.length,
+    hiddenTotalCount: allHiddenAchievements.length,
     hiddenEarnedCount: hiddenAchievements.filter((entry) => entry.earned).length,
     publicAchievements,
     hiddenAchievements,
@@ -1658,17 +1839,36 @@ function resolveAchievementState(definition, context) {
   const commentedReviewDates = context.achievementStats?.commentedReviewDates || [];
   const eventDates = context.achievementStats?.eventDates || [];
   const overnightEventDate = context.achievementStats?.overnightEventDate || null;
+  const overnightEventDates = context.achievementStats?.overnightEventDates || [];
   const legendaryCycleDates = context.achievementStats?.legendaryCycleDates || [];
   const stewardGrantedAt = context.achievementStats?.stewardGrantedAt || null;
+  const ratingDates = (context.achievementStats?.ratingTimeline || [])
+    .map((entry) => entry.happenedAt)
+    .filter(Boolean);
   const goldenStandardAt = findRatingMilestoneDate(
     context.achievementStats?.ratingTimeline || [],
     4.5,
     3,
   );
+  const laureledNameAt = findRatingMilestoneDate(
+    context.achievementStats?.ratingTimeline || [],
+    4.7,
+    5,
+  );
+  const whiteSigilAt = findRatingMilestoneDate(
+    context.achievementStats?.ratingTimeline || [],
+    4.6,
+    5,
+  );
   const unbrokenGlowRatingAt = findRatingMilestoneDate(
     context.achievementStats?.ratingTimeline || [],
     4.8,
     10,
+  );
+  const stormglassRatingAt = findRatingMilestoneDate(
+    context.achievementStats?.ratingTimeline || [],
+    4.9,
+    12,
   );
 
   let earned = false;
@@ -1690,6 +1890,21 @@ function resolveAchievementState(definition, context) {
       earned = dutyCount >= 3;
       progressLabel = `${Math.min(dutyCount, 3)} из 3 завершённых обрядов.`;
       earnedAt = nthItem(completedCycleDates, 3);
+      break;
+    case "open_ledger":
+      earned = commentedReviewsCount >= 3;
+      progressLabel = `${Math.min(commentedReviewsCount, 3)} из 3 вердиктов с пометкой.`;
+      earnedAt = nthItem(commentedReviewDates, 3);
+      break;
+    case "chorus_of_witnesses":
+      earned = feedbackCount >= 5;
+      progressLabel = `Свидетельств ${Math.min(feedbackCount, 5)} из 5.`;
+      earnedAt = nthItem(ratingDates, 5);
+      break;
+    case "dawn_crossing":
+      earned = overnightEventsCount >= 1;
+      progressLabel = `${Math.min(overnightEventsCount, 1)} из 1 похода за грань полуночи.`;
+      earnedAt = overnightEventDate;
       break;
     case "steady_hand":
       earned = dutyCount >= 7;
@@ -1716,10 +1931,35 @@ function resolveAchievementState(definition, context) {
       progressLabel = `${Math.min(createdEventsCount, 4)} из 4 вписанных событий.`;
       earnedAt = nthItem(eventDates, 4);
       break;
+    case "laureled_name":
+      earned = averageRating !== null && averageRating >= 4.7 && feedbackCount >= 5;
+      progressLabel = `Слава ${ratingLabel} из 4.7 · свидетельств ${Math.min(feedbackCount, 5)} из 5.`;
+      earnedAt = laureledNameAt;
+      break;
+    case "steady_chorus":
+      earned = dutyCount >= 5 && commentedReviewsCount >= 3;
+      progressLabel = `Обряды ${Math.min(dutyCount, 5)} из 5 · пометки ${Math.min(commentedReviewsCount, 3)} из 3.`;
+      earnedAt = latestOf(nthItem(completedCycleDates, 5), nthItem(commentedReviewDates, 3));
+      break;
+    case "silver_quill":
+      earned = authoredReviewsCount >= 10;
+      progressLabel = `${Math.min(authoredReviewsCount, 10)} из 10 вынесенных вердиктов.`;
+      earnedAt = nthItem(reviewDates, 10);
+      break;
     case "golden_standard":
       earned = averageRating !== null && averageRating >= 4.5 && feedbackCount >= 3;
       progressLabel = `Слава ${ratingLabel} из 4.5 · свидетельств ${Math.min(feedbackCount, 3)} из 3.`;
       earnedAt = goldenStandardAt;
+      break;
+    case "torchbearer":
+      earned = dutyCount >= 12;
+      progressLabel = `${Math.min(dutyCount, 12)} из 12 завершённых обрядов.`;
+      earnedAt = nthItem(completedCycleDates, 12);
+      break;
+    case "road_captain":
+      earned = createdEventsCount >= 8;
+      progressLabel = `${Math.min(createdEventsCount, 8)} из 8 вписанных событий.`;
+      earnedAt = nthItem(eventDates, 8);
       break;
     case "seal_of_council":
       earned = effectiveRole === "admin" || effectiveRole === "steward";
@@ -1731,10 +1971,24 @@ function resolveAchievementState(definition, context) {
           ? context.member?.approvedAt || context.member?.createdAt || null
           : stewardGrantedAt;
       break;
+    case "circle_pillar":
+      earned = dutyCount >= 10 && authoredReviewsCount >= 5 && createdEventsCount >= 4;
+      progressLabel = `Обряды ${Math.min(dutyCount, 10)} из 10 · вердикты ${Math.min(authoredReviewsCount, 5)} из 5 · походы ${Math.min(createdEventsCount, 4)} из 4.`;
+      earnedAt = latestOf(
+        nthItem(completedCycleDates, 10),
+        nthItem(reviewDates, 5),
+        nthItem(eventDates, 4),
+      );
+      break;
+    case "hall_warden":
+      earned = dutyCount >= 20;
+      progressLabel = `${Math.min(dutyCount, 20)} из 20 завершённых обрядов.`;
+      earnedAt = nthItem(completedCycleDates, 20);
+      break;
     case "midnight_oil":
-      earned = overnightEventsCount >= 1;
-      progressLabel = `${Math.min(overnightEventsCount, 1)} из 1 ночного похода через полночь.`;
-      earnedAt = overnightEventDate;
+      earned = overnightEventsCount >= 3;
+      progressLabel = `${Math.min(overnightEventsCount, 3)} из 3 походов через полночь.`;
+      earnedAt = nthItem(overnightEventDates, 3);
       break;
     case "voice_in_margins":
       earned = commentedReviewsCount >= 7;
@@ -1753,7 +2007,7 @@ function resolveAchievementState(definition, context) {
         averageRating >= 4.8 &&
         feedbackCount >= 10;
       progressLabel = `Обряды ${Math.min(dutyCount, 10)} из 10 · слава ${ratingLabel} из 4.8 · свидетельств ${Math.min(feedbackCount, 10)} из 10.`;
-      earnedAt = latestTimestamp(nthItem(completedCycleDates, 10), unbrokenGlowRatingAt);
+      earnedAt = latestOf(nthItem(completedCycleDates, 10), unbrokenGlowRatingAt);
       break;
     case "north_star":
       earned =
@@ -1762,7 +2016,49 @@ function resolveAchievementState(definition, context) {
         feedbackCount >= 5 &&
         isUniqueRatingLeader;
       progressLabel = `Слава ${ratingLabel} из 4.7 · свидетельств ${Math.min(feedbackCount, 5)} из 5 · лидерство ${isUniqueRatingLeader ? "единоличное" : "ещё делится"}.`;
-      earnedAt = stewardGrantedAt;
+      earnedAt = laureledNameAt;
+      break;
+    case "dragon_chronicler":
+      earned = authoredReviewsCount >= 15 && commentedReviewsCount >= 10;
+      progressLabel = `Вердикты ${Math.min(authoredReviewsCount, 15)} из 15 · пометки ${Math.min(commentedReviewsCount, 10)} из 10.`;
+      earnedAt = latestOf(nthItem(reviewDates, 15), nthItem(commentedReviewDates, 10));
+      break;
+    case "eclipse_route":
+      earned = createdEventsCount >= 10 && overnightEventsCount >= 2;
+      progressLabel = `Походы ${Math.min(createdEventsCount, 10)} из 10 · ночные ${Math.min(overnightEventsCount, 2)} из 2.`;
+      earnedAt = latestOf(nthItem(eventDates, 10), nthItem(overnightEventDates, 2));
+      break;
+    case "white_sigil":
+      earned =
+        (effectiveRole === "admin" || effectiveRole === "steward") &&
+        averageRating !== null &&
+        averageRating >= 4.6 &&
+        feedbackCount >= 5;
+      progressLabel = `Сан ${effectiveRole === "admin" || effectiveRole === "steward" ? "признан" : "ещё не дарован"} · слава ${ratingLabel} из 4.6 · свидетельств ${Math.min(feedbackCount, 5)} из 5.`;
+      earnedAt = latestOf(
+        effectiveRole === "admin"
+          ? context.member?.approvedAt || context.member?.createdAt || null
+          : stewardGrantedAt,
+        whiteSigilAt,
+      );
+      break;
+    case "ember_archivist":
+      earned = dutyCount >= 20 && authoredReviewsCount >= 10 && createdEventsCount >= 6;
+      progressLabel = `Обряды ${Math.min(dutyCount, 20)} из 20 · вердикты ${Math.min(authoredReviewsCount, 10)} из 10 · походы ${Math.min(createdEventsCount, 6)} из 6.`;
+      earnedAt = latestOf(
+        nthItem(completedCycleDates, 20),
+        nthItem(reviewDates, 10),
+        nthItem(eventDates, 6),
+      );
+      break;
+    case "stormglass":
+      earned =
+        dutyCount >= 12 &&
+        averageRating !== null &&
+        averageRating >= 4.9 &&
+        feedbackCount >= 12;
+      progressLabel = `Обряды ${Math.min(dutyCount, 12)} из 12 · слава ${ratingLabel} из 4.9 · свидетельств ${Math.min(feedbackCount, 12)} из 12.`;
+      earnedAt = latestOf(nthItem(completedCycleDates, 12), stormglassRatingAt);
       break;
     default:
       progressLabel = "Путь к этому знамению пока не раскрыт.";
@@ -1814,15 +2110,15 @@ function nthItem(items, position) {
   return index >= 0 && Array.isArray(items) ? items[index] || null : null;
 }
 
-function latestTimestamp(left, right) {
-  if (!left) {
-    return right || null;
-  }
-  if (!right) {
-    return left || null;
+function latestOf(...timestamps) {
+  const defined = timestamps.filter(Boolean);
+  if (!defined.length) {
+    return null;
   }
 
-  return new Date(left).getTime() >= new Date(right).getTime() ? left : right;
+  return defined.reduce((latest, current) =>
+    new Date(latest).getTime() >= new Date(current).getTime() ? latest : current,
+  );
 }
 
 function findRatingMilestoneDate(timeline, threshold, requiredCount) {

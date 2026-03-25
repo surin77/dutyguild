@@ -123,6 +123,99 @@ const ACHIEVEMENT_ICON_LIBRARY = Object.freeze({
     <circle cx="32" cy="28" r="4"></circle>
     <path d="M32 46v8"></path>
   `,
+  open_ledger: `
+    <path d="M18 18h12c4 0 6 2 8 5 2-3 4-5 8-5h2v28h-2c-4 0-6 2-8 5-2-3-4-5-8-5H18Z"></path>
+    <path d="M26 28h8"></path>
+    <path d="M26 36h8"></path>
+  `,
+  chorus_of_witnesses: `
+    <circle cx="20" cy="28" r="4.5"></circle>
+    <circle cx="32" cy="20" r="4.5"></circle>
+    <circle cx="44" cy="28" r="4.5"></circle>
+    <path d="M18 44c4-5 24-5 28 0"></path>
+  `,
+  dawn_crossing: `
+    <path d="M14 42h36"></path>
+    <path d="M20 42c2-8 7-12 12-12s10 4 12 12"></path>
+    <path d="M41 17a8 8 0 1 0 5 14"></path>
+  `,
+  laureled_name: `
+    <path d="M32 16l4 8 9 1.5-6.5 6.5 1.5 9L32 37l-8 4 1.5-9L19 25.5 28 24Z"></path>
+    <path d="M20 44c-3-2-6-6-6-10"></path>
+    <path d="M44 44c3-2 6-6 6-10"></path>
+  `,
+  steady_chorus: `
+    <path d="M16 38c4-6 10-9 16-9s12 3 16 9"></path>
+    <path d="M18 24c2 2 5 3 8 3s6-1 8-3"></path>
+    <path d="M30 20c2 2 5 3 8 3s6-1 8-3"></path>
+  `,
+  silver_quill: `
+    <path d="M18 46l11-11"></path>
+    <path d="M28 20l16 16"></path>
+    <path d="M34 14l6-4 10 10-4 6"></path>
+    <path d="M16 48l9-2-7-7Z"></path>
+  `,
+  torchbearer: `
+    <path d="M32 12c-4 5-6 9-6 13 0 4 2.5 7 6 7s6-3 6-7c0-4-2-8-6-13Z"></path>
+    <path d="M32 32v16"></path>
+    <path d="M24 48h16"></path>
+    <path d="M27 54h10"></path>
+  `,
+  road_captain: `
+    <path d="M18 48V14l20 6-8 6 16 6"></path>
+    <path d="M26 26c4 5 7 9 7 14"></path>
+    <path d="M33 40h9"></path>
+  `,
+  circle_pillar: `
+    <path d="M22 50V18h20v32"></path>
+    <path d="M18 50h28"></path>
+    <path d="M20 18h24"></path>
+    <path d="M26 24v20"></path>
+    <path d="M38 24v20"></path>
+    <circle cx="32" cy="14" r="6"></circle>
+  `,
+  hall_warden: `
+    <path d="M32 12l14 7v11c0 9-6 15-14 20-8-5-14-11-14-20V19Z"></path>
+    <path d="M26 30h12"></path>
+    <path d="M32 22v16"></path>
+  `,
+  dragon_chronicler: `
+    <path d="M18 46l10-10"></path>
+    <path d="M28 20l16 16"></path>
+    <path d="M34 14l6-4 10 10-4 6"></path>
+    <path d="M44 18c2 1 4 3 4 6s-2 5-5 5"></path>
+    <path d="M16 48l8-2-6-6Z"></path>
+  `,
+  eclipse_route: `
+    <path d="M41 14a12 12 0 1 0 8 20A14 14 0 1 1 41 14Z"></path>
+    <path d="M18 46c10-2 16-10 18-20"></path>
+    <path d="M32 20l4 6 6 2"></path>
+  `,
+  white_sigil: `
+    <path d="M32 10l14 8v16l-14 8-14-8V18Z"></path>
+    <circle cx="32" cy="26" r="5"></circle>
+    <path d="M24 40h16"></path>
+  `,
+  ember_archivist: `
+    <path d="M18 22h18v20H18Z"></path>
+    <path d="M24 18h22v20H24"></path>
+    <path d="M40 14c-3 4-4 7-4 9 0 3 1.5 5 4 5s4-2 4-5c0-2-1-5-4-9Z"></path>
+  `,
+  stormglass: `
+    <path d="M22 12h20"></path>
+    <path d="M24 12c0 10 6 11 8 16 2-5 8-6 8-16"></path>
+    <path d="M24 52c0-10 6-11 8-16 2 5 8 6 8 16"></path>
+    <path d="M22 52h20"></path>
+    <path d="M34 26l-6 8h6l-4 8 10-12h-6l4-4"></path>
+  `,
+});
+
+const ACHIEVEMENT_RARITY_META = Object.freeze({
+  ember: { label: "Искровое знамение", weight: 0 },
+  bronze: { label: "Бронзовое знамение", weight: 1 },
+  silver: { label: "Серебряное знамение", weight: 2 },
+  gold: { label: "Золотое знамение", weight: 3 },
+  mythic: { label: "Легендарное знамение", weight: 4 },
 });
 
 const PAGE_DEFINITIONS = Object.freeze([
@@ -295,8 +388,10 @@ function renderHeaderUserMenu() {
   return `
     <div class="header-user">
       <button class="header-user__trigger" type="button" aria-haspopup="true">
-        <span class="header-user__name">${escapeHtml(member.displayName)}</span>
-        ${achievementBar}
+        <span class="header-user__identity">
+          ${achievementBar}
+          <span class="header-user__name">${escapeHtml(member.displayName)}</span>
+        </span>
       </button>
       <div class="header-user__card">
         <div class="header-user__card-head">
@@ -330,41 +425,10 @@ function renderHeaderAchievementBar() {
     return "";
   }
 
-  const earnedAchievements = [
-    ...(codex.publicAchievements || []),
-    ...(codex.hiddenAchievements || []),
-  ].filter((achievement) => achievement.earned);
-
-  if (!earnedAchievements.length) {
-    return "";
-  }
-
-  return `
-    <span class="header-achievement-bar" aria-hidden="true">
-      ${earnedAchievements
-        .map(
-          (achievement) => `
-            <span class="header-achievement header-achievement--${escapeHtml(achievement.rarity || "ember")}">
-              <span class="header-achievement__glyph">
-                ${renderAchievementIcon(achievement.icon, achievement.title)}
-              </span>
-              <span class="header-achievement__tooltip">
-                <strong>${escapeHtml(achievement.title)}</strong>
-                <span>${escapeHtml(achievement.description)}</span>
-                <span class="header-achievement__tooltip-date">
-                  ${
-                    achievement.earnedAt
-                      ? `Получено: ${escapeHtml(formatDateTime(achievement.earnedAt))}`
-                      : "Дата раскрытия пока скрыта в летописи."
-                  }
-                </span>
-              </span>
-            </span>
-          `,
-        )
-        .join("")}
-    </span>
-  `;
+  return renderAchievementStrip(collectEarnedAchievements(codex), {
+    variant: "header",
+    maxVisible: 10,
+  });
 }
 
 function renderLoading() {
@@ -1230,6 +1294,8 @@ function renderAchievementCodexPanel() {
   if (!codex) {
     return "";
   }
+  const hiddenCountLabel = codex.canViewHidden ? codex.hiddenCount : codex.hiddenTotalCount;
+  const fullCount = codex.publicCount + codex.hiddenTotalCount;
 
   const publicCards = codex.publicAchievements
     .map((achievement) => renderAchievementCard(achievement))
@@ -1247,8 +1313,8 @@ function renderAchievementCodexPanel() {
       <p class="panel__intro">
         ${
           codex.canViewHidden
-            ? "Здесь живут все пятнадцать знаков ордена: открытые знамения для круга и сокрытые трофеи, доступные только вашему взгляду."
-            : "Здесь живут открытые знамения ордена: вехи служения, славы и походов, которые видит весь круг."
+            ? `Здесь живут все ${fullCount} знаков ордена: ${codex.publicCount} открытых знамений для круга и ${codex.hiddenCount} сокрытых трофеев, доступных только вашему взгляду.`
+            : `Здесь живут ${codex.publicCount} открытых знамений ордена. Ещё ${codex.hiddenTotalCount} тайных страниц остаются скрытыми от всего круга.`
         }
       </p>
       <div class="achievement-summary-grid">
@@ -1259,7 +1325,7 @@ function renderAchievementCodexPanel() {
         </article>
         <article class="achievement-summary-card">
           <span class="achievement-summary-card__label">${escapeHtml(codex.canViewHidden ? "Сокрытые трофеи" : "Глубина книги")}</span>
-          <strong>${escapeHtml(codex.canViewHidden ? `${codex.hiddenEarnedCount} / ${codex.hiddenCount}` : "Не всё видно")}</strong>
+          <strong>${escapeHtml(codex.canViewHidden ? `${codex.hiddenEarnedCount} / ${codex.hiddenCount}` : `${hiddenCountLabel} скрыто`)}</strong>
           <p>${
             codex.canViewHidden
               ? "Эти знаки открыты только вашему взору и не показываются остальным соратникам."
@@ -1318,6 +1384,7 @@ function renderAchievementCard(achievement) {
   ]
     .filter(Boolean)
     .join(" ");
+  const toneLabel = getAchievementToneLabel(achievement);
 
   return `
     <article class="${classes}">
@@ -1327,7 +1394,7 @@ function renderAchievementCard(achievement) {
       <div class="achievement-card__copy">
         <div class="achievement-card__head">
           <div>
-            <span class="achievement-card__eyebrow">${escapeHtml(achievement.hidden ? "Скрытый трофей" : "Знамение ордена")}</span>
+            <span class="achievement-card__eyebrow">${escapeHtml(toneLabel)}</span>
             <h3>${escapeHtml(achievement.title)}</h3>
           </div>
           <span class="status-pill ${achievement.earned ? "status-pill--done" : "status-pill--ghost"}">${escapeHtml(achievement.stateLabel)}</span>
@@ -1342,9 +1409,126 @@ function renderAchievementCard(achievement) {
             <span class="achievement-card__label">Прогресс</span>
             <span>${escapeHtml(achievement.progressLabel)}</span>
           </div>
+          ${
+            achievement.earnedAt
+              ? `
+                <div>
+                  <span class="achievement-card__label">Обретено</span>
+                  <span>${escapeHtml(formatDateTime(achievement.earnedAt))}</span>
+                </div>
+              `
+              : ""
+          }
         </div>
       </div>
     </article>
+  `;
+}
+
+function collectEarnedAchievements(codex) {
+  return sortAchievementsForDisplay(
+    [
+      ...(codex?.publicAchievements || []),
+      ...(codex?.hiddenAchievements || []),
+    ].filter((achievement) => achievement.earned),
+  );
+}
+
+function sortAchievementsForDisplay(achievements) {
+  return [...(achievements || [])].sort((left, right) => {
+    const leftWeight =
+      (left.hidden ? 10 : 0) + (ACHIEVEMENT_RARITY_META[left.rarity]?.weight || 0);
+    const rightWeight =
+      (right.hidden ? 10 : 0) + (ACHIEVEMENT_RARITY_META[right.rarity]?.weight || 0);
+    if (leftWeight !== rightWeight) {
+      return rightWeight - leftWeight;
+    }
+
+    const leftTime = left.earnedAt ? new Date(left.earnedAt).getTime() : 0;
+    const rightTime = right.earnedAt ? new Date(right.earnedAt).getTime() : 0;
+    if (leftTime !== rightTime) {
+      return rightTime - leftTime;
+    }
+
+    return String(left.title || "").localeCompare(String(right.title || ""), "ru");
+  });
+}
+
+function getAchievementToneLabel(achievement) {
+  if (achievement.hidden) {
+    return "Сокрытый трофей";
+  }
+
+  return ACHIEVEMENT_RARITY_META[achievement.rarity]?.label || "Знамение ордена";
+}
+
+function renderAchievementStrip(
+  achievements,
+  { variant = "header", maxVisible = 8, emptyLabel = "" } = {},
+) {
+  const entries = sortAchievementsForDisplay(achievements || []);
+  if (!entries.length) {
+    return emptyLabel
+      ? `<span class="achievement-strip achievement-strip--${escapeHtml(variant)} achievement-strip--empty">${escapeHtml(emptyLabel)}</span>`
+      : "";
+  }
+
+  const visibleEntries = entries.slice(0, maxVisible);
+  const overflowCount = entries.length - visibleEntries.length;
+
+  return `
+    <span class="achievement-strip achievement-strip--${escapeHtml(variant)}">
+      ${visibleEntries.map((achievement) => renderAchievementToken(achievement, variant)).join("")}
+      ${
+        overflowCount > 0
+          ? renderAchievementOverflowToken(overflowCount, variant)
+          : ""
+      }
+    </span>
+  `;
+}
+
+function renderAchievementToken(achievement, variant) {
+  const classes = [
+    "achievement-token",
+    `achievement-token--${variant}`,
+    achievement.rarity ? `achievement-token--${achievement.rarity}` : "",
+    achievement.hidden ? "achievement-token--hidden" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return `
+    <span class="${classes}">
+      <span class="achievement-token__glyph">
+        ${renderAchievementIcon(achievement.icon, achievement.title)}
+      </span>
+      <span class="achievement-token__tooltip">
+        <span class="achievement-token__eyebrow">${escapeHtml(getAchievementToneLabel(achievement))}</span>
+        <strong>${escapeHtml(achievement.title)}</strong>
+        <span>${escapeHtml(achievement.description)}</span>
+        <span class="achievement-token__tooltip-date">
+          ${
+            achievement.earnedAt
+              ? `Получено: ${escapeHtml(formatDateTime(achievement.earnedAt))}`
+              : "Дата раскрытия пока скрыта в летописи."
+          }
+        </span>
+      </span>
+    </span>
+  `;
+}
+
+function renderAchievementOverflowToken(count, variant) {
+  return `
+    <span class="achievement-token achievement-token--${escapeHtml(variant)} achievement-token--overflow">
+      <span class="achievement-token__glyph achievement-token__glyph--counter">+${escapeHtml(String(count))}</span>
+      <span class="achievement-token__tooltip">
+        <span class="achievement-token__eyebrow">Продолжение свода</span>
+        <strong>Ещё ${escapeHtml(String(count))} знамений</strong>
+        <span>Полная книга достижений хранит больше знаков, чем помещается в этом кратком строю.</span>
+      </span>
+    </span>
   `;
 }
 
@@ -1470,6 +1654,7 @@ function renderRosterPanel() {
               <span class="member-cell__meta">${escapeHtml(getOutcomeTitleFromRating(member.averageRating))}</span>
             </div>
           </td>
+          <td class="member-achievement-cell">${renderRosterAchievementRail(member)}</td>
         </tr>
       `,
     )
@@ -1494,6 +1679,7 @@ function renderRosterPanel() {
               <th>Следующий рубеж</th>
               <th>Служений</th>
               <th>Слава</th>
+              <th>Знамения</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -1501,6 +1687,14 @@ function renderRosterPanel() {
       </div>
     </article>
   `;
+}
+
+function renderRosterAchievementRail(member) {
+  return renderAchievementStrip(member.publicAchievements || [], {
+    variant: "roster",
+    maxVisible: 8,
+    emptyLabel: "Путь ещё не отмечен",
+  });
 }
 
 function renderAdminPanel() {
