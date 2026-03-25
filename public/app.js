@@ -387,33 +387,35 @@ function renderHeaderUserMenu() {
 
   return `
     <div class="header-user">
-      <button class="header-user__trigger" type="button" aria-haspopup="true">
-        <span class="header-user__identity">
-          ${achievementBar}
-          <span class="header-user__name">${escapeHtml(member.displayName)}</span>
-        </span>
-      </button>
-      <div class="header-user__card">
-        <div class="header-user__card-head">
-          <strong>${escapeHtml(member.displayName)}</strong>
-          <span>${escapeHtml(memberRankTitle(member))}</span>
-        </div>
-        <div class="header-user__details">
-          <div class="header-user__detail">
-            <span class="header-user__detail-label">Сан</span>
-            <span>${escapeHtml(roleLabel(member.role))}</span>
-          </div>
-          <div class="header-user__detail">
-            <span class="header-user__detail-label">Звание</span>
+      ${achievementBar}
+      <div class="header-user__menu">
+        <button class="header-user__trigger" type="button" aria-haspopup="true">
+          <span class="header-user__identity">
+            <span class="header-user__name">${escapeHtml(member.displayName)}</span>
+          </span>
+        </button>
+        <div class="header-user__card">
+          <div class="header-user__card-head">
+            <strong>${escapeHtml(member.displayName)}</strong>
             <span>${escapeHtml(memberRankTitle(member))}</span>
           </div>
-          <div class="header-user__detail">
-            <span class="header-user__detail-label">Почта</span>
-            <span>${escapeHtml(member.email)}</span>
+          <div class="header-user__details">
+            <div class="header-user__detail">
+              <span class="header-user__detail-label">Сан</span>
+              <span>${escapeHtml(roleLabel(member.role))}</span>
+            </div>
+            <div class="header-user__detail">
+              <span class="header-user__detail-label">Звание</span>
+              <span>${escapeHtml(memberRankTitle(member))}</span>
+            </div>
+            <div class="header-user__detail">
+              <span class="header-user__detail-label">Почта</span>
+              <span>${escapeHtml(member.email)}</span>
+            </div>
           </div>
+          <p class="header-user__hint">${escapeHtml(memberRankProgress(member))}</p>
+          <button id="logout-button" class="button button--primary header-user__logout" type="button">Покинуть зал</button>
         </div>
-        <p class="header-user__hint">${escapeHtml(memberRankProgress(member))}</p>
-        <button id="logout-button" class="button button--primary header-user__logout" type="button">Покинуть зал</button>
       </div>
     </div>
   `;
@@ -648,8 +650,8 @@ function renderDashboardPage(pageId, context) {
   if (pageId === "circle") {
     return `
       <section class="content-grid">
-        ${renderRankGuidePanel()}
         ${renderRosterPanel()}
+        ${renderRankGuidePanel()}
       </section>
     `;
   }

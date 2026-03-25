@@ -199,14 +199,19 @@ td {
 }
 
 .header-user {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.header-user__menu {
   position: relative;
-  display: grid;
-  justify-items: end;
   padding-bottom: 12px;
   margin-bottom: -12px;
 }
 
-.header-user::after {
+.header-user__menu::after {
   content: "";
   position: absolute;
   top: 100%;
@@ -258,8 +263,8 @@ td {
   z-index: 15;
 }
 
-.header-user:hover .header-user__card,
-.header-user:focus-within .header-user__card {
+.header-user__menu:hover .header-user__card,
+.header-user__menu:focus-within .header-user__card {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
@@ -434,8 +439,8 @@ td {
 }
 
 .achievement-token--roster .achievement-token__tooltip {
-  left: 0;
-  right: auto;
+  left: auto;
+  right: 0;
 }
 
 .achievement-token--hidden .achievement-token__tooltip {
@@ -1890,7 +1895,7 @@ th {
   }
 
   .header-user {
-    justify-items: start;
+    justify-content: flex-start;
   }
 
   .header-user__trigger,
@@ -1900,6 +1905,11 @@ th {
   }
 
   .header-user__card {
+    left: 0;
+    right: auto;
+  }
+
+  .header-user__menu::after {
     left: 0;
     right: auto;
   }
