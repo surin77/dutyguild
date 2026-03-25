@@ -222,6 +222,9 @@ td {
   background: transparent;
   color: inherit;
   cursor: pointer;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
 }
 
 .header-user__trigger:hover .header-user__name,
@@ -306,6 +309,90 @@ td {
   color: var(--white);
   font-size: 0.96rem;
   transition: color 140ms ease;
+}
+
+.header-achievement-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: min(360px, 52vw);
+}
+
+.header-achievement {
+  position: relative;
+  display: inline-flex;
+}
+
+.header-achievement__glyph {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #f7dcac;
+  background: linear-gradient(180deg, rgba(103, 47, 27, 0.95), rgba(57, 23, 15, 0.95));
+  border: 1px solid rgba(240, 190, 114, 0.2);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(240, 190, 114, 0.08) inset;
+}
+
+.header-achievement__glyph .achievement-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.header-achievement--silver .header-achievement__glyph {
+  color: #f7e7cc;
+  background: linear-gradient(180deg, rgba(116, 87, 46, 0.95), rgba(73, 49, 23, 0.95));
+}
+
+.header-achievement--gold .header-achievement__glyph,
+.header-achievement--mythic .header-achievement__glyph {
+  color: #fff0cb;
+  background: linear-gradient(180deg, rgba(156, 91, 33, 0.98), rgba(88, 43, 16, 0.98));
+}
+
+.header-achievement__tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(280px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(247, 239, 229, 0.98), rgba(236, 225, 210, 0.98));
+  border: 1px solid rgba(212, 199, 187, 0.94);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+  text-align: left;
+  color: var(--ink);
+  z-index: 18;
+}
+
+.header-achievement__tooltip strong {
+  font-size: 0.98rem;
+}
+
+.header-achievement__tooltip span {
+  color: var(--ink-soft);
+  line-height: 1.5;
+  font-size: 0.88rem;
+}
+
+.header-achievement__tooltip-date {
+  color: var(--red);
+}
+
+.header-achievement:hover .header-achievement__tooltip,
+.header-achievement:focus-within .header-achievement__tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .header-user__meta {
@@ -1660,6 +1747,12 @@ th {
 
   .header-user {
     justify-items: start;
+  }
+
+  .header-user__trigger,
+  .header-achievement-bar {
+    justify-items: start;
+    justify-content: flex-start;
   }
 
   .header-user__card {

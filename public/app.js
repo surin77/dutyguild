@@ -290,11 +290,13 @@ function renderHeaderUserMenu() {
   if (!member) {
     return "";
   }
+  const achievementBar = renderHeaderAchievementBar();
 
   return `
     <div class="header-user">
       <button class="header-user__trigger" type="button" aria-haspopup="true">
         <span class="header-user__name">${escapeHtml(member.displayName)}</span>
+        ${achievementBar}
       </button>
       <div class="header-user__card">
         <div class="header-user__card-head">
@@ -319,6 +321,49 @@ function renderHeaderUserMenu() {
         <button id="logout-button" class="button button--primary header-user__logout" type="button">Покинуть зал</button>
       </div>
     </div>
+  `;
+}
+
+function renderHeaderAchievementBar() {
+  const codex = state.dashboard?.achievementCodex;
+  if (!codex) {
+    return "";
+  }
+
+  const earnedAchievements = [
+    ...(codex.publicAchievements || []),
+    ...(codex.hiddenAchievements || []),
+  ].filter((achievement) => achievement.earned);
+
+  if (!earnedAchievements.length) {
+    return "";
+  }
+
+  return `
+    <span class="header-achievement-bar" aria-hidden="true">
+      ${earnedAchievements
+        .map(
+          (achievement) => `
+            <span class="header-achievement header-achievement--${escapeHtml(achievement.rarity || "ember")}">
+              <span class="header-achievement__glyph">
+                ${renderAchievementIcon(achievement.icon, achievement.title)}
+              </span>
+              <span class="header-achievement__tooltip">
+                <strong>${escapeHtml(achievement.title)}</strong>
+                <span>${escapeHtml(achievement.description)}</span>
+                <span class="header-achievement__tooltip-date">
+                  ${
+                    achievement.earnedAt
+                      ? `Получено: ${escapeHtml(formatDateTime(achievement.earnedAt))}`
+                      : "Дата раскрытия пока скрыта в летописи."
+                  }
+                </span>
+              </span>
+            </span>
+          `,
+        )
+        .join("")}
+    </span>
   `;
 }
 

@@ -1500,56 +1500,120 @@ async function buildDashboard(env, member) {
 }
 
 async function loadMemberAchievementStats(env, memberId) {
-  const [reviewStats, eventStats, ritualStats] = await Promise.all([
-    first(
+  const [
+    reviewRows,
+    eventRows,
+    completedCycleDates,
+    ratingTimeline,
+    legendaryCycleDates,
+    stewardRecord,
+  ] = await Promise.all([
+    all(
       env,
       `
         SELECT
-          COUNT(*) AS authored_review_count,
-          SUM(CASE WHEN TRIM(COALESCE(comment, '')) != '' THEN 1 ELSE 0 END) AS commented_review_count
+          created_at,
+          comment
         FROM cycle_reviews
         WHERE author_member_id = ?
+        ORDER BY created_at ASC
       `,
       [memberId],
     ),
-    first(
+    all(
       env,
       `
         SELECT
-          COUNT(*) AS created_event_count,
-          SUM(CASE WHEN COALESCE(end_date, event_date) > event_date THEN 1 ELSE 0 END) AS overnight_event_count
+          created_at,
+          event_date,
+          COALESCE(end_date, event_date) AS end_date
         FROM game_events
         WHERE created_by_member_id = ?
+        ORDER BY created_at ASC
+      `,
+      [memberId],
+    ),
+    all(
+      env,
+      `
+        SELECT COALESCE(c.completed_at, c.created_at) AS happened_at
+        FROM cleaning_cycles c
+        JOIN cycle_assignments a ON a.cycle_id = c.id
+        WHERE a.member_id = ?
+          AND c.status = 'completed'
+        ORDER BY COALESCE(c.completed_at, c.created_at) ASC
+      `,
+      [memberId],
+    ),
+    all(
+      env,
+      `
+        SELECT r.created_at, r.rating
+        FROM cycle_reviews r
+        JOIN cycle_assignments a ON a.cycle_id = r.cycle_id
+        JOIN cleaning_cycles c ON c.id = a.cycle_id
+        WHERE a.member_id = ?
+          AND c.status = 'completed'
+        ORDER BY r.created_at ASC
+      `,
+      [memberId],
+    ),
+    all(
+      env,
+      `
+        SELECT COALESCE(c.completed_at, c.created_at) AS happened_at
+        FROM cleaning_cycles c
+        JOIN cycle_assignments a ON a.cycle_id = c.id
+        LEFT JOIN cycle_reviews r ON r.cycle_id = c.id
+        WHERE a.member_id = ?
+          AND c.status = 'completed'
+        GROUP BY c.id, c.completed_at, c.created_at
+        HAVING AVG(r.rating) >= 4.8 AND COUNT(r.id) > 0
+        ORDER BY COALESCE(c.completed_at, c.created_at) ASC
       `,
       [memberId],
     ),
     first(
       env,
       `
-        SELECT
-          SUM(CASE WHEN average_rating >= 4.8 THEN 1 ELSE 0 END) AS legendary_cycle_count
-        FROM (
-          SELECT
-            c.id,
-            AVG(r.rating) AS average_rating
-          FROM cleaning_cycles c
-          JOIN cycle_assignments a ON a.cycle_id = c.id
-          LEFT JOIN cycle_reviews r ON r.cycle_id = c.id
-          WHERE a.member_id = ?
-            AND c.status = 'completed'
-          GROUP BY c.id
-        ) rated_cycles
+        SELECT COALESCE(completed_at, started_at) AS happened_at
+        FROM council_elections
+        WHERE role = 'steward'
+          AND status = 'completed'
+          AND winner_member_id = ?
+        ORDER BY COALESCE(completed_at, started_at) DESC
+        LIMIT 1
       `,
       [memberId],
     ),
   ]);
 
+  const reviewDates = reviewRows.map((row) => row.created_at).filter(Boolean);
+  const commentedReviewDates = reviewRows
+    .filter((row) => String(row.comment || "").trim())
+    .map((row) => row.created_at)
+    .filter(Boolean);
+  const eventDates = eventRows.map((row) => row.created_at).filter(Boolean);
+  const overnightEventDate =
+    eventRows.find((row) => row.end_date && row.end_date > row.event_date)?.created_at || null;
+
   return {
-    authoredReviewsCount: Number(reviewStats?.authored_review_count || 0),
-    commentedReviewsCount: Number(reviewStats?.commented_review_count || 0),
-    createdEventsCount: Number(eventStats?.created_event_count || 0),
-    overnightEventsCount: Number(eventStats?.overnight_event_count || 0),
-    legendaryCyclesCount: Number(ritualStats?.legendary_cycle_count || 0),
+    authoredReviewsCount: reviewDates.length,
+    commentedReviewsCount: commentedReviewDates.length,
+    createdEventsCount: eventDates.length,
+    overnightEventsCount: overnightEventDate ? 1 : 0,
+    reviewDates,
+    commentedReviewDates,
+    completedCycleDates: completedCycleDates.map((row) => row.happened_at).filter(Boolean),
+    ratingTimeline: ratingTimeline.map((row) => ({
+      happenedAt: row.created_at,
+      rating: Number(row.rating || 0),
+    })),
+    legendaryCycleDates: legendaryCycleDates.map((row) => row.happened_at).filter(Boolean),
+    legendaryCyclesCount: legendaryCycleDates.length,
+    eventDates,
+    overnightEventDate,
+    stewardGrantedAt: stewardRecord?.happened_at || null,
   };
 }
 
@@ -1589,64 +1653,98 @@ function resolveAchievementState(definition, context) {
   const effectiveRole = String(context.member?.role || "member");
   const isUniqueRatingLeader = isUniqueRatingLeaderForMember(context.member, context.roster);
   const ratingLabel = formatRatingLabel(averageRating);
+  const completedCycleDates = context.achievementStats?.completedCycleDates || [];
+  const reviewDates = context.achievementStats?.reviewDates || [];
+  const commentedReviewDates = context.achievementStats?.commentedReviewDates || [];
+  const eventDates = context.achievementStats?.eventDates || [];
+  const overnightEventDate = context.achievementStats?.overnightEventDate || null;
+  const legendaryCycleDates = context.achievementStats?.legendaryCycleDates || [];
+  const stewardGrantedAt = context.achievementStats?.stewardGrantedAt || null;
+  const goldenStandardAt = findRatingMilestoneDate(
+    context.achievementStats?.ratingTimeline || [],
+    4.5,
+    3,
+  );
+  const unbrokenGlowRatingAt = findRatingMilestoneDate(
+    context.achievementStats?.ratingTimeline || [],
+    4.8,
+    10,
+  );
 
   let earned = false;
   let progressLabel = "Знамение ещё не раскрыто.";
+  let earnedAt = null;
 
   switch (definition.id) {
     case "initiated":
       earned = true;
       progressLabel = "Печать допуска уже признана, имя внесено в братский свиток.";
+      earnedAt = context.member?.approvedAt || context.member?.createdAt || null;
       break;
     case "first_oath":
       earned = dutyCount >= 1;
       progressLabel = `${Math.min(dutyCount, 1)} из 1 завершённого обряда.`;
+      earnedAt = nthItem(completedCycleDates, 1);
       break;
     case "third_bell":
       earned = dutyCount >= 3;
       progressLabel = `${Math.min(dutyCount, 3)} из 3 завершённых обрядов.`;
+      earnedAt = nthItem(completedCycleDates, 3);
       break;
     case "steady_hand":
       earned = dutyCount >= 7;
       progressLabel = `${Math.min(dutyCount, 7)} из 7 завершённых обрядов.`;
+      earnedAt = nthItem(completedCycleDates, 7);
       break;
     case "first_verdict":
       earned = authoredReviewsCount >= 1;
       progressLabel = `${Math.min(authoredReviewsCount, 1)} из 1 вынесенного вердикта.`;
+      earnedAt = nthItem(reviewDates, 1);
       break;
     case "scribe_of_circle":
       earned = authoredReviewsCount >= 5;
       progressLabel = `${Math.min(authoredReviewsCount, 5)} из 5 вынесенных вердиктов.`;
+      earnedAt = nthItem(reviewDates, 5);
       break;
     case "pathfinder":
       earned = createdEventsCount >= 1;
       progressLabel = `${Math.min(createdEventsCount, 1)} из 1 вписанного события.`;
+      earnedAt = nthItem(eventDates, 1);
       break;
     case "hall_host":
       earned = createdEventsCount >= 4;
       progressLabel = `${Math.min(createdEventsCount, 4)} из 4 вписанных событий.`;
+      earnedAt = nthItem(eventDates, 4);
       break;
     case "golden_standard":
       earned = averageRating !== null && averageRating >= 4.5 && feedbackCount >= 3;
       progressLabel = `Слава ${ratingLabel} из 4.5 · свидетельств ${Math.min(feedbackCount, 3)} из 3.`;
+      earnedAt = goldenStandardAt;
       break;
     case "seal_of_council":
       earned = effectiveRole === "admin" || effectiveRole === "steward";
       progressLabel = earned
         ? `Сан признан: ${effectiveRole === "admin" ? "Магистр Совета" : "Сенешаль Совета"}.`
         : "Нужен управный сан Совета.";
+      earnedAt =
+        effectiveRole === "admin"
+          ? context.member?.approvedAt || context.member?.createdAt || null
+          : stewardGrantedAt;
       break;
     case "midnight_oil":
       earned = overnightEventsCount >= 1;
       progressLabel = `${Math.min(overnightEventsCount, 1)} из 1 ночного похода через полночь.`;
+      earnedAt = overnightEventDate;
       break;
     case "voice_in_margins":
       earned = commentedReviewsCount >= 7;
       progressLabel = `${Math.min(commentedReviewsCount, 7)} из 7 вердиктов с комментарием.`;
+      earnedAt = nthItem(commentedReviewDates, 7);
       break;
     case "legendary_ritualist":
       earned = legendaryCyclesCount >= 3;
       progressLabel = `${Math.min(legendaryCyclesCount, 3)} из 3 легендарных исходов.`;
+      earnedAt = nthItem(legendaryCycleDates, 3);
       break;
     case "unbroken_glow":
       earned =
@@ -1655,6 +1753,7 @@ function resolveAchievementState(definition, context) {
         averageRating >= 4.8 &&
         feedbackCount >= 10;
       progressLabel = `Обряды ${Math.min(dutyCount, 10)} из 10 · слава ${ratingLabel} из 4.8 · свидетельств ${Math.min(feedbackCount, 10)} из 10.`;
+      earnedAt = latestTimestamp(nthItem(completedCycleDates, 10), unbrokenGlowRatingAt);
       break;
     case "north_star":
       earned =
@@ -1663,6 +1762,7 @@ function resolveAchievementState(definition, context) {
         feedbackCount >= 5 &&
         isUniqueRatingLeader;
       progressLabel = `Слава ${ratingLabel} из 4.7 · свидетельств ${Math.min(feedbackCount, 5)} из 5 · лидерство ${isUniqueRatingLeader ? "единоличное" : "ещё делится"}.`;
+      earnedAt = stewardGrantedAt;
       break;
     default:
       progressLabel = "Путь к этому знамению пока не раскрыт.";
@@ -1671,6 +1771,7 @@ function resolveAchievementState(definition, context) {
   return {
     ...definition,
     earned,
+    earnedAt,
     progressLabel,
     stateLabel: earned ? "Знамение раскрыто" : "Пока не раскрыто",
   };
@@ -1706,6 +1807,37 @@ function isUniqueRatingLeaderForMember(member, roster) {
     (entry) => Number(entry.averageRating || 0) === topRating,
   );
   return leaders.length === 1 && leaders[0].id === member.id;
+}
+
+function nthItem(items, position) {
+  const index = Number(position || 0) - 1;
+  return index >= 0 && Array.isArray(items) ? items[index] || null : null;
+}
+
+function latestTimestamp(left, right) {
+  if (!left) {
+    return right || null;
+  }
+  if (!right) {
+    return left || null;
+  }
+
+  return new Date(left).getTime() >= new Date(right).getTime() ? left : right;
+}
+
+function findRatingMilestoneDate(timeline, threshold, requiredCount) {
+  let total = 0;
+  let count = 0;
+
+  for (const entry of timeline || []) {
+    total += Number(entry.rating || 0);
+    count += 1;
+    if (count >= requiredCount && total / count >= threshold) {
+      return entry.happenedAt || null;
+    }
+  }
+
+  return null;
 }
 
 async function handleCalendarFeed(env) {
@@ -1872,6 +2004,8 @@ async function loadRoster(env) {
         m.role,
         m.status,
         m.duty_count,
+        m.created_at,
+        m.approved_at,
         COUNT(r.id) AS feedback_count,
         ROUND(AVG(r.rating), 2) AS average_rating
       FROM members m
@@ -3120,6 +3254,8 @@ function memberToClient(member) {
     baseRole: member.role,
     status: member.status,
     dutyCount,
+    createdAt: member.created_at || null,
+    approvedAt: member.approved_at || member.created_at || null,
     rank,
   };
 }
