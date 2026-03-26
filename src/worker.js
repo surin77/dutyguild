@@ -255,6 +255,165 @@ const RITUAL_OUTCOME_LADDER = Object.freeze([
   },
 ]);
 
+const SERVICE_DEED_LIBRARY = Object.freeze({
+  trash: {
+    id: "trash",
+    label: "Изгнать сор из зала",
+    shortLabel: "Изгнание сора",
+    description:
+      "Унести сор, коробки и всё лишнее за порог, чтобы зал снова дышал легко.",
+  },
+  dust: {
+    id: "dust",
+    label: "Прогнать пыль вихрем",
+    shortLabel: "Охота на пыль",
+    description:
+      "Пройтись вихрем чистоты по полу и углам, чтобы пыль не задерживалась в зале.",
+  },
+  order: {
+    id: "order",
+    label: "Вернуть реликвии на места",
+    shortLabel: "Возвращение реликвий",
+    description:
+      "Разложить коробки, свитки и прочие реликвии круга по их законным местам.",
+  },
+});
+
+const SERVICE_DEED_ACHIEVEMENTS = Object.freeze([
+  {
+    id: "ash_bearer",
+    icon: "ash_bearer",
+    hidden: false,
+    rarity: "ember",
+    deedType: "trash",
+    threshold: 1,
+    title: "Пеплоносец",
+    description: "Вы впервые вынесли сор за стены ордена и очистили путь для новых свершений.",
+    criteria: "Зачесть «Изгнание сора» 1 раз.",
+  },
+  {
+    id: "cinder_caravan",
+    icon: "cinder_caravan",
+    hidden: false,
+    rarity: "bronze",
+    deedType: "trash",
+    threshold: 5,
+    title: "Караван золы",
+    description: "Сор уже не задерживается в зале: вы умеете проводить его за ворота без лишней суеты.",
+    criteria: "Зачесть «Изгнание сора» 5 раз.",
+  },
+  {
+    id: "ember_exorcist",
+    icon: "ember_exorcist",
+    hidden: false,
+    rarity: "silver",
+    deedType: "trash",
+    threshold: 10,
+    title: "Изгоняющий сор",
+    description: "Лишнее отступает перед вами быстро и без права остаться в летописи зала.",
+    criteria: "Зачесть «Изгнание сора» 10 раз.",
+  },
+  {
+    id: "gate_of_cinders",
+    icon: "gate_of_cinders",
+    hidden: false,
+    rarity: "gold",
+    deedType: "trash",
+    threshold: 20,
+    title: "Владыка пепельных врат",
+    description: "Вы сделали вынос сора частью порядка ордена, а не редким героическим порывом.",
+    criteria: "Зачесть «Изгнание сора» 20 раз.",
+  },
+  {
+    id: "dust_hunter",
+    icon: "dust_hunter",
+    hidden: false,
+    rarity: "ember",
+    deedType: "dust",
+    threshold: 1,
+    title: "Охотник на пыль",
+    description: "Первый вихрь уже поднят, и пыль в зале впервые поняла, что ей здесь не рады.",
+    criteria: "Зачесть «Охоту на пыль» 1 раз.",
+  },
+  {
+    id: "whirl_keeper",
+    icon: "whirl_keeper",
+    hidden: false,
+    rarity: "bronze",
+    deedType: "dust",
+    threshold: 5,
+    title: "Хранитель вихря",
+    description: "Вы умеете поддерживать чистое дыхание зала не рывком, а устойчивой привычкой.",
+    criteria: "Зачесть «Охоту на пыль» 5 раз.",
+  },
+  {
+    id: "hall_tempest",
+    icon: "hall_tempest",
+    hidden: false,
+    rarity: "silver",
+    deedType: "dust",
+    threshold: 10,
+    title: "Буревестник зала",
+    description: "Ваш вихрь проходит по залу как уверенный шторм, после которого остаётся только порядок.",
+    criteria: "Зачесть «Охоту на пыль» 10 раз.",
+  },
+  {
+    id: "storm_of_purity",
+    icon: "storm_of_purity",
+    hidden: false,
+    rarity: "gold",
+    deedType: "dust",
+    threshold: 20,
+    title: "Шторм чистоты",
+    description: "Редкая пыль осмелится задержаться там, где вы уже двадцать раз поднимали вихрь.",
+    criteria: "Зачесть «Охоту на пыль» 20 раз.",
+  },
+  {
+    id: "relic_keeper",
+    icon: "relic_keeper",
+    hidden: false,
+    rarity: "ember",
+    deedType: "order",
+    threshold: 1,
+    title: "Хранитель реликвий",
+    description: "Вы впервые вернули священный беспорядок обратно под власть полок и ящиков.",
+    criteria: "Зачесть «Возвращение реликвий» 1 раз.",
+  },
+  {
+    id: "shelf_chronicler",
+    icon: "shelf_chronicler",
+    hidden: false,
+    rarity: "bronze",
+    deedType: "order",
+    threshold: 5,
+    title: "Летописец полок",
+    description: "Вещи всё чаще находят свои места, а зал перестаёт хранить безымянные завалы.",
+    criteria: "Зачесть «Возвращение реликвий» 5 раз.",
+  },
+  {
+    id: "vault_marshal",
+    icon: "vault_marshal",
+    hidden: false,
+    rarity: "silver",
+    deedType: "order",
+    threshold: 10,
+    title: "Маршал кладовых",
+    description: "Коробки, книги и реликвии строятся по местам, когда вы проходите по залу с твёрдой рукой.",
+    criteria: "Зачесть «Возвращение реликвий» 10 раз.",
+  },
+  {
+    id: "master_of_order",
+    icon: "master_of_order",
+    hidden: false,
+    rarity: "gold",
+    deedType: "order",
+    threshold: 20,
+    title: "Архитектор порядка",
+    description: "Вы не просто раскладываете вещи: вы удерживаете саму геометрию орденского зала.",
+    criteria: "Зачесть «Возвращение реликвий» 20 раз.",
+  },
+]);
+
 const ACHIEVEMENT_LIBRARY = Object.freeze([
   {
     id: "initiated",
@@ -436,6 +595,7 @@ const ACHIEVEMENT_LIBRARY = Object.freeze([
     description: "Круг видит в вас не просто опытного соратника, а настоящую стену, на которую можно положиться.",
     criteria: "Завершить 20 обрядов.",
   },
+  ...SERVICE_DEED_ACHIEVEMENTS,
   {
     id: "midnight_oil",
     icon: "midnight_oil",
@@ -634,6 +794,23 @@ async function handleFetch(request, env) {
       return member;
     }
     return handleCreateMember(request, env);
+  }
+
+  if (pathname === "/api/deeds" && request.method === "POST") {
+    const member = await requireMember(request, env);
+    if (member instanceof Response) {
+      return member;
+    }
+    return handleCreateServiceDeed(request, env, member);
+  }
+
+  const deedMatch = pathname.match(/^\/api\/deeds\/([^/]+)$/);
+  if (deedMatch && request.method === "PUT") {
+    const member = await requireAdmin(request, env);
+    if (member instanceof Response) {
+      return member;
+    }
+    return handleCorrectServiceDeed(request, env, member, deedMatch[1]);
   }
 
   if (
@@ -946,6 +1123,91 @@ async function handleCreateMember(request, env) {
   });
 }
 
+async function handleCreateServiceDeed(request, env, actor) {
+  const body = await readJson(request);
+  const deedType = normalizeServiceDeedType(body?.deedType);
+  const quantity = normalizePositiveInteger(body?.quantity);
+  const notes = String(body?.notes || "").trim();
+  const now = new Date().toISOString();
+
+  if (!deedType) {
+    return json({ error: "Выберите, какое именно деяние вписывается в книгу служений." }, 400);
+  }
+
+  if (!quantity || quantity > 20) {
+    return json({ error: "Укажите меру деяния от 1 до 20." }, 400);
+  }
+
+  await run(
+    env,
+    `
+      INSERT INTO service_deeds (
+        id,
+        member_id,
+        deed_type,
+        reported_quantity,
+        effective_quantity,
+        notes,
+        created_by_member_id,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    [crypto.randomUUID(), actor.id, deedType, quantity, quantity, notes, actor.id, now],
+  );
+
+  return json({ ok: true });
+}
+
+async function handleCorrectServiceDeed(request, env, actor, deedId) {
+  const deed = await first(
+    env,
+    `
+      SELECT *
+      FROM service_deeds
+      WHERE id = ?
+      LIMIT 1
+    `,
+    [deedId],
+  );
+
+  if (!deed) {
+    return json({ error: "Такое деяние не найдено в книге служений." }, 404);
+  }
+
+  const body = await readJson(request);
+  const effectiveQuantity = normalizePositiveInteger(body?.effectiveQuantity);
+  const correctionNote = String(body?.correctionNote || "").trim();
+  const now = new Date().toISOString();
+
+  if (!effectiveQuantity || effectiveQuantity > 50) {
+    return json({ error: "Магистр может зачесть меру от 1 до 50." }, 400);
+  }
+
+  if (
+    Number(deed.effective_quantity || 0) === effectiveQuantity &&
+    String(deed.correction_note || "") === correctionNote
+  ) {
+    return json({ ok: true, unchanged: true });
+  }
+
+  await run(
+    env,
+    `
+      UPDATE service_deeds
+      SET effective_quantity = ?,
+          correction_note = ?,
+          corrected_by_member_id = ?,
+          corrected_at = ?,
+          updated_at = ?
+      WHERE id = ?
+    `,
+    [effectiveQuantity, correctionNote, actor.id, now, now, deedId],
+  );
+
+  return json({ ok: true });
+}
+
 async function handleCreateGameEvent(request, env, actor) {
   const body = await readJson(request);
   const title = String(body?.title || "").trim();
@@ -1139,6 +1401,101 @@ async function handleDeleteGameEvent(env, actor, gameEventId) {
   });
 
   return json({ ok: true });
+}
+
+async function loadServiceDeedLedger(env) {
+  const rows = await all(
+    env,
+    `
+      SELECT
+        d.id,
+        d.member_id,
+        d.deed_type,
+        d.reported_quantity,
+        d.effective_quantity,
+        d.notes,
+        d.correction_note,
+        d.created_at,
+        d.updated_at,
+        d.corrected_at,
+        d.created_by_member_id,
+        d.corrected_by_member_id,
+        member.display_name AS member_name,
+        creator.display_name AS created_by_name,
+        corrector.display_name AS corrected_by_name
+      FROM service_deeds d
+      JOIN members member ON member.id = d.member_id
+      LEFT JOIN members creator ON creator.id = d.created_by_member_id
+      LEFT JOIN members corrector ON corrector.id = d.corrected_by_member_id
+      ORDER BY d.created_at DESC, d.id DESC
+      LIMIT 60
+    `,
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    memberId: row.member_id,
+    memberName: row.member_name,
+    deedType: row.deed_type,
+    reportedQuantity: Number(row.reported_quantity || 0),
+    effectiveQuantity: Number(row.effective_quantity || 0),
+    notes: row.notes || "",
+    correctionNote: row.correction_note || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    correctedAt: row.corrected_at || null,
+    createdByMemberId: row.created_by_member_id,
+    createdByName: row.created_by_name || row.member_name,
+    correctedByMemberId: row.corrected_by_member_id || null,
+    correctedByName: row.corrected_by_name || null,
+  }));
+}
+
+async function loadServiceDeedSummary(env, memberId) {
+  const [overallRows, memberRows, leaderboardRows] = await Promise.all([
+    all(
+      env,
+      `
+        SELECT deed_type, SUM(effective_quantity) AS total
+        FROM service_deeds
+        GROUP BY deed_type
+      `,
+    ),
+    all(
+      env,
+      `
+        SELECT deed_type, SUM(effective_quantity) AS total
+        FROM service_deeds
+        WHERE member_id = ?
+        GROUP BY deed_type
+      `,
+      [memberId],
+    ),
+    all(
+      env,
+      `
+        SELECT
+          m.id,
+          m.display_name,
+          COALESCE(SUM(d.effective_quantity), 0) AS total
+        FROM members m
+        LEFT JOIN service_deeds d ON d.member_id = m.id
+        WHERE m.status = 'active'
+        GROUP BY m.id
+        ORDER BY total DESC, m.display_name ASC
+      `,
+    ),
+  ]);
+
+  return {
+    overall: mapServiceDeedTotals(overallRows),
+    mine: mapServiceDeedTotals(memberRows),
+    leaderboard: leaderboardRows.map((row) => ({
+      memberId: row.id,
+      displayName: row.display_name,
+      total: Number(row.total || 0),
+    })),
+  };
 }
 
 async function handleStartStewardElection(env, actor) {
@@ -1458,6 +1815,8 @@ async function buildDashboard(env, member) {
     rawRoster,
     currentStewardMemberId,
     achievementStats,
+    serviceDeedLedger,
+    serviceDeedSummary,
   ] = await Promise.all([
     first(
       env,
@@ -1554,6 +1913,8 @@ async function buildDashboard(env, member) {
     loadRoster(env),
     getCurrentStewardMemberId(env),
     loadMemberAchievementStats(env, member.id),
+    loadServiceDeedLedger(env),
+    loadServiceDeedSummary(env, member.id),
   ]);
 
   const roster = decorateCouncilRoster(rawRoster, currentStewardMemberId);
@@ -1638,6 +1999,8 @@ async function buildDashboard(env, member) {
     roster: rosterWithAchievements,
     councilElection,
     achievementCodex,
+    serviceDeedLedger,
+    serviceDeedSummary,
   };
 }
 
@@ -1649,6 +2012,7 @@ async function loadMemberAchievementStats(env, memberId) {
     ratingTimeline,
     legendaryCycleDates,
     stewardRecord,
+    serviceDeedRows,
   ] = await Promise.all([
     all(
       env,
@@ -1728,6 +2092,16 @@ async function loadMemberAchievementStats(env, memberId) {
       `,
       [memberId],
     ),
+    all(
+      env,
+      `
+        SELECT deed_type, effective_quantity, created_at
+        FROM service_deeds
+        WHERE member_id = ?
+        ORDER BY created_at ASC, id ASC
+      `,
+      [memberId],
+    ),
   ]);
 
   const reviewDates = reviewRows.map((row) => row.created_at).filter(Boolean);
@@ -1740,6 +2114,7 @@ async function loadMemberAchievementStats(env, memberId) {
     .filter((row) => row.end_date && row.end_date > row.event_date)
     .map((row) => row.created_at)
     .filter(Boolean);
+  const serviceDeedStats = buildServiceDeedAchievementStats(serviceDeedRows);
 
   return {
     authoredReviewsCount: reviewDates.length,
@@ -1759,6 +2134,8 @@ async function loadMemberAchievementStats(env, memberId) {
     overnightEventDate: overnightEventDates[0] || null,
     overnightEventDates,
     stewardGrantedAt: stewardRecord?.happened_at || null,
+    serviceDeedTotals: serviceDeedStats.totals,
+    serviceDeedMilestones: serviceDeedStats.milestones,
   };
 }
 
@@ -1842,6 +2219,8 @@ function resolveAchievementState(definition, context) {
   const overnightEventDates = context.achievementStats?.overnightEventDates || [];
   const legendaryCycleDates = context.achievementStats?.legendaryCycleDates || [];
   const stewardGrantedAt = context.achievementStats?.stewardGrantedAt || null;
+  const serviceDeedTotals = context.achievementStats?.serviceDeedTotals || {};
+  const serviceDeedMilestones = context.achievementStats?.serviceDeedMilestones || {};
   const ratingDates = (context.achievementStats?.ratingTimeline || [])
     .map((entry) => entry.happenedAt)
     .filter(Boolean);
@@ -1874,6 +2253,23 @@ function resolveAchievementState(definition, context) {
   let earned = false;
   let progressLabel = "Знамение ещё не раскрыто.";
   let earnedAt = null;
+
+  if (definition.deedType) {
+    const deedTotal = Number(serviceDeedTotals?.[definition.deedType] || 0);
+    const milestoneDate =
+      serviceDeedMilestones?.[definition.deedType]?.[String(definition.threshold)] || null;
+    earned = deedTotal >= Number(definition.threshold || 0);
+    progressLabel = `${Math.min(deedTotal, Number(definition.threshold || 0))} из ${definition.threshold} зачтённых свершений.`;
+    earnedAt = milestoneDate;
+
+    return {
+      ...definition,
+      earned,
+      earnedAt,
+      progressLabel,
+      stateLabel: earned ? "Обретено" : "Ждёт раскрытия",
+    };
+  }
 
   switch (definition.id) {
     case "initiated":
@@ -2373,6 +2769,7 @@ function getCouncilPermissions(role) {
     canManageMembers: role === "admin",
     canManageCycles: role === "admin" || role === "steward",
     canManageAllEvents: role === "admin" || role === "steward",
+    canManageDeeds: role === "admin",
   };
 }
 
@@ -4632,6 +5029,63 @@ function isValidEmail(email) {
 function normalizeTime(value) {
   const stringValue = String(value || "").trim();
   return /^\d{2}:\d{2}$/.test(stringValue) ? stringValue : null;
+}
+
+function normalizePositiveInteger(value) {
+  const parsed = Number.parseInt(String(value ?? "").trim(), 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function normalizeServiceDeedType(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return SERVICE_DEED_LIBRARY[normalized] ? normalized : null;
+}
+
+function mapServiceDeedTotals(rows = []) {
+  const totals = Object.fromEntries(
+    Object.keys(SERVICE_DEED_LIBRARY).map((deedType) => [deedType, 0]),
+  );
+
+  for (const row of rows) {
+    const deedType = normalizeServiceDeedType(row?.deed_type || row?.deedType);
+    if (!deedType) {
+      continue;
+    }
+    totals[deedType] += Number(row?.total || row?.effective_quantity || row?.effectiveQuantity || 0);
+  }
+
+  return totals;
+}
+
+function buildServiceDeedAchievementStats(rows = []) {
+  const totals = mapServiceDeedTotals();
+  const thresholds = [...new Set(SERVICE_DEED_ACHIEVEMENTS.map((entry) => Number(entry.threshold)))]
+    .filter((value) => Number.isFinite(value))
+    .sort((left, right) => left - right);
+  const milestones = Object.fromEntries(
+    Object.keys(SERVICE_DEED_LIBRARY).map((deedType) => [deedType, {}]),
+  );
+
+  for (const row of rows) {
+    const deedType = normalizeServiceDeedType(row?.deed_type || row?.deedType);
+    if (!deedType) {
+      continue;
+    }
+
+    totals[deedType] += Number(row?.effective_quantity || row?.effectiveQuantity || 0);
+    const happenedAt = row?.created_at || row?.createdAt || null;
+    for (const threshold of thresholds) {
+      const thresholdKey = String(threshold);
+      if (!milestones[deedType][thresholdKey] && totals[deedType] >= threshold && happenedAt) {
+        milestones[deedType][thresholdKey] = happenedAt;
+      }
+    }
+  }
+
+  return {
+    totals,
+    milestones,
+  };
 }
 
 function isDateOnly(value) {

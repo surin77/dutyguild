@@ -993,6 +993,141 @@ select:focus {
   width: 100%;
 }
 
+.deed-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.deed-main,
+.deed-side,
+.deed-summary-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.deed-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.deed-summary-card,
+.deed-side-card,
+.deed-form {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.46);
+  border: 1px solid rgba(203, 188, 173, 0.9);
+}
+
+.deed-summary-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.deed-summary-card__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: var(--red-deep);
+  background: linear-gradient(180deg, rgba(247, 233, 214, 0.96), rgba(231, 208, 170, 0.94));
+  box-shadow: inset 0 0 0 1px rgba(200, 140, 58, 0.24);
+}
+
+.deed-summary-card__icon .achievement-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.deed-summary-card__copy {
+  display: grid;
+  gap: 8px;
+}
+
+.deed-summary-card__copy strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--red-deep);
+}
+
+.deed-summary-card__copy p,
+.deed-side-card p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.deed-summary-card__eyebrow {
+  display: inline-block;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.74rem;
+}
+
+.deed-summary-card__mine {
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+}
+
+.deed-side-card h3,
+.deed-form h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.deed-form__hint {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(203, 188, 173, 0.72);
+}
+
+.deed-form__hint .section-tag {
+  margin-bottom: 8px;
+}
+
+.deed-form__hint p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.list-card--compact p {
+  margin: 8px 0 0;
+}
+
+.deed-table__manage {
+  min-width: 250px;
+}
+
+.deed-correction {
+  display: grid;
+  gap: 12px;
+}
+
+.deed-correction summary {
+  cursor: pointer;
+  color: var(--red-deep);
+  font-weight: 700;
+  list-style: none;
+}
+
+.deed-correction summary::-webkit-details-marker {
+  display: none;
+}
+
+.deed-correction-form {
+  margin-top: 10px;
+}
+
+.deed-correction-form .button {
+  width: 100%;
+}
+
 .event-edit-form {
   margin-top: 14px;
   padding-top: 14px;
@@ -1878,11 +2013,13 @@ th {
   .stats-band,
   .admin-grid,
   .adventure-grid,
+  .deed-grid,
   .review-grid,
   .council-grid,
   .election-summary-grid,
   .achievement-summary-grid,
   .achievement-grid,
+  .deed-summary-grid,
   .rank-summary-grid,
   .rank-ladder {
     grid-template-columns: 1fr;
@@ -1955,6 +2092,10 @@ th {
 
   .assignment-card__state {
     text-align: left;
+  }
+
+  .deed-summary-card {
+    grid-template-columns: 1fr;
   }
 
   .status-row {

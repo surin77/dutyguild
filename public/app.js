@@ -179,6 +179,76 @@ const ACHIEVEMENT_ICON_LIBRARY = Object.freeze({
     <path d="M26 30h12"></path>
     <path d="M32 22v16"></path>
   `,
+  ash_bearer: `
+    <path d="M22 24h20l-3 20H25Z"></path>
+    <path d="M26 24v-4h12v4"></path>
+    <path d="M32 12l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
+  cinder_caravan: `
+    <path d="M18 28h18l-2 16H20Z"></path>
+    <path d="M38 24h8l4 8-4 12H36"></path>
+    <circle cx="24" cy="48" r="3"></circle>
+    <circle cx="42" cy="48" r="3"></circle>
+    <path d="M28 18l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
+  ember_exorcist: `
+    <path d="M22 20h18l-3 18H25Z"></path>
+    <path d="M40 18l8 8"></path>
+    <path d="M44 14l4 4-8 8"></path>
+    <path d="M30 12l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
+  gate_of_cinders: `
+    <path d="M18 48V20l14-8 14 8v28"></path>
+    <path d="M26 48V30h12v18"></path>
+    <path d="M32 12l2.5 5 5.5 1.5-5.5 2.5-2.5 5-2.5-5-5.5-2.5 5.5-1.5Z"></path>
+  `,
+  dust_hunter: `
+    <path d="M18 34c4-8 10-12 18-12 5 0 9 2 12 6"></path>
+    <path d="M16 42c6-6 14-8 24-6"></path>
+    <path d="M22 18l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
+  whirl_keeper: `
+    <path d="M16 34c4-9 11-13 20-13 6 0 11 2 14 7"></path>
+    <path d="M16 42c7-6 16-8 26-6"></path>
+    <path d="M22 50c6-4 12-5 18-3"></path>
+    <circle cx="42" cy="18" r="3"></circle>
+  `,
+  hall_tempest: `
+    <path d="M14 34c5-11 13-16 24-16 7 0 12 3 16 8"></path>
+    <path d="M14 42c8-7 18-10 30-7"></path>
+    <path d="M18 50c8-4 16-5 24-3"></path>
+    <path d="M34 14l3 6 6 2-6 2-3 6-3-6-6-2 6-2Z"></path>
+  `,
+  storm_of_purity: `
+    <path d="M14 34c5-12 14-18 26-18 8 0 14 3 18 9"></path>
+    <path d="M14 42c9-8 20-11 33-8"></path>
+    <path d="M18 50c9-5 18-6 28-4"></path>
+    <path d="M46 16l3 6 6 2-6 2-3 6-3-6-6-2 6-2Z"></path>
+  `,
+  relic_keeper: `
+    <path d="M18 24h28v20H18Z"></path>
+    <path d="M24 18h16v6H24Z"></path>
+    <path d="M32 12l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
+  shelf_chronicler: `
+    <path d="M18 18h12v28H18Z"></path>
+    <path d="M34 18h12v28H34Z"></path>
+    <path d="M22 26h4"></path>
+    <path d="M38 34h4"></path>
+    <path d="M32 12l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
+  vault_marshal: `
+    <path d="M16 18h12v30H16Z"></path>
+    <path d="M36 18h12v30H36Z"></path>
+    <path d="M26 24h10v18H26Z"></path>
+    <path d="M32 12l2.5 5 5.5 1.5-5.5 2.5-2.5 5-2.5-5-5.5-2.5 5.5-1.5Z"></path>
+  `,
+  master_of_order: `
+    <path d="M14 20h14v28H14Z"></path>
+    <path d="M36 20h14v28H36Z"></path>
+    <path d="M25 26h14v16H25Z"></path>
+    <path d="M32 12l3 6 6 2-6 2-3 6-3-6-6-2 6-2Z"></path>
+  `,
   dragon_chronicler: `
     <path d="M18 46l10-10"></path>
     <path d="M28 20l16 16"></path>
@@ -218,6 +288,30 @@ const ACHIEVEMENT_RARITY_META = Object.freeze({
   mythic: { label: "Легендарное знамение", weight: 4 },
 });
 
+const DEED_LIBRARY = Object.freeze({
+  trash: {
+    id: "trash",
+    label: "Изгнать сор из зала",
+    shortLabel: "Изгнание сора",
+    description: "Унести всё лишнее за порог, чтобы зал дышал свободно.",
+    icon: "ash_bearer",
+  },
+  dust: {
+    id: "dust",
+    label: "Прогнать пыль вихрем",
+    shortLabel: "Охота на пыль",
+    description: "Поднять вихрь чистоты и не оставить пыли ни шанса.",
+    icon: "dust_hunter",
+  },
+  order: {
+    id: "order",
+    label: "Вернуть реликвии на места",
+    shortLabel: "Возвращение реликвий",
+    description: "Разложить коробки, свитки и реликвии круга по законным местам.",
+    icon: "relic_keeper",
+  },
+});
+
 const PAGE_DEFINITIONS = Object.freeze([
   {
     id: "home",
@@ -242,6 +336,14 @@ const PAGE_DEFINITIONS = Object.freeze([
     title: () => "Сходки у стола и карта будущих встреч",
     lead:
       "В этом разделе круг ведёт грядущие партии, правит записи хронистов и следит, чтобы события не сталкивались с обрядами.",
+  },
+  {
+    id: "deeds",
+    label: "Деяния",
+    kicker: "Книга служений",
+    title: () => "Малые подвиги, которые держат зал в строю",
+    lead:
+      "Здесь круг вписывает добрые деяния повседневного служения: изгнание сора, охоту на пыль и возвращение реликвий по местам. Магистр при нужде сверяет меру, чтобы летопись оставалась честной.",
   },
   {
     id: "circle",
@@ -647,6 +749,14 @@ function renderDashboardPage(pageId, context) {
     `;
   }
 
+  if (pageId === "deeds") {
+    return `
+      <section class="content-grid">
+        ${renderDeedsPanel()}
+      </section>
+    `;
+  }
+
   if (pageId === "circle") {
     return `
       <section class="content-grid">
@@ -846,6 +956,230 @@ function renderAdventurePanel() {
         </div>
       </div>
     </article>
+  `;
+}
+
+function getDeedMeta(deedType) {
+  return DEED_LIBRARY[deedType] || DEED_LIBRARY.trash;
+}
+
+function getDeedTotal(scope, deedType) {
+  return Number(state.dashboard?.serviceDeedSummary?.[scope]?.[deedType] || 0);
+}
+
+function renderDeedsPanel() {
+  const deedCards = Object.values(DEED_LIBRARY)
+    .map((deed) => renderDeedSummaryCard(deed))
+    .join("");
+  const leaderboardItems = (state.dashboard?.serviceDeedSummary?.leaderboard || [])
+    .filter((entry) => Number(entry.total || 0) > 0)
+    .slice(0, 6)
+    .map(
+      (entry, index) => `
+        <li class="list-card list-card--compact">
+          <div class="list-card__head">
+            <strong>${index + 1}. ${escapeHtml(entry.displayName)}</strong>
+            <span>${escapeHtml(String(entry.total))}</span>
+          </div>
+          <p>Зачтённых деяний в книге служений.</p>
+        </li>
+      `,
+    )
+    .join("");
+  const canManageDeeds = Boolean(state.me?.permissions?.canManageDeeds);
+  const ledgerRows = (state.dashboard?.serviceDeedLedger || [])
+    .map((entry) => renderServiceDeedLedgerRow(entry, canManageDeeds))
+    .join("");
+
+  return `
+    <article class="panel panel--wide">
+      <div class="panel__header">
+        <p class="section-tag">Книга служений</p>
+        <h2>Малые деяния ордена</h2>
+      </div>
+      <p class="panel__intro">
+        Не всякая доблесть зовёт к фанфарам: часть силы ордена держится на тихих делах, которые делают зал пригодным для новых подвигов.
+      </p>
+      <div class="deed-grid">
+        <div class="deed-main">
+          <div class="deed-summary-grid">${deedCards}</div>
+          <form id="service-deed-form" class="stack-form deed-form">
+            <h3>Вписать новое деяние</h3>
+            <label>
+              <span>Какое деяние свершено</span>
+              <select name="deedType">
+                <option value="">Выберите деяние</option>
+                ${Object.values(DEED_LIBRARY)
+                  .map(
+                    (deed) => `
+                      <option value="${escapeHtml(deed.id)}">${escapeHtml(deed.label)}</option>
+                    `,
+                  )
+                  .join("")}
+              </select>
+            </label>
+            <div class="split-fields">
+              <label>
+                <span>Мера</span>
+                <input name="quantity" type="number" min="1" max="20" value="1" />
+              </label>
+              <div class="deed-form__hint">
+                <span class="section-tag">Знамения служения</span>
+                <p>Открываются по градации 1, 5, 10 и 20 зачтённых свершений каждого вида.</p>
+              </div>
+            </div>
+            <label>
+              <span>Пометка летописца</span>
+              <textarea
+                name="notes"
+                rows="3"
+                placeholder="Например: вынес коробки после похода, прогнал пыль у длинного стола, разложил реликвии по полкам"
+              ></textarea>
+            </label>
+            <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
+              Вписать деяние
+            </button>
+          </form>
+        </div>
+        <div class="deed-side">
+          <article class="deed-side-card">
+            <p class="section-tag">Ведущие служители</p>
+            <h3>Кто чаще держит зал в строю</h3>
+            ${
+              leaderboardItems
+                ? `<ul class="list-stack">${leaderboardItems}</ul>`
+                : '<p class="panel__intro">Книга служений пока пуста. Первый вписанный подвиг сразу появится здесь.</p>'
+            }
+          </article>
+          <article class="deed-side-card">
+            <p class="section-tag">Слово Магистра</p>
+            <h3>Мера должна быть честной</h3>
+            <p>
+              Любой соратник может вписать своё деяние сам, но итоговая зачтённая мера остаётся под печатью Магистра, чтобы летопись не знала надуманных подвигов.
+            </p>
+          </article>
+        </div>
+      </div>
+    </article>
+    <article class="panel panel--wide">
+      <div class="panel__header">
+        <p class="section-tag">Летопись служений</p>
+        <h2>Последние вписанные деяния</h2>
+      </div>
+      <p class="panel__intro">
+        Здесь хранится полный строй последних дел: кто свершил деяние, какую меру заявил и что в итоге зачтено кругом.
+      </p>
+      <div class="table-wrap">
+        <table class="deed-table">
+          <thead>
+            <tr>
+              <th>Деяние</th>
+              <th>Соратник</th>
+              <th>Заявлено</th>
+              <th>Зачтено</th>
+              <th>Вписано</th>
+              <th>Пометка</th>
+              ${canManageDeeds ? "<th>Печать Магистра</th>" : ""}
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              ledgerRows ||
+              `<tr><td colspan="${canManageDeeds ? 7 : 6}">Книга служений пока пуста.</td></tr>`
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+  `;
+}
+
+function renderDeedSummaryCard(deed) {
+  return `
+    <article class="deed-summary-card">
+      <div class="deed-summary-card__icon">
+        ${renderAchievementIcon(deed.icon, deed.shortLabel)}
+      </div>
+      <div class="deed-summary-card__copy">
+        <span class="deed-summary-card__eyebrow">${escapeHtml(deed.shortLabel)}</span>
+        <strong>${escapeHtml(String(getDeedTotal("overall", deed.id)))}</strong>
+        <p>${escapeHtml(deed.description)}</p>
+        <span class="deed-summary-card__mine">Ваш след: ${escapeHtml(String(getDeedTotal("mine", deed.id)))}</span>
+      </div>
+    </article>
+  `;
+}
+
+function renderServiceDeedLedgerRow(entry, canManageDeeds) {
+  const deed = getDeedMeta(entry.deedType);
+  const correctionMeta = entry.correctedAt
+    ? `Исправлено: ${escapeHtml(entry.correctedByName || "Магистр")} · ${escapeHtml(formatDateTime(entry.correctedAt))}`
+    : "Без магистерской правки";
+  const noteParts = [entry.notes, entry.correctionNote].filter(Boolean);
+
+  return `
+    <tr>
+      <td>
+        <div class="member-cell">
+          <strong>${escapeHtml(deed.label)}</strong>
+          <span class="member-cell__meta">${escapeHtml(deed.description)}</span>
+        </div>
+      </td>
+      <td>
+        <div class="member-cell">
+          <strong>${escapeHtml(entry.memberName)}</strong>
+          <span class="member-cell__meta">Вписал: ${escapeHtml(entry.createdByName || entry.memberName)}</span>
+        </div>
+      </td>
+      <td>${escapeHtml(String(entry.reportedQuantity))}</td>
+      <td>
+        <div class="member-cell">
+          <strong>${escapeHtml(String(entry.effectiveQuantity))}</strong>
+          <span class="member-cell__meta">${correctionMeta}</span>
+        </div>
+      </td>
+      <td>
+        <div class="member-cell">
+          <strong>${escapeHtml(formatDateTime(entry.createdAt))}</strong>
+          <span class="member-cell__meta">
+            ${entry.updatedAt && entry.updatedAt !== entry.createdAt ? `Обновлено: ${escapeHtml(formatDateTime(entry.updatedAt))}` : "Без последующих правок"}
+          </span>
+        </div>
+      </td>
+      <td>
+        ${
+          noteParts.length
+            ? `<div class="member-cell">${noteParts
+                .map((note) => `<span class="member-cell__meta">${escapeHtml(note)}</span>`)
+                .join("")}</div>`
+            : '<span class="member-cell__meta">Пометок нет</span>'
+        }
+      </td>
+      ${
+        canManageDeeds
+          ? `
+            <td class="deed-table__manage">
+              <details class="deed-correction">
+                <summary>Сверить меру</summary>
+                <form class="stack-form deed-correction-form" data-deed-correction="${escapeHtml(entry.id)}">
+                  <label>
+                    <span>Зачесть</span>
+                    <input name="effectiveQuantity" type="number" min="1" max="50" value="${escapeHtml(String(entry.effectiveQuantity))}" />
+                  </label>
+                  <label>
+                    <span>Пометка Магистра</span>
+                    <input name="correctionNote" value="${escapeHtml(entry.correctionNote || "")}" placeholder="Например: часть меры уже была вписана ранее" />
+                  </label>
+                  <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>
+                    Утвердить меру
+                  </button>
+                </form>
+              </details>
+            </td>
+          `
+          : ""
+      }
+    </tr>
   `;
 }
 
@@ -1797,6 +2131,7 @@ function bindEvents() {
   document.querySelector("#logout-button")?.addEventListener("click", onLogout);
   document.querySelector("#generate-cycle-button")?.addEventListener("click", onGenerateCycle);
   document.querySelector("#invite-member-form")?.addEventListener("submit", onInviteMember);
+  document.querySelector("#service-deed-form")?.addEventListener("submit", onCreateServiceDeed);
   document.querySelector("#game-event-form")?.addEventListener("submit", onCreateGameEvent);
   document.querySelector("[data-calendar-copy]")?.addEventListener("click", onCopyCalendarLink);
   document.querySelector("[data-steward-election-start]")?.addEventListener("click", onStartStewardElection);
@@ -1814,6 +2149,9 @@ function bindEvents() {
   });
   document.querySelectorAll("[data-game-delete]").forEach((button) => {
     button.addEventListener("click", onDeleteGameEvent);
+  });
+  document.querySelectorAll("[data-deed-correction]").forEach((form) => {
+    form.addEventListener("submit", onCorrectServiceDeed);
   });
   document.querySelectorAll("[data-cycle-complete]").forEach((button) => {
     button.addEventListener("click", onCompleteCycle);
@@ -1897,6 +2235,31 @@ async function onInviteMember(event) {
   });
 }
 
+async function onCreateServiceDeed(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  await withBusy(async () => {
+    const formData = new FormData(form);
+    await api("/api/deeds", {
+      method: "POST",
+      body: {
+        deedType: formData.get("deedType"),
+        quantity: formData.get("quantity"),
+        notes: formData.get("notes"),
+      },
+    });
+    form.reset();
+    const quantityInput = form.querySelector('input[name="quantity"]');
+    if (quantityInput) {
+      quantityInput.value = "1";
+    }
+    await hydrateDashboard();
+    state.notice = "Деяние вписано в книгу служений.";
+    state.error = "";
+    render();
+  });
+}
+
 async function onCreateGameEvent(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -1941,6 +2304,30 @@ async function onCopyCalendarLink() {
     state.notice = "";
     render();
   }
+}
+
+async function onCorrectServiceDeed(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const deedId = String(form?.dataset?.deedCorrection || "").trim();
+  if (!deedId) {
+    return;
+  }
+
+  await withBusy(async () => {
+    const formData = new FormData(form);
+    await api(`/api/deeds/${deedId}`, {
+      method: "PUT",
+      body: {
+        effectiveQuantity: formData.get("effectiveQuantity"),
+        correctionNote: formData.get("correctionNote"),
+      },
+    });
+    await hydrateDashboard();
+    state.notice = "Мера деяния сверена под печатью Магистра.";
+    state.error = "";
+    render();
+  });
 }
 
 function onStartEditGameEvent(event) {
