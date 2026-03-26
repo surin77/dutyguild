@@ -12,6 +12,7 @@ const state = {
   error: "",
   busy: false,
   editingGameEventId: "",
+  editingDeedId: "",
 };
 
 const SCENE_LIBRARY = {
@@ -249,6 +250,37 @@ const ACHIEVEMENT_ICON_LIBRARY = Object.freeze({
     <path d="M25 26h14v16H25Z"></path>
     <path d="M32 12l3 6 6 2-6 2-3 6-3-6-6-2 6-2Z"></path>
   `,
+  altar_squire: `
+    <path d="M18 44h28"></path>
+    <path d="M22 28h20v16H22Z"></path>
+    <path d="M26 18h12"></path>
+    <path d="M32 12l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
+  cup_tamer: `
+    <path d="M20 22h11v15a5 5 0 0 1-11 0Z"></path>
+    <path d="M31 24h5a4 4 0 0 1 0 8h-5"></path>
+    <path d="M40 26h8v12a4 4 0 0 1-8 0Z"></path>
+    <path d="M18 48h30"></path>
+  `,
+  spring_bearer: `
+    <path d="M32 12c-6 8-10 14-10 20 0 6 4.5 10 10 10s10-4 10-10c0-6-4-12-10-20Z"></path>
+    <path d="M20 48h24"></path>
+    <path d="M26 54h12"></path>
+  `,
+  brew_spark: `
+    <path d="M20 24h12v14a6 6 0 0 1-12 0Z"></path>
+    <path d="M32 26h5a4 4 0 0 1 0 8h-5"></path>
+    <path d="M24 16c-2 2-2 4 0 6"></path>
+    <path d="M30 14c-2 2-2 4 0 6"></path>
+    <path d="M36 16c-2 2-2 4 0 6"></path>
+    <path d="M18 48h24"></path>
+  `,
+  stores_warden: `
+    <path d="M18 24h28v20H18Z"></path>
+    <path d="M22 18h20v6H22Z"></path>
+    <path d="M26 30h12"></path>
+    <path d="M32 12l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
   dragon_chronicler: `
     <path d="M18 46l10-10"></path>
     <path d="M28 20l16 16"></path>
@@ -310,6 +342,41 @@ const DEED_LIBRARY = Object.freeze({
     description: "Разложить коробки, свитки и реликвии круга по законным местам.",
     icon: "relic_keeper",
   },
+  altars: {
+    id: "altars",
+    label: "Осветить алтари трапезы",
+    shortLabel: "Алтари трапезы",
+    description: "Протереть столы и прочие поверхности общего сбора, чтобы зал выглядел достойно.",
+    icon: "altar_squire",
+  },
+  vessels: {
+    id: "vessels",
+    label: "Усмирить чаши после пира",
+    shortLabel: "Чаши после пира",
+    description: "Привести в порядок кружки, чаши и прочие сосуды после встречи круга.",
+    icon: "cup_tamer",
+  },
+  water: {
+    id: "water",
+    label: "Напитать источник ордена",
+    shortLabel: "Источник ордена",
+    description: "Пополнить запас чистой воды, чтобы в зале не иссякал простой источник сил.",
+    icon: "spring_bearer",
+  },
+  coffee: {
+    id: "coffee",
+    label: "Пробудить кофейный алтарь",
+    shortLabel: "Кофейный алтарь",
+    description: "Пополнить запас кофе и не дать жаровне бодрости угаснуть.",
+    icon: "brew_spark",
+  },
+  stores: {
+    id: "stores",
+    label: "Пополнить кладовую быта",
+    shortLabel: "Кладовая быта",
+    description: "Принести бумагу, приборы, мешки и прочие нужные запасы для зала.",
+    icon: "stores_warden",
+  },
 });
 
 const PAGE_DEFINITIONS = Object.freeze([
@@ -343,7 +410,7 @@ const PAGE_DEFINITIONS = Object.freeze([
     kicker: "Книга служений",
     title: () => "Малые подвиги, которые держат зал в строю",
     lead:
-      "Здесь круг вписывает добрые деяния повседневного служения: изгнание сора, охоту на пыль и возвращение реликвий по местам. Магистр при нужде сверяет меру, чтобы летопись оставалась честной.",
+      "Здесь круг вписывает добрые деяния повседневного служения: от охоты на пыль и умиротворения чаш до подпитки источника, жаровни и кладовых ордена. Каждое новое деяние ждёт печати Совета, чтобы летопись оставалась честной.",
   },
   {
     id: "circle",
@@ -967,24 +1034,63 @@ function getDeedTotal(scope, deedType) {
   return Number(state.dashboard?.serviceDeedSummary?.[scope]?.[deedType] || 0);
 }
 
+function getDeedStatusMeta(entry) {
+  if (entry.status === "approved") {
+    const approvalHint = entry.approvedAt
+      ? `Печать Совета: ${entry.approvedByName || "Совет"} · ${formatDateTime(entry.approvedAt)}`
+      : `Печать Совета: ${entry.approvedByName || "Совет"}`;
+    const correctionHint =
+      entry.correctedAt && entry.correctedByName
+        ? ` · Правил: ${entry.correctedByName}`
+        : "";
+    return {
+      label: "Запечатано",
+      tone: "done",
+      hint: `${approvalHint}${correctionHint}`,
+    };
+  }
+
+  return {
+    label: "Ждёт печати",
+    tone: "ghost",
+    hint: "Пока не зачтено в свод служения и знамения ордена.",
+  };
+}
+
+function renderDeedLeaderList(deedType) {
+  const deed = getDeedMeta(deedType);
+  const leaders = state.dashboard?.serviceDeedSummary?.leadersByType?.[deedType] || [];
+
+  if (!leaders.length) {
+    return `
+      <li class="list-card list-card--compact">
+        <div class="list-card__head">
+          <strong>${escapeHtml(deed.shortLabel)}</strong>
+          <span>—</span>
+        </div>
+        <p>Пока печать Совета не закрепила ни одного деяния в этой линии служения.</p>
+      </li>
+    `;
+  }
+
+  return `
+    <li class="list-card list-card--compact">
+      <div class="list-card__head">
+        <strong>${escapeHtml(deed.shortLabel)}</strong>
+        <span>${escapeHtml(String(leaders[0].total))}</span>
+      </div>
+      <p>${escapeHtml(leaders.map((entry) => entry.displayName).join(", "))}</p>
+    </li>
+  `;
+}
+
 function renderDeedsPanel() {
   const deedCards = Object.values(DEED_LIBRARY)
     .map((deed) => renderDeedSummaryCard(deed))
     .join("");
-  const leaderboardItems = (state.dashboard?.serviceDeedSummary?.leaderboard || [])
-    .filter((entry) => Number(entry.total || 0) > 0)
-    .slice(0, 6)
-    .map(
-      (entry, index) => `
-        <li class="list-card list-card--compact">
-          <div class="list-card__head">
-            <strong>${index + 1}. ${escapeHtml(entry.displayName)}</strong>
-            <span>${escapeHtml(String(entry.total))}</span>
-          </div>
-          <p>Зачтённых деяний в книге служений.</p>
-        </li>
-      `,
-    )
+  const overallLeader = state.dashboard?.serviceDeedSummary?.overallLeader || null;
+  const categoryLeaders = Object.keys(DEED_LIBRARY)
+    .map((deedType) => renderDeedLeaderList(deedType))
     .join("");
   const canManageDeeds = Boolean(state.me?.permissions?.canManageDeeds);
   const ledgerRows = (state.dashboard?.serviceDeedLedger || [])
@@ -1018,22 +1124,16 @@ function renderDeedsPanel() {
                   .join("")}
               </select>
             </label>
-            <div class="split-fields">
-              <label>
-                <span>Мера</span>
-                <input name="quantity" type="number" min="1" max="20" value="1" />
-              </label>
-              <div class="deed-form__hint">
-                <span class="section-tag">Знамения служения</span>
-                <p>Открываются по градации 1, 5, 10 и 20 зачтённых свершений каждого вида.</p>
-              </div>
+            <div class="deed-form__hint">
+              <span class="section-tag">Знамения служения</span>
+              <p>Одно внесение — одно деяние. Знамения открываются на рубежах 1, 5, 10 и 20 утверждённых свершений каждого вида.</p>
             </div>
             <label>
               <span>Пометка летописца</span>
               <textarea
                 name="notes"
                 rows="3"
-                placeholder="Например: вынес коробки после похода, прогнал пыль у длинного стола, разложил реликвии по полкам"
+                placeholder="Например: освятил алтари трапезы после встречи, пополнил источник ордена или усмирил чаши после пира"
               ></textarea>
             </label>
             <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
@@ -1046,16 +1146,33 @@ function renderDeedsPanel() {
             <p class="section-tag">Ведущие служители</p>
             <h3>Кто чаще держит зал в строю</h3>
             ${
-              leaderboardItems
-                ? `<ul class="list-stack">${leaderboardItems}</ul>`
-                : '<p class="panel__intro">Книга служений пока пуста. Первый вписанный подвиг сразу появится здесь.</p>'
+              overallLeader
+                ? `
+                  <article class="deed-leader-card">
+                    <span class="section-tag">Общий лидер</span>
+                    <h4>${escapeHtml(overallLeader.displayName)}</h4>
+                    <strong>${escapeHtml(String(overallLeader.total))}</strong>
+                    <p>Утверждённых деяний уже внесено под этим именем в общий свод служения.</p>
+                  </article>
+                `
+                : `
+                  <article class="deed-leader-card deed-leader-card--quiet">
+                    <span class="section-tag">Общий лидер</span>
+                    <h4>Вершина ещё свободна</h4>
+                    <p>Как только Совет запечатает первые деяния, здесь появится имя ведущего служителя ордена.</p>
+                  </article>
+                `
             }
+            <div class="deed-side-card__subsection">
+              <span class="section-tag">Лидеры по линиям</span>
+              <ul class="list-stack">${categoryLeaders}</ul>
+            </div>
           </article>
           <article class="deed-side-card">
-            <p class="section-tag">Слово Магистра</p>
-            <h3>Мера должна быть честной</h3>
+            <p class="section-tag">Печать Совета</p>
+            <h3>Честность служения</h3>
             <p>
-              Любой соратник может вписать своё деяние сам, но итоговая зачтённая мера остаётся под печатью Магистра, чтобы летопись не знала надуманных подвигов.
+              Любой соратник может вписать деяние сам, но в счёт служения и знамений оно войдёт только после печати Магистра или действующего Сенешаля.
             </p>
           </article>
         </div>
@@ -1067,7 +1184,7 @@ function renderDeedsPanel() {
         <h2>Последние вписанные деяния</h2>
       </div>
       <p class="panel__intro">
-        Здесь хранится полный строй последних дел: кто свершил деяние, какую меру заявил и что в итоге зачтено кругом.
+        Здесь хранится полный строй последних дел: кто свершил деяние, когда оно было вписано и скрепил ли его Совет своей печатью.
       </p>
       <div class="table-wrap">
         <table class="deed-table">
@@ -1075,17 +1192,16 @@ function renderDeedsPanel() {
             <tr>
               <th>Деяние</th>
               <th>Соратник</th>
-              <th>Заявлено</th>
-              <th>Зачтено</th>
+              <th>Статус</th>
               <th>Вписано</th>
               <th>Пометка</th>
-              ${canManageDeeds ? "<th>Печать Магистра</th>" : ""}
+              ${canManageDeeds ? "<th>Печать Совета</th>" : ""}
             </tr>
           </thead>
           <tbody>
             ${
               ledgerRows ||
-              `<tr><td colspan="${canManageDeeds ? 7 : 6}">Книга служений пока пуста.</td></tr>`
+              `<tr><td colspan="${canManageDeeds ? 6 : 5}">Книга служений пока пуста.</td></tr>`
             }
           </tbody>
         </table>
@@ -1112,13 +1228,12 @@ function renderDeedSummaryCard(deed) {
 
 function renderServiceDeedLedgerRow(entry, canManageDeeds) {
   const deed = getDeedMeta(entry.deedType);
-  const correctionMeta = entry.correctedAt
-    ? `Исправлено: ${escapeHtml(entry.correctedByName || "Магистр")} · ${escapeHtml(formatDateTime(entry.correctedAt))}`
-    : "Без магистерской правки";
+  const statusMeta = getDeedStatusMeta(entry);
   const noteParts = [entry.notes, entry.correctionNote].filter(Boolean);
+  const isEditing = state.editingDeedId === entry.id;
 
   return `
-    <tr>
+    <tr class="${isEditing ? "deed-row deed-row--editing" : "deed-row"}">
       <td>
         <div class="member-cell">
           <strong>${escapeHtml(deed.label)}</strong>
@@ -1131,11 +1246,10 @@ function renderServiceDeedLedgerRow(entry, canManageDeeds) {
           <span class="member-cell__meta">Вписал: ${escapeHtml(entry.createdByName || entry.memberName)}</span>
         </div>
       </td>
-      <td>${escapeHtml(String(entry.reportedQuantity))}</td>
       <td>
         <div class="member-cell">
-          <strong>${escapeHtml(String(entry.effectiveQuantity))}</strong>
-          <span class="member-cell__meta">${correctionMeta}</span>
+          <strong>${escapeHtml(statusMeta.label)}</strong>
+          <span class="member-cell__meta">${escapeHtml(statusMeta.hint)}</span>
         </div>
       </td>
       <td>
@@ -1159,26 +1273,77 @@ function renderServiceDeedLedgerRow(entry, canManageDeeds) {
         canManageDeeds
           ? `
             <td class="deed-table__manage">
-              <details class="deed-correction">
-                <summary>Сверить меру</summary>
-                <form class="stack-form deed-correction-form" data-deed-correction="${escapeHtml(entry.id)}">
-                  <label>
-                    <span>Зачесть</span>
-                    <input name="effectiveQuantity" type="number" min="1" max="50" value="${escapeHtml(String(entry.effectiveQuantity))}" />
-                  </label>
-                  <label>
-                    <span>Пометка Магистра</span>
-                    <input name="correctionNote" value="${escapeHtml(entry.correctionNote || "")}" placeholder="Например: часть меры уже была вписана ранее" />
-                  </label>
-                  <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>
-                    Утвердить меру
-                  </button>
-                </form>
-              </details>
+              <div class="deed-action-stack">
+                ${
+                  entry.status !== "approved"
+                    ? `<button class="button button--primary" type="button" data-deed-approve="${escapeHtml(entry.id)}" ${state.busy ? "disabled" : ""}>Запечатать деяние</button>`
+                    : ""
+                }
+                <button class="button button--secondary" type="button" data-deed-edit-start="${escapeHtml(entry.id)}" ${state.busy ? "disabled" : ""}>
+                  Править запись
+                </button>
+              </div>
             </td>
           `
           : ""
       }
+    </tr>
+    ${
+      canManageDeeds && isEditing
+        ? renderServiceDeedEditorRow(entry)
+        : ""
+    }
+  `;
+}
+
+function renderServiceDeedEditorRow(entry) {
+  return `
+    <tr class="deed-editor-row">
+      <td colspan="6">
+        <form class="stack-form deed-editor" data-deed-correction="${escapeHtml(entry.id)}">
+          <div class="deed-editor__head">
+            <div>
+              <span class="section-tag">Печать Совета</span>
+              <h3>Правка записи о деянии</h3>
+            </div>
+            <button class="button button--secondary" type="button" data-deed-edit-cancel="true" ${state.busy ? "disabled" : ""}>
+              Свернуть
+            </button>
+          </div>
+          <div class="deed-editor__grid">
+            <label>
+              <span>Вид деяния</span>
+              <select name="deedType">
+                ${Object.values(DEED_LIBRARY)
+                  .map(
+                    (deed) => `
+                      <option value="${escapeHtml(deed.id)}" ${entry.deedType === deed.id ? "selected" : ""}>${escapeHtml(deed.label)}</option>
+                    `,
+                  )
+                  .join("")}
+              </select>
+            </label>
+            <label>
+              <span>Статус записи</span>
+              <select name="status">
+                <option value="pending" ${entry.status === "pending" ? "selected" : ""}>Ждёт печати Совета</option>
+                <option value="approved" ${entry.status === "approved" ? "selected" : ""}>Запечатано и зачтено</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            <span>Пометка летописца</span>
+            <textarea name="notes" rows="3">${escapeHtml(entry.notes || "")}</textarea>
+          </label>
+          <label>
+            <span>Пометка Совета</span>
+            <input name="correctionNote" value="${escapeHtml(entry.correctionNote || "")}" placeholder="Например: подтверждено Сенешалем после обхода зала" />
+          </label>
+          <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
+            Утвердить правку
+          </button>
+        </form>
+      </td>
     </tr>
   `;
 }
@@ -2036,8 +2201,8 @@ function renderRosterAchievementRail(member) {
 function renderAdminPanel() {
   const canInviteMembers = Boolean(state.me.permissions?.canManageMembers);
   const intro = canInviteMembers
-    ? "Призывайте новых соратников в круг, следите за устройством братства и созывайте следующий обряд. Новые походы весь круг вписывает сам, а летопись разошлёт знамения автоматически."
-    : "Как Сенешаль, вы можете созывать новые обряды и править летопись походов, но свиток братства пополняет только Магистр.";
+    ? "Призывайте новых соратников в круг, следите за устройством братства, созывайте следующий обряд и при нужде ставьте печать Совета на деяниях ордена. Новые походы и деяния весь круг вписывает сам, а летопись разошлёт знамения автоматически."
+    : "Как Сенешаль, вы можете созывать новые обряды, править летопись походов и ставить печать Совета на деяниях ордена, но свиток братства пополняет только Магистр.";
   const inviteBlock = canInviteMembers
     ? `
       <div class="admin-grid admin-grid--single">
@@ -2150,6 +2315,15 @@ function bindEvents() {
   document.querySelectorAll("[data-game-delete]").forEach((button) => {
     button.addEventListener("click", onDeleteGameEvent);
   });
+  document.querySelectorAll("[data-deed-approve]").forEach((button) => {
+    button.addEventListener("click", onApproveServiceDeed);
+  });
+  document.querySelectorAll("[data-deed-edit-start]").forEach((button) => {
+    button.addEventListener("click", onStartEditServiceDeed);
+  });
+  document.querySelectorAll("[data-deed-edit-cancel]").forEach((button) => {
+    button.addEventListener("click", onCancelEditServiceDeed);
+  });
   document.querySelectorAll("[data-deed-correction]").forEach((form) => {
     form.addEventListener("submit", onCorrectServiceDeed);
   });
@@ -2244,17 +2418,12 @@ async function onCreateServiceDeed(event) {
       method: "POST",
       body: {
         deedType: formData.get("deedType"),
-        quantity: formData.get("quantity"),
         notes: formData.get("notes"),
       },
     });
     form.reset();
-    const quantityInput = form.querySelector('input[name="quantity"]');
-    if (quantityInput) {
-      quantityInput.value = "1";
-    }
     await hydrateDashboard();
-    state.notice = "Деяние вписано в книгу служений.";
+    state.notice = "Деяние вписано в книгу служений и теперь ждёт печати Совета.";
     state.error = "";
     render();
   });
@@ -2319,15 +2488,53 @@ async function onCorrectServiceDeed(event) {
     await api(`/api/deeds/${deedId}`, {
       method: "PUT",
       body: {
-        effectiveQuantity: formData.get("effectiveQuantity"),
+        deedType: formData.get("deedType"),
+        status: formData.get("status"),
+        notes: formData.get("notes"),
         correctionNote: formData.get("correctionNote"),
       },
     });
+    state.editingDeedId = "";
     await hydrateDashboard();
-    state.notice = "Мера деяния сверена под печатью Магистра.";
+    state.notice = "Запись о деянии обновлена под печатью Совета.";
     state.error = "";
     render();
   });
+}
+
+async function onApproveServiceDeed(event) {
+  const deedId = String(event.currentTarget?.dataset?.deedApprove || "").trim();
+  if (!deedId) {
+    return;
+  }
+
+  await withBusy(async () => {
+    await api(`/api/deeds/${deedId}`, {
+      method: "PUT",
+      body: {
+        status: "approved",
+      },
+    });
+    state.editingDeedId = "";
+    await hydrateDashboard();
+    state.notice = "Деяние запечатано и пошло в зачёт служения.";
+    state.error = "";
+    render();
+  });
+}
+
+function onStartEditServiceDeed(event) {
+  state.editingDeedId = String(event.currentTarget?.dataset?.deedEditStart || "").trim();
+  state.notice = "";
+  state.error = "";
+  render();
+}
+
+function onCancelEditServiceDeed() {
+  state.editingDeedId = "";
+  state.notice = "";
+  state.error = "";
+  render();
 }
 
 function onStartEditGameEvent(event) {
@@ -2578,6 +2785,8 @@ function resetSessionState() {
   state.pendingEmail = "";
   state.loginCode = "";
   state.debugCode = "";
+  state.editingGameEventId = "";
+  state.editingDeedId = "";
 }
 
 function syncPageFromLocation() {

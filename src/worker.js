@@ -258,161 +258,143 @@ const RITUAL_OUTCOME_LADDER = Object.freeze([
 const SERVICE_DEED_LIBRARY = Object.freeze({
   trash: {
     id: "trash",
+    icon: "ash_bearer",
     label: "Изгнать сор из зала",
     shortLabel: "Изгнание сора",
     description:
       "Унести сор, коробки и всё лишнее за порог, чтобы зал снова дышал легко.",
+    track: [
+      ["ash_bearer", "Пеплоносец", "Вы впервые вынесли сор за стены ордена и очистили путь для новых свершений."],
+      ["cinder_caravan", "Караван золы", "Сор уже не задерживается в зале: вы умеете проводить его за ворота без лишней суеты."],
+      ["ember_exorcist", "Изгоняющий сор", "Лишнее отступает перед вами быстро и без права остаться в летописи зала."],
+      ["gate_of_cinders", "Владыка пепельных врат", "Вы сделали вынос сора частью порядка ордена, а не редким героическим порывом."],
+    ],
   },
   dust: {
     id: "dust",
+    icon: "dust_hunter",
     label: "Прогнать пыль вихрем",
     shortLabel: "Охота на пыль",
     description:
       "Пройтись вихрем чистоты по полу и углам, чтобы пыль не задерживалась в зале.",
+    track: [
+      ["dust_hunter", "Охотник на пыль", "Первый вихрь уже поднят, и пыль в зале впервые поняла, что ей здесь не рады."],
+      ["whirl_keeper", "Хранитель вихря", "Вы умеете поддерживать чистое дыхание зала не рывком, а устойчивой привычкой."],
+      ["hall_tempest", "Буревестник зала", "Ваш вихрь проходит по залу как уверенный шторм, после которого остаётся только порядок."],
+      ["storm_of_purity", "Шторм чистоты", "Редкая пыль осмелится задержаться там, где вы уже двадцать раз поднимали вихрь."],
+    ],
   },
   order: {
     id: "order",
+    icon: "relic_keeper",
     label: "Вернуть реликвии на места",
     shortLabel: "Возвращение реликвий",
     description:
       "Разложить коробки, свитки и прочие реликвии круга по их законным местам.",
+    track: [
+      ["relic_keeper", "Хранитель реликвий", "Вы впервые вернули священный беспорядок обратно под власть полок и ящиков."],
+      ["shelf_chronicler", "Летописец полок", "Вещи всё чаще находят свои места, а зал перестаёт хранить безымянные завалы."],
+      ["vault_marshal", "Маршал кладовых", "Коробки, книги и реликвии строятся по местам, когда вы проходите по залу с твёрдой рукой."],
+      ["master_of_order", "Архитектор порядка", "Вы не просто раскладываете вещи: вы удерживаете саму геометрию орденского зала."],
+    ],
+  },
+  altars: {
+    id: "altars",
+    icon: "altar_squire",
+    label: "Осветить алтари трапезы",
+    shortLabel: "Алтари трапезы",
+    description:
+      "Протереть столы, подоконники и иные алтари общего сбора, чтобы они снова выглядели достойно круга.",
+    track: [
+      ["altar_squire", "Служка алтарей", "Вы впервые вернули трапезным алтарям вид, достойный очередного похода."],
+      ["altar_keeper", "Хранитель алтарей", "Поверхности зала уже узнают вашу руку и охотнее встречают новые партии."],
+      ["altar_warden", "Страж престолов стола", "Вы следите за алтарями трапезы так, будто сами духи чистоты стоят у вас за плечом."],
+      ["altar_archon", "Архон трапезных алтарей", "Редкий стол сохранит пятна и крошки, если вы уже взяли этот свод под свою стражу."],
+    ],
+  },
+  vessels: {
+    id: "vessels",
+    icon: "cup_tamer",
+    label: "Усмирить чаши после пира",
+    shortLabel: "Чаши после пира",
+    description:
+      "Привести в порядок кружки, чаши и следы былых пиршеств, чтобы зал не тонул в посуде.",
+    track: [
+      ["cup_tamer", "Укротитель чаш", "Первая партия кружек уже смирилась с вашей твёрдой волей."],
+      ["cup_warden", "Страж кубков", "После ваших обходов даже посуда знает дорогу к чистоте."],
+      ["cup_marshal", "Маршал пиршественных чаш", "Вы умеете быстро вернуть порядок там, где после встречи осталась целая гора сосудов."],
+      ["cup_sovereign", "Повелитель пиршественных чаш", "Вы превратили послепиршественный хаос в строй, достойный лучших залов ордена."],
+    ],
+  },
+  water: {
+    id: "water",
+    icon: "spring_bearer",
+    label: "Напитать источник ордена",
+    shortLabel: "Источник ордена",
+    description:
+      "Пополнить запас чистой воды, чтобы у круга не иссякал простой, но важный источник сил.",
+    track: [
+      ["spring_bearer", "Носитель ключевой воды", "Вы впервые поддержали живой источник ордена, и жажда отступила без боя."],
+      ["spring_keeper", "Хранитель источника", "Вода в зале всё чаще появляется вовремя, потому что вы не забываете о тихих нуждах круга."],
+      ["spring_warden", "Страж живой влаги", "Источник ордена уже держится на вас так же надёжно, как на камне держится башня."],
+      ["spring_sovereign", "Владыка хрустального ключа", "Редкий круг может похвастаться столь надёжным хранителем воды и ясности ума."],
+    ],
+  },
+  coffee: {
+    id: "coffee",
+    icon: "brew_spark",
+    label: "Пробудить кофейный алтарь",
+    shortLabel: "Кофейный алтарь",
+    description:
+      "Пополнить запасы кофе, чтобы жаровня бодрости не угасала перед длинными походами и ранними сборами.",
+    track: [
+      ["brew_spark", "Искра жаровни", "Вы впервые не дали кофейному алтарю погаснуть в самый неподходящий миг."],
+      ["brew_keeper", "Хранитель жаровни", "Круг уже знает: если бодрящее зелье снова есть в кладовой, где-то рядом прошли вы."],
+      ["brew_master", "Мастер бодрящего зелья", "Вы держите кофейный алтарь в строю так, словно это отдельная школа магии."],
+      ["brew_archon", "Архон кофейного алтаря", "Даже тяжёлые дни становятся легче, когда вы следите за запасами жаровни."],
+    ],
+  },
+  stores: {
+    id: "stores",
+    icon: "stores_warden",
+    label: "Пополнить кладовую быта",
+    shortLabel: "Кладовая быта",
+    description:
+      "Пополнить запасы бумаги, приборов, мешков и прочих нужных мелочей, без которых зал быстро теряет достоинство.",
+    track: [
+      ["stores_warden", "Кладовщик знамений", "Вы впервые напомнили ордену, что великие саги держатся ещё и на крепком тыле."],
+      ["stores_keeper", "Хранитель запасов", "Кладовая быта всё реже пустеет, когда вы держите её в поле зрения."],
+      ["stores_marshal", "Маршал тылов", "Вы не даёте бытовым мелочам подточить силу круга, потому что тыл у вас под контролем."],
+      ["stores_archon", "Владыка непустых кладовых", "Даже самые приземлённые нужды ордена под вашей рукой становятся предметом тихой легенды."],
+    ],
   },
 });
 
-const SERVICE_DEED_ACHIEVEMENTS = Object.freeze([
-  {
-    id: "ash_bearer",
-    icon: "ash_bearer",
-    hidden: false,
-    rarity: "ember",
-    deedType: "trash",
-    threshold: 1,
-    title: "Пеплоносец",
-    description: "Вы впервые вынесли сор за стены ордена и очистили путь для новых свершений.",
-    criteria: "Зачесть «Изгнание сора» 1 раз.",
-  },
-  {
-    id: "cinder_caravan",
-    icon: "cinder_caravan",
-    hidden: false,
-    rarity: "bronze",
-    deedType: "trash",
-    threshold: 5,
-    title: "Караван золы",
-    description: "Сор уже не задерживается в зале: вы умеете проводить его за ворота без лишней суеты.",
-    criteria: "Зачесть «Изгнание сора» 5 раз.",
-  },
-  {
-    id: "ember_exorcist",
-    icon: "ember_exorcist",
-    hidden: false,
-    rarity: "silver",
-    deedType: "trash",
-    threshold: 10,
-    title: "Изгоняющий сор",
-    description: "Лишнее отступает перед вами быстро и без права остаться в летописи зала.",
-    criteria: "Зачесть «Изгнание сора» 10 раз.",
-  },
-  {
-    id: "gate_of_cinders",
-    icon: "gate_of_cinders",
-    hidden: false,
-    rarity: "gold",
-    deedType: "trash",
-    threshold: 20,
-    title: "Владыка пепельных врат",
-    description: "Вы сделали вынос сора частью порядка ордена, а не редким героическим порывом.",
-    criteria: "Зачесть «Изгнание сора» 20 раз.",
-  },
-  {
-    id: "dust_hunter",
-    icon: "dust_hunter",
-    hidden: false,
-    rarity: "ember",
-    deedType: "dust",
-    threshold: 1,
-    title: "Охотник на пыль",
-    description: "Первый вихрь уже поднят, и пыль в зале впервые поняла, что ей здесь не рады.",
-    criteria: "Зачесть «Охоту на пыль» 1 раз.",
-  },
-  {
-    id: "whirl_keeper",
-    icon: "whirl_keeper",
-    hidden: false,
-    rarity: "bronze",
-    deedType: "dust",
-    threshold: 5,
-    title: "Хранитель вихря",
-    description: "Вы умеете поддерживать чистое дыхание зала не рывком, а устойчивой привычкой.",
-    criteria: "Зачесть «Охоту на пыль» 5 раз.",
-  },
-  {
-    id: "hall_tempest",
-    icon: "hall_tempest",
-    hidden: false,
-    rarity: "silver",
-    deedType: "dust",
-    threshold: 10,
-    title: "Буревестник зала",
-    description: "Ваш вихрь проходит по залу как уверенный шторм, после которого остаётся только порядок.",
-    criteria: "Зачесть «Охоту на пыль» 10 раз.",
-  },
-  {
-    id: "storm_of_purity",
-    icon: "storm_of_purity",
-    hidden: false,
-    rarity: "gold",
-    deedType: "dust",
-    threshold: 20,
-    title: "Шторм чистоты",
-    description: "Редкая пыль осмелится задержаться там, где вы уже двадцать раз поднимали вихрь.",
-    criteria: "Зачесть «Охоту на пыль» 20 раз.",
-  },
-  {
-    id: "relic_keeper",
-    icon: "relic_keeper",
-    hidden: false,
-    rarity: "ember",
-    deedType: "order",
-    threshold: 1,
-    title: "Хранитель реликвий",
-    description: "Вы впервые вернули священный беспорядок обратно под власть полок и ящиков.",
-    criteria: "Зачесть «Возвращение реликвий» 1 раз.",
-  },
-  {
-    id: "shelf_chronicler",
-    icon: "shelf_chronicler",
-    hidden: false,
-    rarity: "bronze",
-    deedType: "order",
-    threshold: 5,
-    title: "Летописец полок",
-    description: "Вещи всё чаще находят свои места, а зал перестаёт хранить безымянные завалы.",
-    criteria: "Зачесть «Возвращение реликвий» 5 раз.",
-  },
-  {
-    id: "vault_marshal",
-    icon: "vault_marshal",
-    hidden: false,
-    rarity: "silver",
-    deedType: "order",
-    threshold: 10,
-    title: "Маршал кладовых",
-    description: "Коробки, книги и реликвии строятся по местам, когда вы проходите по залу с твёрдой рукой.",
-    criteria: "Зачесть «Возвращение реликвий» 10 раз.",
-  },
-  {
-    id: "master_of_order",
-    icon: "master_of_order",
-    hidden: false,
-    rarity: "gold",
-    deedType: "order",
-    threshold: 20,
-    title: "Архитектор порядка",
-    description: "Вы не просто раскладываете вещи: вы удерживаете саму геометрию орденского зала.",
-    criteria: "Зачесть «Возвращение реликвий» 20 раз.",
-  },
+const SERVICE_DEED_THRESHOLDS = Object.freeze([
+  { threshold: 1, rarity: "ember" },
+  { threshold: 5, rarity: "bronze" },
+  { threshold: 10, rarity: "silver" },
+  { threshold: 20, rarity: "gold" },
 ]);
+
+const SERVICE_DEED_ACHIEVEMENTS = Object.freeze(
+  Object.values(SERVICE_DEED_LIBRARY).flatMap((deed) =>
+    SERVICE_DEED_THRESHOLDS.map((milestone, index) => {
+      const [id, title, description] = deed.track[index];
+      return {
+        id,
+        icon: deed.icon,
+        hidden: false,
+        rarity: milestone.rarity,
+        deedType: deed.id,
+        threshold: milestone.threshold,
+        title,
+        description,
+        criteria: `Зачесть «${deed.shortLabel}» ${milestone.threshold} ${pluralizeRussian(milestone.threshold, ["раз", "раза", "раз"]).trim()}.`,
+      };
+    }),
+  ),
+);
 
 const ACHIEVEMENT_LIBRARY = Object.freeze([
   {
@@ -806,7 +788,7 @@ async function handleFetch(request, env) {
 
   const deedMatch = pathname.match(/^\/api\/deeds\/([^/]+)$/);
   if (deedMatch && request.method === "PUT") {
-    const member = await requireAdmin(request, env);
+    const member = await requireCouncil(request, env);
     if (member instanceof Response) {
       return member;
     }
@@ -1126,16 +1108,11 @@ async function handleCreateMember(request, env) {
 async function handleCreateServiceDeed(request, env, actor) {
   const body = await readJson(request);
   const deedType = normalizeServiceDeedType(body?.deedType);
-  const quantity = normalizePositiveInteger(body?.quantity);
   const notes = String(body?.notes || "").trim();
   const now = new Date().toISOString();
 
   if (!deedType) {
     return json({ error: "Выберите, какое именно деяние вписывается в книгу служений." }, 400);
-  }
-
-  if (!quantity || quantity > 20) {
-    return json({ error: "Укажите меру деяния от 1 до 20." }, 400);
   }
 
   await run(
@@ -1147,13 +1124,14 @@ async function handleCreateServiceDeed(request, env, actor) {
         deed_type,
         reported_quantity,
         effective_quantity,
+        status,
         notes,
         created_by_member_id,
         updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, 1, 1, 'pending', ?, ?, ?)
     `,
-    [crypto.randomUUID(), actor.id, deedType, quantity, quantity, notes, actor.id, now],
+    [crypto.randomUUID(), actor.id, deedType, notes, actor.id, now],
   );
 
   return json({ ok: true });
@@ -1176,33 +1154,50 @@ async function handleCorrectServiceDeed(request, env, actor, deedId) {
   }
 
   const body = await readJson(request);
-  const effectiveQuantity = normalizePositiveInteger(body?.effectiveQuantity);
-  const correctionNote = String(body?.correctionNote || "").trim();
+  const deedType = normalizeServiceDeedType(body?.deedType) || normalizeServiceDeedType(deed.deed_type);
+  const status = normalizeServiceDeedStatus(body?.status) || String(deed.status || "pending");
+  const notes =
+    body && Object.prototype.hasOwnProperty.call(body, "notes")
+      ? String(body?.notes || "").trim()
+      : String(deed.notes || "").trim();
+  const correctionNote =
+    body && Object.prototype.hasOwnProperty.call(body, "correctionNote")
+      ? String(body?.correctionNote || "").trim()
+      : String(deed.correction_note || "").trim();
   const now = new Date().toISOString();
 
-  if (!effectiveQuantity || effectiveQuantity > 50) {
-    return json({ error: "Магистр может зачесть меру от 1 до 50." }, 400);
+  if (!deedType) {
+    return json({ error: "Укажите верный вид деяния для исправленной записи." }, 400);
   }
 
   if (
-    Number(deed.effective_quantity || 0) === effectiveQuantity &&
+    String(deed.deed_type || "") === deedType &&
+    String(deed.status || "pending") === status &&
+    String(deed.notes || "") === notes &&
     String(deed.correction_note || "") === correctionNote
   ) {
     return json({ ok: true, unchanged: true });
   }
 
+  const approvedAt = status === "approved" ? deed.approved_at || now : null;
+  const approvedByMemberId = status === "approved" ? deed.approved_by_member_id || actor.id : null;
+
   await run(
     env,
     `
       UPDATE service_deeds
-      SET effective_quantity = ?,
+      SET deed_type = ?,
+          status = ?,
+          notes = ?,
           correction_note = ?,
+          approved_by_member_id = ?,
+          approved_at = ?,
           corrected_by_member_id = ?,
           corrected_at = ?,
           updated_at = ?
       WHERE id = ?
     `,
-    [effectiveQuantity, correctionNote, actor.id, now, now, deedId],
+    [deedType, status, notes, correctionNote, approvedByMemberId, approvedAt, actor.id, now, now, deedId],
   );
 
   return json({ ok: true });
@@ -1413,20 +1408,25 @@ async function loadServiceDeedLedger(env) {
         d.deed_type,
         d.reported_quantity,
         d.effective_quantity,
+        d.status,
         d.notes,
         d.correction_note,
         d.created_at,
         d.updated_at,
         d.corrected_at,
+        d.approved_at,
         d.created_by_member_id,
         d.corrected_by_member_id,
+        d.approved_by_member_id,
         member.display_name AS member_name,
         creator.display_name AS created_by_name,
-        corrector.display_name AS corrected_by_name
+        corrector.display_name AS corrected_by_name,
+        approver.display_name AS approved_by_name
       FROM service_deeds d
       JOIN members member ON member.id = d.member_id
       LEFT JOIN members creator ON creator.id = d.created_by_member_id
       LEFT JOIN members corrector ON corrector.id = d.corrected_by_member_id
+      LEFT JOIN members approver ON approver.id = d.approved_by_member_id
       ORDER BY d.created_at DESC, d.id DESC
       LIMIT 60
     `,
@@ -1437,6 +1437,7 @@ async function loadServiceDeedLedger(env) {
     memberId: row.member_id,
     memberName: row.member_name,
     deedType: row.deed_type,
+    status: row.status || "pending",
     reportedQuantity: Number(row.reported_quantity || 0),
     effectiveQuantity: Number(row.effective_quantity || 0),
     notes: row.notes || "",
@@ -1444,20 +1445,24 @@ async function loadServiceDeedLedger(env) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     correctedAt: row.corrected_at || null,
+    approvedAt: row.approved_at || null,
     createdByMemberId: row.created_by_member_id,
     createdByName: row.created_by_name || row.member_name,
     correctedByMemberId: row.corrected_by_member_id || null,
     correctedByName: row.corrected_by_name || null,
+    approvedByMemberId: row.approved_by_member_id || null,
+    approvedByName: row.approved_by_name || null,
   }));
 }
 
 async function loadServiceDeedSummary(env, memberId) {
-  const [overallRows, memberRows, leaderboardRows] = await Promise.all([
+  const [overallRows, memberRows, leaderboardRows, categoryRows] = await Promise.all([
     all(
       env,
       `
         SELECT deed_type, SUM(effective_quantity) AS total
         FROM service_deeds
+        WHERE status = 'approved'
         GROUP BY deed_type
       `,
     ),
@@ -1467,6 +1472,7 @@ async function loadServiceDeedSummary(env, memberId) {
         SELECT deed_type, SUM(effective_quantity) AS total
         FROM service_deeds
         WHERE member_id = ?
+          AND status = 'approved'
         GROUP BY deed_type
       `,
       [memberId],
@@ -1479,22 +1485,61 @@ async function loadServiceDeedSummary(env, memberId) {
           m.display_name,
           COALESCE(SUM(d.effective_quantity), 0) AS total
         FROM members m
-        LEFT JOIN service_deeds d ON d.member_id = m.id
+        LEFT JOIN service_deeds d ON d.member_id = m.id AND d.status = 'approved'
         WHERE m.status = 'active'
         GROUP BY m.id
         ORDER BY total DESC, m.display_name ASC
       `,
     ),
+    all(
+      env,
+      `
+        SELECT
+          d.deed_type,
+          m.id AS member_id,
+          m.display_name,
+          COALESCE(SUM(d.effective_quantity), 0) AS total
+        FROM service_deeds d
+        JOIN members m ON m.id = d.member_id
+        WHERE d.status = 'approved'
+          AND m.status = 'active'
+        GROUP BY d.deed_type, m.id, m.display_name
+        ORDER BY d.deed_type ASC, total DESC, m.display_name ASC
+      `,
+    ),
   ]);
+
+  const leaderboard = leaderboardRows.map((row) => ({
+    memberId: row.id,
+    displayName: row.display_name,
+    total: Number(row.total || 0),
+  }));
+  const overallLeader = leaderboard.find((entry) => entry.total > 0) || null;
+  const leadersByType = Object.fromEntries(
+    Object.keys(SERVICE_DEED_LIBRARY).map((deedType) => [deedType, []]),
+  );
+
+  for (const deedType of Object.keys(SERVICE_DEED_LIBRARY)) {
+    const contenders = categoryRows
+      .filter((row) => row.deed_type === deedType)
+      .map((row) => ({
+        memberId: row.member_id,
+        displayName: row.display_name,
+        total: Number(row.total || 0),
+      }))
+      .filter((entry) => entry.total > 0);
+    const topTotal = contenders[0]?.total || 0;
+    leadersByType[deedType] = topTotal
+      ? contenders.filter((entry) => entry.total === topTotal)
+      : [];
+  }
 
   return {
     overall: mapServiceDeedTotals(overallRows),
     mine: mapServiceDeedTotals(memberRows),
-    leaderboard: leaderboardRows.map((row) => ({
-      memberId: row.id,
-      displayName: row.display_name,
-      total: Number(row.total || 0),
-    })),
+    leaderboard,
+    overallLeader,
+    leadersByType,
   };
 }
 
@@ -2098,6 +2143,7 @@ async function loadMemberAchievementStats(env, memberId) {
         SELECT deed_type, effective_quantity, created_at
         FROM service_deeds
         WHERE member_id = ?
+          AND status = 'approved'
         ORDER BY created_at ASC, id ASC
       `,
       [memberId],
@@ -2769,7 +2815,7 @@ function getCouncilPermissions(role) {
     canManageMembers: role === "admin",
     canManageCycles: role === "admin" || role === "steward",
     canManageAllEvents: role === "admin" || role === "steward",
-    canManageDeeds: role === "admin",
+    canManageDeeds: role === "admin" || role === "steward",
   };
 }
 
@@ -5039,6 +5085,11 @@ function normalizePositiveInteger(value) {
 function normalizeServiceDeedType(value) {
   const normalized = String(value || "").trim().toLowerCase();
   return SERVICE_DEED_LIBRARY[normalized] ? normalized : null;
+}
+
+function normalizeServiceDeedStatus(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized === "approved" || normalized === "pending" ? normalized : null;
 }
 
 function mapServiceDeedTotals(rows = []) {

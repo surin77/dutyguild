@@ -1080,6 +1080,37 @@ select:focus {
   margin-bottom: 12px;
 }
 
+.deed-side-card__subsection {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.deed-leader-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 251, 245, 0.92), rgba(239, 228, 211, 0.94));
+  border: 1px solid rgba(203, 188, 173, 0.9);
+}
+
+.deed-leader-card h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.deed-leader-card strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--red-deep);
+}
+
+.deed-leader-card--quiet strong {
+  color: var(--ink-soft);
+}
+
 .deed-form__hint {
   padding: 14px 16px;
   border-radius: 14px;
@@ -1101,31 +1132,53 @@ select:focus {
 }
 
 .deed-table__manage {
-  min-width: 250px;
+  min-width: 210px;
 }
 
-.deed-correction {
+.deed-action-stack {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
-.deed-correction summary {
-  cursor: pointer;
-  color: var(--red-deep);
-  font-weight: 700;
-  list-style: none;
-}
-
-.deed-correction summary::-webkit-details-marker {
-  display: none;
-}
-
-.deed-correction-form {
-  margin-top: 10px;
-}
-
-.deed-correction-form .button {
+.deed-action-stack .button {
   width: 100%;
+}
+
+.deed-row--editing td {
+  border-bottom-color: transparent;
+}
+
+.deed-editor-row td {
+  padding-top: 0;
+}
+
+.deed-editor {
+  margin: 0 0 6px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(203, 188, 173, 0.9);
+}
+
+.deed-editor__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.deed-editor__head h3 {
+  margin: 0;
+}
+
+.deed-editor__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.deed-editor .button {
+  width: min(100%, 280px);
 }
 
 .event-edit-form {
@@ -2014,6 +2067,7 @@ th {
   .admin-grid,
   .adventure-grid,
   .deed-grid,
+  .deed-editor__grid,
   .review-grid,
   .council-grid,
   .election-summary-grid,
@@ -2079,6 +2133,7 @@ th {
 
   .review-form__head,
   .event-edit-form__header,
+  .deed-editor__head,
   .election-stage__head,
   .achievement-card__head,
   .achievement-section__head {
