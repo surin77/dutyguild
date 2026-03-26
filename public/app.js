@@ -344,6 +344,7 @@ const DEED_LIBRARY = Object.freeze({
   },
   altars: {
     id: "altars",
+    retired: true,
     label: "Осветить алтари трапезы",
     shortLabel: "Алтари трапезы",
     description: "Протереть столы и прочие поверхности общего сбора, чтобы зал выглядел достойно.",
@@ -351,6 +352,7 @@ const DEED_LIBRARY = Object.freeze({
   },
   vessels: {
     id: "vessels",
+    retired: true,
     label: "Усмирить чаши после пира",
     shortLabel: "Чаши после пира",
     description: "Привести в порядок кружки, чаши и прочие сосуды после встречи круга.",
@@ -410,7 +412,7 @@ const PAGE_DEFINITIONS = Object.freeze([
     kicker: "Книга служений",
     title: () => "Малые подвиги, которые держат зал в строю",
     lead:
-      "Здесь круг вписывает добрые деяния повседневного служения: от охоты на пыль и умиротворения чаш до подпитки источника, жаровни и кладовых ордена. Каждое новое деяние ждёт печати Совета, чтобы летопись оставалась честной.",
+      "Здесь круг вписывает добрые деяния повседневного служения: от охоты на пыль и изгнания сора до подпитки источника, жаровни и кладовых ордена. Каждое новое деяние ждёт печати Совета, чтобы летопись оставалась честной.",
   },
   {
     id: "circle",
@@ -1030,6 +1032,21 @@ function getDeedMeta(deedType) {
   return DEED_LIBRARY[deedType] || DEED_LIBRARY.trash;
 }
 
+function getVisibleDeedEntries() {
+  return Object.values(DEED_LIBRARY).filter((deed) => !deed.retired);
+}
+
+function getSelectableDeedEntries(selectedDeedType = "") {
+  const visibleEntries = getVisibleDeedEntries();
+  const selectedEntry = DEED_LIBRARY[selectedDeedType];
+
+  if (selectedEntry && selectedEntry.retired) {
+    return [...visibleEntries, selectedEntry];
+  }
+
+  return visibleEntries;
+}
+
 function getDeedTotal(scope, deedType) {
   return Number(state.dashboard?.serviceDeedSummary?.[scope]?.[deedType] || 0);
 }
@@ -1085,11 +1102,13 @@ function renderDeedLeaderList(deedType) {
 }
 
 function renderDeedsPanel() {
-  const deedCards = Object.values(DEED_LIBRARY)
+  const visibleDeeds = getVisibleDeedEntries();
+  const deedCards = visibleDeeds
     .map((deed) => renderDeedSummaryCard(deed))
     .join("");
   const overallLeader = state.dashboard?.serviceDeedSummary?.overallLeader || null;
-  const categoryLeaders = Object.keys(DEED_LIBRARY)
+  const categoryLeaders = visibleDeeds
+    .map((deed) => deed.id)
     .map((deedType) => renderDeedLeaderList(deedType))
     .join("");
   const canManageDeeds = Boolean(state.me?.permissions?.canManageDeeds);
@@ -1115,7 +1134,7 @@ function renderDeedsPanel() {
               <span>Какое деяние свершено</span>
               <select name="deedType">
                 <option value="">Выберите деяние</option>
-                ${Object.values(DEED_LIBRARY)
+                ${visibleDeeds
                   .map(
                     (deed) => `
                       <option value="${escapeHtml(deed.id)}">${escapeHtml(deed.label)}</option>
@@ -1133,7 +1152,7 @@ function renderDeedsPanel() {
               <textarea
                 name="notes"
                 rows="3"
-                placeholder="Например: освятил алтари трапезы после встречи, пополнил источник ордена или усмирил чаши после пира"
+                placeholder="Например: изгнал сор из зала, напитал источник ордена или пополнил кладовую быта"
               ></textarea>
             </label>
             <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
@@ -1297,6 +1316,8 @@ function renderServiceDeedLedgerRow(entry, canManageDeeds) {
 }
 
 function renderServiceDeedEditorRow(entry) {
+  const selectableDeeds = getSelectableDeedEntries(entry.deedType);
+
   return `
     <tr class="deed-editor-row">
       <td colspan="6">
@@ -1314,10 +1335,10 @@ function renderServiceDeedEditorRow(entry) {
             <label>
               <span>Вид деяния</span>
               <select name="deedType">
-                ${Object.values(DEED_LIBRARY)
+                ${selectableDeeds
                   .map(
                     (deed) => `
-                      <option value="${escapeHtml(deed.id)}" ${entry.deedType === deed.id ? "selected" : ""}>${escapeHtml(deed.label)}</option>
+                      <option value="${escapeHtml(deed.id)}" ${entry.deedType === deed.id ? "selected" : ""}>${escapeHtml(deed.label)}${deed.retired ? " (архивное)" : ""}</option>
                     `,
                   )
                   .join("")}

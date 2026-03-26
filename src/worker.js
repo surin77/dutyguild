@@ -300,6 +300,7 @@ const SERVICE_DEED_LIBRARY = Object.freeze({
   },
   altars: {
     id: "altars",
+    retired: true,
     icon: "altar_squire",
     label: "Осветить алтари трапезы",
     shortLabel: "Алтари трапезы",
@@ -314,6 +315,7 @@ const SERVICE_DEED_LIBRARY = Object.freeze({
   },
   vessels: {
     id: "vessels",
+    retired: true,
     icon: "cup_tamer",
     label: "Усмирить чаши после пира",
     shortLabel: "Чаши после пира",
@@ -378,7 +380,9 @@ const SERVICE_DEED_THRESHOLDS = Object.freeze([
 ]);
 
 const SERVICE_DEED_ACHIEVEMENTS = Object.freeze(
-  Object.values(SERVICE_DEED_LIBRARY).flatMap((deed) =>
+  Object.values(SERVICE_DEED_LIBRARY)
+    .filter((deed) => !deed.retired)
+    .flatMap((deed) =>
     SERVICE_DEED_THRESHOLDS.map((milestone, index) => {
       const [id, title, description] = deed.track[index];
       return {
@@ -1154,7 +1158,9 @@ async function handleCorrectServiceDeed(request, env, actor, deedId) {
   }
 
   const body = await readJson(request);
-  const deedType = normalizeServiceDeedType(body?.deedType) || normalizeServiceDeedType(deed.deed_type);
+  const deedType =
+    normalizeServiceDeedType(body?.deedType) ||
+    normalizeServiceDeedType(deed.deed_type, { includeRetired: true });
   const status = normalizeServiceDeedStatus(body?.status) || String(deed.status || "pending");
   const notes =
     body && Object.prototype.hasOwnProperty.call(body, "notes")
@@ -1509,17 +1515,34 @@ async function loadServiceDeedSummary(env, memberId) {
     ),
   ]);
 
-  const leaderboard = leaderboardRows.map((row) => ({
-    memberId: row.id,
-    displayName: row.display_name,
-    total: Number(row.total || 0),
-  }));
+  const activeDeedTypes = getActiveServiceDeedTypes();
+  const leaderboardByMember = new Map();
+  for (const row of categoryRows) {
+    if (!activeDeedTypes.includes(String(row.deed_type || "").trim())) {
+      continue;
+    }
+    const memberId = row.member_id;
+    const current = leaderboardByMember.get(memberId) || {
+      memberId,
+      displayName: row.display_name,
+      total: 0,
+    };
+    current.total += Number(row.total || 0);
+    leaderboardByMember.set(memberId, current);
+  }
+
+  const leaderboard = [...leaderboardByMember.values()].sort((left, right) => {
+    if (right.total !== left.total) {
+      return right.total - left.total;
+    }
+    return left.displayName.localeCompare(right.displayName, "ru");
+  });
   const overallLeader = leaderboard.find((entry) => entry.total > 0) || null;
   const leadersByType = Object.fromEntries(
-    Object.keys(SERVICE_DEED_LIBRARY).map((deedType) => [deedType, []]),
+    activeDeedTypes.map((deedType) => [deedType, []]),
   );
 
-  for (const deedType of Object.keys(SERVICE_DEED_LIBRARY)) {
+  for (const deedType of activeDeedTypes) {
     const contenders = categoryRows
       .filter((row) => row.deed_type === deedType)
       .map((row) => ({
@@ -5082,9 +5105,25 @@ function normalizePositiveInteger(value) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
-function normalizeServiceDeedType(value) {
+function getActiveServiceDeedEntries() {
+  return Object.values(SERVICE_DEED_LIBRARY).filter((deed) => !deed.retired);
+}
+
+function getActiveServiceDeedTypes() {
+  return getActiveServiceDeedEntries().map((deed) => deed.id);
+}
+
+function normalizeServiceDeedType(value, options = {}) {
+  const { includeRetired = false } = options;
   const normalized = String(value || "").trim().toLowerCase();
-  return SERVICE_DEED_LIBRARY[normalized] ? normalized : null;
+  const deed = SERVICE_DEED_LIBRARY[normalized];
+  if (!deed) {
+    return null;
+  }
+  if (deed.retired && !includeRetired) {
+    return null;
+  }
+  return normalized;
 }
 
 function normalizeServiceDeedStatus(value) {
@@ -5094,7 +5133,7 @@ function normalizeServiceDeedStatus(value) {
 
 function mapServiceDeedTotals(rows = []) {
   const totals = Object.fromEntries(
-    Object.keys(SERVICE_DEED_LIBRARY).map((deedType) => [deedType, 0]),
+    getActiveServiceDeedTypes().map((deedType) => [deedType, 0]),
   );
 
   for (const row of rows) {
@@ -5114,7 +5153,7 @@ function buildServiceDeedAchievementStats(rows = []) {
     .filter((value) => Number.isFinite(value))
     .sort((left, right) => left - right);
   const milestones = Object.fromEntries(
-    Object.keys(SERVICE_DEED_LIBRARY).map((deedType) => [deedType, {}]),
+    getActiveServiceDeedTypes().map((deedType) => [deedType, {}]),
   );
 
   for (const row of rows) {
