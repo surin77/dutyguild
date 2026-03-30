@@ -281,6 +281,75 @@ const ACHIEVEMENT_ICON_LIBRARY = Object.freeze({
     <path d="M26 30h12"></path>
     <path d="M32 12l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
   `,
+  task_quill: `
+    <path d="M18 46l12-12"></path>
+    <path d="M30 18l16 16"></path>
+    <path d="M36 14l6-4 10 10-4 6"></path>
+    <path d="M16 48l9-2-7-7Z"></path>
+    <path d="M18 18h10"></path>
+  `,
+  task_bearer: `
+    <path d="M18 24h28v20H18Z"></path>
+    <path d="M24 18h16v6H24Z"></path>
+    <path d="M24 32h16"></path>
+    <path d="M28 40h8"></path>
+    <path d="M32 12l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
+  task_warden: `
+    <path d="M20 20h24v28H20Z"></path>
+    <path d="M26 20v-4h12v4"></path>
+    <path d="M26 32l4 4 8-8"></path>
+    <path d="M26 42h12"></path>
+  `,
+  task_archon: `
+    <path d="M18 22h28v24H18Z"></path>
+    <path d="M24 22v-6h16v6"></path>
+    <path d="M24 34l4 4 8-8"></path>
+    <path d="M32 10l3 6 6 2-6 2-3 6-3-6-6-2 6-2Z"></path>
+  `,
+  task_top_ember: `
+    <path d="M18 48V20l14-8 14 8v28"></path>
+    <path d="M26 48V32h12v16"></path>
+    <path d="M32 14l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
+  task_top_bronze: `
+    <path d="M16 46h32"></path>
+    <path d="M20 46l4-20h16l4 20"></path>
+    <path d="M24 18h16v8H24Z"></path>
+    <path d="M32 10l2 4 4 1-4 2-2 4-2-4-4-2 4-1Z"></path>
+  `,
+  task_top_silver: `
+    <path d="M18 46h28"></path>
+    <path d="M22 46V24l10-6 10 6v22"></path>
+    <path d="M28 34h8"></path>
+    <path d="M32 12l2.5 5 5.5 1.5-5.5 2.5-2.5 5-2.5-5-5.5-2.5 5.5-1.5Z"></path>
+  `,
+  task_top_gold: `
+    <path d="M20 48l4-24h16l4 24"></path>
+    <path d="M24 24l8-10 8 10"></path>
+    <path d="M18 48h28"></path>
+    <path d="M32 12l3 6 6 2-6 2-3 6-3-6-6-2 6-2Z"></path>
+  `,
+  proposal_quill: `
+    <path d="M18 46l12-12"></path>
+    <path d="M30 18l16 16"></path>
+    <path d="M36 14l6-4 10 10-4 6"></path>
+    <path d="M16 48l9-2-7-7Z"></path>
+    <path d="M40 40h10"></path>
+  `,
+  proposal_crown: `
+    <path d="M18 44h28"></path>
+    <path d="M20 44l3-18 9 8 9-8 3 18"></path>
+    <path d="M24 20l4 6"></path>
+    <path d="M40 20l-4 6"></path>
+    <circle cx="32" cy="18" r="3"></circle>
+  `,
+  proposal_ashes: `
+    <path d="M20 42h24"></path>
+    <path d="M22 42c0-8 5-10 10-16"></path>
+    <path d="M42 42c0-8-5-10-10-16"></path>
+    <path d="M32 12c-4 4-6 7-6 10a6 6 0 0 0 12 0c0-3-2-6-6-10Z"></path>
+  `,
   dragon_chronicler: `
     <path d="M18 46l10-10"></path>
     <path d="M28 20l16 16"></path>
@@ -415,6 +484,14 @@ const PAGE_DEFINITIONS = Object.freeze([
       "Здесь круг вписывает добрые деяния повседневного служения: от охоты на пыль и изгнания сора до подпитки источника, жаровни и кладовых ордена. Каждое новое деяние ждёт печати Совета, чтобы летопись оставалась честной.",
   },
   {
+    id: "tasks",
+    label: "Поручения",
+    kicker: "Книга поручений",
+    title: () => "Дела ордена, исполнители и печати Совета",
+    lead:
+      "Здесь хранятся поручения для ордена: кто взял их на себя, кто довёл до печати Совета и каков средний вердикт по каждому исполнителю.",
+  },
+  {
     id: "circle",
     label: "Круг",
     kicker: "Свиток братства",
@@ -429,6 +506,14 @@ const PAGE_DEFINITIONS = Object.freeze([
     title: () => "Открытые знаки, тайные трофеи и путь славы",
     lead:
       "Здесь собраны все знамения ордена: видимые для круга достижения и сокрытые трофеи, которые открываются только самым внимательным глазам.",
+  },
+  {
+    id: "proposals",
+    label: "Замыслы",
+    kicker: "Свиток улучшений",
+    title: () => "Предложения, собор голосов и треки воплощения",
+    lead:
+      "Здесь каждый член ордена может предложить улучшение летописи. Собор решает, чему дать печать большинства, а затем весь круг подтверждает завершение воплощённого замысла.",
   },
   {
     id: "council",
@@ -826,6 +911,14 @@ function renderDashboardPage(pageId, context) {
     `;
   }
 
+  if (pageId === "tasks") {
+    return `
+      <section class="content-grid">
+        ${renderTasksPanel()}
+      </section>
+    `;
+  }
+
   if (pageId === "circle") {
     return `
       <section class="content-grid">
@@ -843,10 +936,19 @@ function renderDashboardPage(pageId, context) {
     `;
   }
 
+  if (pageId === "proposals") {
+    return `
+      <section class="content-grid">
+        ${renderProposalsPanel()}
+      </section>
+    `;
+  }
+
   if (pageId === "council") {
     return `
       <section class="content-grid">
         ${renderCouncilElectionPanel()}
+        ${renderConductPanel()}
         ${state.me.permissions?.canManageCycles ? renderAdminPanel() : ""}
       </section>
     `;
@@ -935,6 +1037,42 @@ function renderCyclePanel(title, cycle, emptyText, panelClass = "") {
     : cycle.isAssignedToMe && cycle.myAssignmentCompleted
       ? `<p class="panel__aside-note">Ваша печать завершения уже внесена. Теперь летопись ждёт знак второго героя.</p>`
       : "";
+  const exactRitualBlock = cycle.exactRitualDate
+    ? `
+      <div class="ritual-slot-banner">
+        <span class="section-tag">Точный срок</span>
+        <strong>${escapeHtml(formatCycleRitualSlot(cycle))}</strong>
+        <span>${escapeHtml(cycle.ritualSetByName ? `Срок внёс ${cycle.ritualSetByName}` : "Срок уже закреплён в летописи.")}</span>
+      </div>
+    `
+    : `
+      <p class="panel__aside-note">
+        Точный срок ещё не назван. Назначенные хранители могут выбрать день и час внутри промежутка, чтобы занять это окно за орденом.
+      </p>
+    `;
+  const scheduleForm = cycle.canSetSchedule
+    ? `
+      <form class="stack-form ritual-schedule-form" data-cycle-schedule="${escapeHtml(cycle.id)}">
+        <div class="ritual-schedule-form__head">
+          <strong>Назвать точный срок обряда</strong>
+          <span>После этого всему кругу уйдёт письмо, а новые походы в это окно будут блокироваться.</span>
+        </div>
+        <div class="split-fields">
+          <label>
+            <span>День</span>
+            <input name="ritualDate" type="date" value="${escapeHtml(cycle.exactRitualDate || cycle.plannedCleaningDate || cycle.startsOn)}" />
+          </label>
+          <label>
+            <span>Начало</span>
+            <input name="startsAt" type="time" value="${escapeHtml(cycle.exactRitualStartsAt || "19:00")}" />
+          </label>
+        </div>
+        <button class="button button--secondary" type="submit" ${state.busy ? "disabled" : ""}>
+          Закрепить окно обряда
+        </button>
+      </form>
+    `
+    : "";
   const verdict = cycle.averageRating === null
     ? cycle.status === "completed"
       ? "Обряд завершён, но круг ещё не вынес вердикт."
@@ -956,8 +1094,10 @@ function renderCyclePanel(title, cycle, emptyText, panelClass = "") {
         <span class="status-pill status-pill--${escapeHtml(cycleStatusTone(cycle))}">${escapeHtml(cycleStatusLabel(cycle))}</span>
         <span class="status-pill status-pill--ghost">${escapeHtml(cycle.status === "completed" ? cycle.outcome.shortTitle : "Вердикт ещё не вынесен")}</span>
       </div>
+      ${exactRitualBlock}
       <p class="panel__aside-note">${escapeHtml(verdict)}</p>
       <div class="assignment-list">${badges || '<span class="muted">Герои ещё не названы</span>'}</div>
+      ${scheduleForm}
       ${actionBlock}
     </article>
   `;
@@ -1226,6 +1366,374 @@ function renderDeedsPanel() {
         </table>
       </div>
     </article>
+  `;
+}
+
+function renderTasksPanel() {
+  const tasks = state.dashboard?.orderTasks || [];
+  const summary = state.dashboard?.orderTaskSummary || {};
+  const taskCards = tasks.map((task) => renderOrderTaskCard(task)).join("");
+  const assigneeOptions = getAssignableTaskMembers();
+  const performerRows = [...(state.dashboard?.roster || [])]
+    .sort((left, right) => {
+      const rightTasks = Number(right.profileStats?.tasksCompleted || 0);
+      const leftTasks = Number(left.profileStats?.tasksCompleted || 0);
+      if (rightTasks !== leftTasks) {
+        return rightTasks - leftTasks;
+      }
+      return left.displayName.localeCompare(right.displayName, "ru");
+    })
+    .map(
+      (member) => `
+        <tr>
+          <td>${escapeHtml(member.displayName)}</td>
+          <td>${escapeHtml(String(member.profileStats?.tasksCompleted || 0))}</td>
+          <td>${escapeHtml(formatNullableRating(member.profileStats?.taskAverageRating))}</td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  return `
+    <article class="panel panel--wide">
+      <div class="panel__header">
+        <p class="section-tag">Книга поручений</p>
+        <h2>Дела ордена и их исполнители</h2>
+      </div>
+      <p class="panel__intro">
+        Здесь хранится весь строй поручений: кто взял их на себя, кто довёл до печати Совета и каков средний вердикт по каждому исполнителю.
+      </p>
+      <div class="task-grid">
+        <div class="task-main">
+          ${
+            taskCards
+              ? `<ul class="list-stack task-stack">${taskCards}</ul>`
+              : '<p class="panel__intro">Пока ни одно поручение не внесено в книгу. Значит, самое время дать ордену новое дело.</p>'
+          }
+        </div>
+        <div class="task-side">
+          <article class="deed-side-card">
+            <p class="section-tag">Ведущий исполнитель</p>
+            <h3>${escapeHtml(summary.overallLeader?.displayName || "Вершина ещё свободна")}</h3>
+            <p>
+              ${
+                summary.overallLeader
+                  ? `${escapeHtml(String(summary.overallLeader.completedCount || 0))} закрытых поручений под этим именем.`
+                  : "Как только появятся первые утверждённые поручения, здесь появится имя лидера исполнения."
+              }
+            </p>
+          </article>
+          <form id="order-task-form" class="stack-form task-form">
+            <h3>Вписать поручение</h3>
+            <label>
+              <span>Название поручения</span>
+              <input name="title" placeholder="Например: подготовить новый свод знамений" />
+            </label>
+            <label>
+              <span>Краткое описание</span>
+              <textarea name="description" rows="3" placeholder="Что именно надо свершить и на что обратить внимание"></textarea>
+            </label>
+            <label>
+              <span>Исполнитель</span>
+              <select name="assignedToMemberId">
+                ${assigneeOptions
+                  .map(
+                    (member) => `
+                      <option value="${escapeHtml(member.id)}">${escapeHtml(member.displayName)}</option>
+                    `,
+                  )
+                  .join("")}
+              </select>
+            </label>
+            <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
+              Вписать поручение
+            </button>
+          </form>
+          <article class="deed-side-card">
+            <p class="section-tag">Свод исполнителей</p>
+            <h3>Кто держит поручения в строю</h3>
+            <div class="table-wrap">
+              <table class="task-ranking-table">
+                <thead>
+                  <tr>
+                    <th>Соратник</th>
+                    <th>Закрыто</th>
+                    <th>Средний вердикт</th>
+                  </tr>
+                </thead>
+                <tbody>${performerRows}</tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderOrderTaskCard(task) {
+  const statusMeta = getOrderTaskStatusMeta(task);
+  const actionButtons = [
+    task.canComplete
+      ? `<button class="button button--primary" type="button" data-task-complete="${escapeHtml(task.id)}" ${state.busy ? "disabled" : ""}>Сдать исполнение</button>`
+      : "",
+    task.canApprove
+      ? `<button class="button button--secondary" type="button" data-task-approve="${escapeHtml(task.id)}" ${state.busy ? "disabled" : ""}>Поставить печать Совета</button>`
+      : "",
+    task.canRequestOrderReview
+      ? `<button class="button button--primary" type="button" data-task-order-review="${escapeHtml(task.id)}" ${state.busy ? "disabled" : ""}>Вынести на одобрение ордена</button>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("");
+
+  return `
+    <li class="list-card task-card">
+      <div class="list-card__head">
+        <strong>${escapeHtml(task.title)}</strong>
+        <span class="status-pill status-pill--${escapeHtml(statusMeta.tone)}">${escapeHtml(statusMeta.label)}</span>
+      </div>
+      <p>${escapeHtml(task.description || "Описание не оставлено, но поручение уже внесено в книгу.")}</p>
+      <div class="list-card__meta-row">
+        <span class="list-card__meta">Исполнитель: ${escapeHtml(task.assignedToName)}</span>
+        <span class="list-card__meta">Вписал: ${escapeHtml(task.createdByName)}</span>
+        <span class="list-card__meta">${escapeHtml(task.taskType === "proposal" ? "Поручение замысла" : "Обычное поручение")}</span>
+      </div>
+      ${
+        task.sourceProposalTitle
+          ? `<p class="list-card__meta">Источник: ${escapeHtml(task.sourceProposalTitle)}</p>`
+          : ""
+      }
+      ${
+        task.completionNote
+          ? `<p class="list-card__meta">Слово исполнителя: ${escapeHtml(task.completionNote)}</p>`
+          : ""
+      }
+      ${
+        task.rating !== null
+          ? `<p class="list-card__meta">Вердикт Совета: ${escapeHtml(String(task.rating))} / 5</p>`
+          : ""
+      }
+      ${
+        task.councilNote
+          ? `<p class="list-card__meta">Пометка Совета: ${escapeHtml(task.councilNote)}</p>`
+          : ""
+      }
+      ${
+        actionButtons
+          ? `<div class="list-card__actions list-card__actions--centered">${actionButtons}</div>`
+          : ""
+      }
+    </li>
+  `;
+}
+
+function renderConductPanel() {
+  const conductSummary = state.dashboard?.conductSummary || {};
+  const marks = state.dashboard?.conductLedger || [];
+  const subjectOptions = (state.dashboard?.roster || []).filter((member) => member.id !== state.me?.id);
+  const cards = marks.map((mark) => renderConductCard(mark)).join("");
+
+  return `
+    <article class="panel panel--wide">
+      <div class="panel__header">
+        <p class="section-tag">Книга нрава</p>
+        <h2>Страйки, хвала и печать Совета</h2>
+      </div>
+      <p class="panel__intro">
+        Любой член ордена может вынести знак похвалы или страйк, но войдёт он в летопись только после печати Сенешаля или Магистра.
+      </p>
+      <div class="conduct-grid">
+        <form id="conduct-form" class="stack-form conduct-form">
+          <h3>Внести знак в книгу нрава</h3>
+          <label>
+            <span>Кому адресован знак</span>
+            <select name="subjectMemberId">
+              ${subjectOptions
+                .map(
+                  (member) => `
+                    <option value="${escapeHtml(member.id)}">${escapeHtml(member.displayName)}</option>
+                  `,
+                )
+                .join("")}
+            </select>
+          </label>
+          <label>
+            <span>Какой знак</span>
+            <select name="kind">
+              <option value="praise">Хвала за старание</option>
+              <option value="strike">Страйк за свинство</option>
+            </select>
+          </label>
+          <label>
+            <span>Причина</span>
+            <textarea name="reason" rows="3" placeholder="Коротко опишите, что именно заметил круг"></textarea>
+          </label>
+          <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
+            Внести знак
+          </button>
+        </form>
+        <div class="conduct-side">
+          <article class="deed-side-card">
+            <p class="section-tag">Свод нрава</p>
+            <h3>Что уже запечатано</h3>
+            <p>Хвал: ${escapeHtml(String(conductSummary.approvedPraiseCount || 0))}</p>
+            <p>Страйков: ${escapeHtml(String(conductSummary.approvedStrikeCount || 0))}</p>
+            <p>Ждут печати: ${escapeHtml(String(conductSummary.pendingCount || 0))}</p>
+          </article>
+        </div>
+      </div>
+    </article>
+    <article class="panel panel--wide">
+      <div class="panel__header">
+        <p class="section-tag">Последние знаки</p>
+        <h2>Что сейчас лежит в книге суда</h2>
+      </div>
+      ${
+        cards
+          ? `<ul class="list-stack conduct-stack">${cards}</ul>`
+          : '<p class="panel__intro">Книга нрава пока пуста.</p>'
+      }
+    </article>
+  `;
+}
+
+function renderConductCard(mark) {
+  const meta = getConductMeta(mark);
+  return `
+    <li class="list-card conduct-card">
+      <div class="list-card__head">
+        <strong>${escapeHtml(meta.label)} · ${escapeHtml(mark.subjectName)}</strong>
+        <span class="status-pill status-pill--${escapeHtml(meta.tone)}">${escapeHtml(conductStatusLabel(mark.status))}</span>
+      </div>
+      <p>${escapeHtml(mark.reason)}</p>
+      <div class="list-card__meta-row">
+        <span class="list-card__meta">Внёс: ${escapeHtml(mark.authorName)}</span>
+        <span class="list-card__meta">${escapeHtml(formatDateTime(mark.createdAt))}</span>
+      </div>
+      ${
+        mark.reviewNote
+          ? `<p class="list-card__meta">Пометка Совета: ${escapeHtml(mark.reviewNote)}</p>`
+          : ""
+      }
+      ${
+        mark.canReview
+          ? `
+            <div class="list-card__actions list-card__actions--centered">
+              <button class="button button--primary" type="button" data-conduct-review="${escapeHtml(mark.id)}" data-decision="approve" ${state.busy ? "disabled" : ""}>Утвердить</button>
+              <button class="button button--danger" type="button" data-conduct-review="${escapeHtml(mark.id)}" data-decision="reject" ${state.busy ? "disabled" : ""}>Отклонить</button>
+            </div>
+          `
+          : ""
+      }
+    </li>
+  `;
+}
+
+function renderProposalsPanel() {
+  const proposals = state.dashboard?.improvementProposals || [];
+  const activeVotingCount = proposals.filter((proposal) => proposal.status === "voting").length;
+  const approvedCount = proposals.filter((proposal) => proposal.status === "approved").length;
+  const orderReviewCount = proposals.filter((proposal) => proposal.status === "order_review").length;
+  const cards = proposals.map((proposal) => renderProposalCard(proposal)).join("");
+
+  return `
+    <article class="panel panel--wide">
+      <div class="panel__header">
+        <p class="section-tag">Свиток улучшений</p>
+        <h2>Замыслы для будущих версий летописи</h2>
+      </div>
+      <p class="panel__intro">
+        Каждый соратник может внести новый замысел. Собор решает, стоит ли давать ему печать большинства, а затем весь круг подтверждает завершение воплощённого поручения.
+      </p>
+      <div class="task-grid">
+        <div class="task-main">
+          ${
+            cards
+              ? `<ul class="list-stack proposal-stack">${cards}</ul>`
+              : '<p class="panel__intro">Пока в свитке улучшений нет ни одного замысла.</p>'
+          }
+        </div>
+        <div class="task-side">
+          <article class="deed-side-card">
+            <p class="section-tag">Свод замыслов</p>
+            <h3>Текущее состояние собора</h3>
+            <p>На голосовании: ${escapeHtml(String(activeVotingCount))}</p>
+            <p>Ждут воплощения: ${escapeHtml(String(approvedCount))}</p>
+            <p>На финальном одобрении: ${escapeHtml(String(orderReviewCount))}</p>
+          </article>
+          <form id="proposal-form" class="stack-form task-form">
+            <h3>Внести новый замысел</h3>
+            <label>
+              <span>Заголовок</span>
+              <input name="title" placeholder="Например: новая книга поручений и трек статусов" />
+            </label>
+            <label>
+              <span>Описание</span>
+              <textarea name="description" rows="5" placeholder="Опишите идею, пользу для ордена и как именно она должна выглядеть"></textarea>
+            </label>
+            <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
+              Вынести на собор
+            </button>
+          </form>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderProposalCard(proposal) {
+  const statusMeta = getProposalStatusMeta(proposal);
+  const actions = [
+    proposal.canVote
+      ? `<button class="button button--primary" type="button" data-proposal-vote="${escapeHtml(proposal.id)}" data-vote-choice="approve" ${state.busy ? "disabled" : ""}>Поддержать</button>`
+      : "",
+    proposal.canVote
+      ? `<button class="button button--danger" type="button" data-proposal-vote="${escapeHtml(proposal.id)}" data-vote-choice="reject" ${state.busy ? "disabled" : ""}>Отклонить</button>`
+      : "",
+    proposal.canRequestOrderReview
+      ? `<button class="button button--secondary" type="button" data-proposal-order-review="${escapeHtml(proposal.linkedTaskId)}" ${state.busy ? "disabled" : ""}>Вынести исполнение на одобрение ордена</button>`
+      : "",
+    proposal.canVoteCompletion
+      ? `<button class="button button--primary" type="button" data-proposal-completion-vote="${escapeHtml(proposal.id)}" data-vote-choice="approve" ${state.busy ? "disabled" : ""}>Одобрить исполнение</button>`
+      : "",
+    proposal.canVoteCompletion
+      ? `<button class="button button--danger" type="button" data-proposal-completion-vote="${escapeHtml(proposal.id)}" data-vote-choice="reject" ${state.busy ? "disabled" : ""}>Вернуть на доработку</button>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("");
+
+  return `
+    <li class="list-card proposal-card">
+      <div class="list-card__head">
+        <strong>${escapeHtml(proposal.title)}</strong>
+        <span class="status-pill status-pill--${escapeHtml(statusMeta.tone)}">${escapeHtml(statusMeta.label)}</span>
+      </div>
+      <p>${escapeHtml(proposal.description)}</p>
+      <div class="list-card__meta-row">
+        <span class="list-card__meta">Автор: ${escapeHtml(proposal.authorName)}</span>
+        <span class="list-card__meta">Создано: ${escapeHtml(formatDateTime(proposal.createdAt))}</span>
+      </div>
+      <p class="list-card__meta">
+        Собор: ${escapeHtml(String(proposal.proposalVotes.approveCount))} за / ${escapeHtml(String(proposal.proposalVotes.rejectCount))} против · нужно ${escapeHtml(String(proposal.proposalVotes.majorityCount))}
+      </p>
+      ${
+        proposal.linkedTaskTitle
+          ? `<p class="list-card__meta">Связанное поручение: ${escapeHtml(proposal.linkedTaskTitle)} · ${escapeHtml(proposal.linkedTaskAssigneeName || "Магистр Совета")}</p>`
+          : ""
+      }
+      ${
+        proposal.status === "order_review"
+          ? `<p class="list-card__meta">Одобрение исполнения: ${escapeHtml(String(proposal.completionVotes.approveCount))} из ${escapeHtml(String(proposal.completionVotes.requiredCount))}</p>`
+          : ""
+      }
+      ${
+        actions
+          ? `<div class="list-card__actions list-card__actions--centered">${actions}</div>`
+          : ""
+      }
+    </li>
   `;
 }
 
@@ -2146,41 +2654,7 @@ function renderReviewPanel() {
 }
 
 function renderRosterPanel() {
-  const rows = state.dashboard.roster
-    .map(
-      (member) => `
-        <tr>
-          <td>
-            <div class="member-cell">
-              <strong>${escapeHtml(member.displayName)}</strong>
-              <span class="member-cell__meta">${escapeHtml(member.email)}</span>
-            </div>
-          </td>
-          <td>${roleLabel(member.role)}</td>
-          <td>
-            <div class="member-cell">
-              <strong>${escapeHtml(memberRankTitle(member))}</strong>
-              <span class="member-cell__meta">${escapeHtml(memberRankStage(member))}</span>
-            </div>
-          </td>
-          <td>
-            <div class="member-cell">
-              <strong>${escapeHtml(memberNextRankTitle(member))}</strong>
-              <span class="member-cell__meta">${escapeHtml(memberRankProgress(member))}</span>
-            </div>
-          </td>
-          <td>${member.dutyCount}</td>
-          <td>
-            <div class="member-cell">
-              <strong>${member.averageRating === null ? "—" : member.averageRating.toFixed(1)}</strong>
-              <span class="member-cell__meta">${escapeHtml(getOutcomeTitleFromRating(member.averageRating))}</span>
-            </div>
-          </td>
-          <td class="member-achievement-cell">${renderRosterAchievementRail(member)}</td>
-        </tr>
-      `,
-    )
-    .join("");
+  const cards = state.dashboard.roster.map((member) => renderRosterMemberCard(member)).join("");
 
   return `
     <article class="panel panel--wide">
@@ -2189,25 +2663,70 @@ function renderRosterPanel() {
         <h2>Имена, внесённые в круг</h2>
       </div>
       <p class="panel__intro">
-        Здесь видно звание каждого соратника, его текущую ступень и рубеж до следующего возвышения.
+        Нажмите на имя соратника, чтобы раскрыть его полный свод: ритуалы, деяния, поручения, знамения и отметки круга.
       </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Имя</th>
-              <th>Сан</th>
-              <th>Звание</th>
-              <th>Следующий рубеж</th>
-              <th>Служений</th>
-              <th>Слава</th>
-              <th>Знамения</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
+      <div class="roster-stack">${cards}</div>
     </article>
+  `;
+}
+
+function renderRosterMemberCard(member) {
+  const stats = member.profileStats || {};
+  const leadingDeed = getLeadingDeedLabel(stats.leadingDeedType);
+
+  return `
+    <details class="roster-member">
+      <summary class="roster-member__summary">
+        <div class="roster-member__identity">
+          <strong>${escapeHtml(member.displayName)}</strong>
+          <span>${escapeHtml(roleLabel(member.role))}</span>
+          <span>${escapeHtml(memberRankTitle(member))}</span>
+        </div>
+        <div class="roster-member__summary-metrics">
+          <span>${escapeHtml(String(stats.ritualsCompleted || 0))} обрядов</span>
+          <span>${escapeHtml(formatNullableRating(stats.ritualAverageRating))} славы</span>
+          <span>${escapeHtml(String(stats.achievementCount || 0))} знамений</span>
+        </div>
+      </summary>
+      <div class="roster-member__details">
+        <div class="roster-member__stats">
+          <article class="roster-stat-card">
+            <span>Ритуалы</span>
+            <strong>${escapeHtml(String(stats.ritualsCompleted || 0))}</strong>
+            <p>Слава: ${escapeHtml(formatNullableRating(stats.ritualAverageRating))} · свидетельств ${escapeHtml(String(stats.ritualFeedbackCount || 0))}</p>
+          </article>
+          <article class="roster-stat-card">
+            <span>Деяния</span>
+            <strong>${escapeHtml(String(stats.deedCountTotal || 0))}</strong>
+            <p>${escapeHtml(leadingDeed ? `${leadingDeed} · ${stats.leadingDeedCount}` : "Пока без ведущей линии служения")}</p>
+          </article>
+          <article class="roster-stat-card">
+            <span>Поручения</span>
+            <strong>${escapeHtml(String(stats.tasksCompleted || 0))}</strong>
+            <p>Средний вердикт: ${escapeHtml(formatNullableRating(stats.taskAverageRating))}</p>
+          </article>
+          <article class="roster-stat-card">
+            <span>Замыслы</span>
+            <strong>${escapeHtml(String(stats.proposalsCreated || 0))}</strong>
+            <p>Принято: ${escapeHtml(String(stats.proposalsApproved || 0))} · отклонено: ${escapeHtml(String(stats.proposalsRejected || 0))}</p>
+          </article>
+          <article class="roster-stat-card">
+            <span>Нрав</span>
+            <strong>${escapeHtml(String(stats.praiseCount || 0))} / ${escapeHtml(String(stats.strikeCount || 0))}</strong>
+            <p>Хвала / страйки, уже запечатанные в книге суда.</p>
+          </article>
+          <article class="roster-stat-card">
+            <span>Знамения</span>
+            <strong>${escapeHtml(String(stats.achievementCount || 0))}</strong>
+            <p>${escapeHtml(memberRankProgress(member))}</p>
+          </article>
+        </div>
+        <div class="roster-member__achievements">
+          <span class="section-tag">Знамения соратника</span>
+          ${renderRosterAchievementRail(member)}
+        </div>
+      </div>
+    </details>
   `;
 }
 
@@ -2319,10 +2838,37 @@ function bindEvents() {
   document.querySelector("#invite-member-form")?.addEventListener("submit", onInviteMember);
   document.querySelector("#service-deed-form")?.addEventListener("submit", onCreateServiceDeed);
   document.querySelector("#game-event-form")?.addEventListener("submit", onCreateGameEvent);
+  document.querySelector("#order-task-form")?.addEventListener("submit", onCreateOrderTask);
+  document.querySelector("#conduct-form")?.addEventListener("submit", onCreateConductMark);
+  document.querySelector("#proposal-form")?.addEventListener("submit", onCreateProposal);
   document.querySelector("[data-calendar-copy]")?.addEventListener("click", onCopyCalendarLink);
   document.querySelector("[data-steward-election-start]")?.addEventListener("click", onStartStewardElection);
+  document.querySelectorAll("[data-cycle-schedule]").forEach((form) => {
+    form.addEventListener("submit", onScheduleCycle);
+  });
   document.querySelectorAll("[data-steward-election-vote]").forEach((button) => {
     button.addEventListener("click", onCastStewardElectionVote);
+  });
+  document.querySelectorAll("[data-task-complete]").forEach((button) => {
+    button.addEventListener("click", onCompleteOrderTask);
+  });
+  document.querySelectorAll("[data-task-approve]").forEach((button) => {
+    button.addEventListener("click", onApproveOrderTask);
+  });
+  document.querySelectorAll("[data-task-order-review]").forEach((button) => {
+    button.addEventListener("click", onRequestOrderReview);
+  });
+  document.querySelectorAll("[data-conduct-review]").forEach((button) => {
+    button.addEventListener("click", onReviewConductMark);
+  });
+  document.querySelectorAll("[data-proposal-vote]").forEach((button) => {
+    button.addEventListener("click", onVoteProposal);
+  });
+  document.querySelectorAll("[data-proposal-completion-vote]").forEach((button) => {
+    button.addEventListener("click", onVoteProposalCompletion);
+  });
+  document.querySelectorAll("[data-proposal-order-review]").forEach((button) => {
+    button.addEventListener("click", onRequestOrderReview);
   });
   document.querySelectorAll("[data-game-edit-start]").forEach((button) => {
     button.addEventListener("click", onStartEditGameEvent);
@@ -2470,6 +3016,261 @@ async function onCreateGameEvent(event) {
     state.editingGameEventId = "";
     await hydrateDashboard();
     state.notice = "Событие вписано в летопись, а круг получил почтовое знамение.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onScheduleCycle(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const cycleId = String(form?.dataset?.cycleSchedule || "").trim();
+  if (!cycleId) {
+    return;
+  }
+
+  await withBusy(async () => {
+    const formData = new FormData(form);
+    await api(`/api/cycles/${cycleId}/schedule`, {
+      method: "POST",
+      body: {
+        ritualDate: formData.get("ritualDate"),
+        startsAt: formData.get("startsAt"),
+      },
+    });
+    await hydrateDashboard();
+    state.notice = "Точный срок обряда закреплён, а круг уже получил почтовое знамение.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onCreateOrderTask(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  await withBusy(async () => {
+    const formData = new FormData(form);
+    await api("/api/tasks", {
+      method: "POST",
+      body: {
+        title: formData.get("title"),
+        description: formData.get("description"),
+        assignedToMemberId: formData.get("assignedToMemberId"),
+      },
+    });
+    form.reset();
+    await hydrateDashboard();
+    state.notice = "Поручение внесено в книгу ордена.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onCompleteOrderTask(event) {
+  const taskId = String(event.currentTarget?.dataset?.taskComplete || "").trim();
+  if (!taskId) {
+    return;
+  }
+
+  const completionNote =
+    window.prompt("Какое краткое слово оставить в летописи об исполнении поручения?", "") ?? null;
+  if (completionNote === null) {
+    return;
+  }
+
+  await withBusy(async () => {
+    await api(`/api/tasks/${taskId}/complete`, {
+      method: "POST",
+      body: {
+        completionNote,
+      },
+    });
+    await hydrateDashboard();
+    state.notice = "Исполнение внесено. Теперь поручение ждёт печати Совета.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onApproveOrderTask(event) {
+  const taskId = String(event.currentTarget?.dataset?.taskApprove || "").trim();
+  if (!taskId) {
+    return;
+  }
+
+  const ratingRaw = window.prompt("Какой вердикт поставить исполнению? Укажите число от 1 до 5.", "5");
+  if (ratingRaw === null) {
+    return;
+  }
+  const rating = Number(ratingRaw);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    state.error = "Печать Совета требует оценку от 1 до 5.";
+    state.notice = "";
+    render();
+    return;
+  }
+
+  const councilNote =
+    window.prompt("Нужна ли короткая пометка Совета к этому поручению?", "") ?? "";
+
+  await withBusy(async () => {
+    await api(`/api/tasks/${taskId}/approve`, {
+      method: "POST",
+      body: {
+        rating,
+        councilNote,
+      },
+    });
+    await hydrateDashboard();
+    state.notice = "Печать Совета поставлена, поручение зачтено.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onRequestOrderReview(event) {
+  const taskId = String(
+    event.currentTarget?.dataset?.taskOrderReview ||
+      event.currentTarget?.dataset?.proposalOrderReview ||
+      "",
+  ).trim();
+  if (!taskId) {
+    return;
+  }
+
+  const completionNote =
+    window.prompt("Что стоит знать кругу перед финальным одобрением исполнения?", "") ?? null;
+  if (completionNote === null) {
+    return;
+  }
+
+  await withBusy(async () => {
+    await api(`/api/tasks/${taskId}/order-review`, {
+      method: "POST",
+      body: {
+        completionNote,
+      },
+    });
+    await hydrateDashboard();
+    state.notice = "Исполнение вынесено на одобрение ордена.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onCreateConductMark(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  await withBusy(async () => {
+    const formData = new FormData(form);
+    await api("/api/conduct-marks", {
+      method: "POST",
+      body: {
+        subjectMemberId: formData.get("subjectMemberId"),
+        kind: formData.get("kind"),
+        reason: formData.get("reason"),
+      },
+    });
+    form.reset();
+    await hydrateDashboard();
+    state.notice = "Знак внесён в книгу нрава и теперь ждёт печати Совета.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onReviewConductMark(event) {
+  const markId = String(event.currentTarget?.dataset?.conductReview || "").trim();
+  const decision = String(event.currentTarget?.dataset?.decision || "").trim();
+  if (!markId || !decision) {
+    return;
+  }
+
+  const reviewNote =
+    window.prompt("Оставить ли короткую пометку Совета к этому знаку?", "") ?? null;
+  if (reviewNote === null) {
+    return;
+  }
+
+  await withBusy(async () => {
+    await api(`/api/conduct-marks/${markId}/review`, {
+      method: "POST",
+      body: {
+        decision,
+        reviewNote,
+      },
+    });
+    await hydrateDashboard();
+    state.notice =
+      decision === "approve"
+        ? "Совет запечатал знак в книге нрава."
+        : "Совет отклонил предложенный знак.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onCreateProposal(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  await withBusy(async () => {
+    const formData = new FormData(form);
+    await api("/api/proposals", {
+      method: "POST",
+      body: {
+        title: formData.get("title"),
+        description: formData.get("description"),
+      },
+    });
+    form.reset();
+    await hydrateDashboard();
+    state.notice = "Замысел вынесен на собор, а круг уже получил письма с приглашением к голосованию.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onVoteProposal(event) {
+  const proposalId = String(event.currentTarget?.dataset?.proposalVote || "").trim();
+  const vote = String(event.currentTarget?.dataset?.voteChoice || "").trim();
+  if (!proposalId || !vote) {
+    return;
+  }
+
+  await withBusy(async () => {
+    const response = await api(`/api/proposals/${proposalId}/vote`, {
+      method: "POST",
+      body: { vote },
+    });
+    await hydrateDashboard();
+    state.notice =
+      response.resolution?.status === "approved"
+        ? "Замысел получил печать большинства и стал поручением Магистра."
+        : response.resolution?.status === "rejected"
+          ? "Собор не дал этому замыслу печать большинства."
+          : "Ваш голос внесён в собор замысла.";
+    state.error = "";
+    render();
+  });
+}
+
+async function onVoteProposalCompletion(event) {
+  const proposalId = String(event.currentTarget?.dataset?.proposalCompletionVote || "").trim();
+  const vote = String(event.currentTarget?.dataset?.voteChoice || "").trim();
+  if (!proposalId || !vote) {
+    return;
+  }
+
+  await withBusy(async () => {
+    const response = await api(`/api/proposals/${proposalId}/completion-vote`, {
+      method: "POST",
+      body: { vote },
+    });
+    await hydrateDashboard();
+    state.notice =
+      response.resolution?.status === "closed"
+        ? "Весь орден дал печать исполнению, и трек замысла закрыт."
+        : "Ваш знак по исполнению внесён в летопись.";
     state.error = "";
     render();
   });
@@ -2878,6 +3679,88 @@ function roleLabel(role) {
     return "Сенешаль Совета";
   }
   return "Соратник круга";
+}
+
+function getAssignableTaskMembers() {
+  if (state.me?.permissions?.canManageTasks) {
+    return state.dashboard?.roster || [];
+  }
+
+  return state.me ? [state.me] : [];
+}
+
+function getOrderTaskStatusMeta(task) {
+  switch (task.status) {
+    case "completed_pending":
+      return { label: "Ждёт печати Совета", tone: "waiting" };
+    case "approved":
+      return { label: "Запечатано", tone: "done" };
+    case "order_review":
+      return { label: "Ждёт одобрения ордена", tone: "live" };
+    case "closed":
+      return { label: "Путь завершён", tone: "done" };
+    default:
+      return { label: "Ждёт исполнения", tone: "ghost" };
+  }
+}
+
+function getConductMeta(mark) {
+  if (mark.kind === "strike") {
+    return {
+      label: "Страйк за свинство",
+      tone: "error",
+    };
+  }
+
+  return {
+    label: "Хвала за старание",
+    tone: "done",
+  };
+}
+
+function conductStatusLabel(status) {
+  if (status === "approved") {
+    return "Запечатано";
+  }
+  if (status === "rejected") {
+    return "Отклонено";
+  }
+  return "Ждёт печати";
+}
+
+function getProposalStatusMeta(proposal) {
+  switch (proposal.status) {
+    case "approved":
+      return { label: "Ждёт воплощения", tone: "waiting" };
+    case "order_review":
+      return { label: "Финальное одобрение", tone: "live" };
+    case "closed":
+      return { label: "Замысел завершён", tone: "done" };
+    case "rejected":
+      return { label: "Собор отклонил", tone: "error" };
+    default:
+      return { label: "Идёт собор", tone: "ghost" };
+  }
+}
+
+function formatNullableRating(value) {
+  return value === null || value === undefined ? "—" : Number(value).toFixed(1);
+}
+
+function getLeadingDeedLabel(deedType) {
+  if (!deedType) {
+    return "";
+  }
+
+  return DEED_LIBRARY[deedType]?.shortLabel || deedType;
+}
+
+function formatCycleRitualSlot(cycle) {
+  if (!cycle?.exactRitualDate) {
+    return "Точный срок ещё не назван";
+  }
+
+  return `${formatDate(cycle.exactRitualDate)}${cycle.exactRitualStartsAt ? `, ${cycle.exactRitualStartsAt}` : ""}`;
 }
 
 function formatRatingValue(value) {

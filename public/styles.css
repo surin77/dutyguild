@@ -2052,6 +2052,175 @@ th {
   }
 }
 
+.ritual-slot-banner {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 249, 241, 0.82);
+  border: 1px solid rgba(212, 199, 187, 0.82);
+}
+
+.ritual-slot-banner strong {
+  font-size: 1.05rem;
+}
+
+.ritual-schedule-form {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(36, 29, 26, 0.86);
+  color: var(--white);
+}
+
+.ritual-schedule-form__head {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.ritual-schedule-form__head span {
+  color: rgba(255, 245, 234, 0.78);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.task-grid,
+.conduct-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.95fr);
+  gap: 24px;
+}
+
+.task-main,
+.task-side,
+.conduct-side {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.task-stack,
+.conduct-stack,
+.proposal-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.task-card,
+.conduct-card,
+.proposal-card {
+  gap: 12px;
+}
+
+.list-card__actions--centered {
+  justify-content: center;
+}
+
+.task-ranking-table {
+  width: 100%;
+}
+
+.task-ranking-table td,
+.task-ranking-table th {
+  text-align: left;
+  vertical-align: top;
+}
+
+.status-pill--error {
+  background: rgba(178, 53, 29, 0.14);
+  color: var(--red-deep);
+  border: 1px solid rgba(178, 53, 29, 0.24);
+}
+
+.roster-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.roster-member {
+  border: 1px solid rgba(212, 199, 187, 0.86);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(250, 245, 238, 0.96), rgba(241, 233, 222, 0.96));
+  overflow: hidden;
+}
+
+.roster-member > summary {
+  list-style: none;
+}
+
+.roster-member > summary::-webkit-details-marker {
+  display: none;
+}
+
+.roster-member__summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 20px;
+  cursor: pointer;
+}
+
+.roster-member__identity,
+.roster-member__summary-metrics,
+.roster-member__details,
+.roster-member__stats {
+  display: grid;
+  gap: 10px;
+}
+
+.roster-member__identity span,
+.roster-member__summary-metrics span {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.roster-member__summary-metrics {
+  text-align: right;
+}
+
+.roster-member__details {
+  padding: 0 20px 20px;
+}
+
+.roster-member__stats {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.roster-stat-card {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 250, 244, 0.82);
+  border: 1px solid rgba(212, 199, 187, 0.74);
+}
+
+.roster-stat-card span {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.roster-stat-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.4rem;
+}
+
+.roster-stat-card p {
+  margin: 10px 0 0;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.roster-member__achievements {
+  display: grid;
+  gap: 10px;
+}
+
 @media (max-width: 1080px) {
   .ember-field {
     opacity: 0.72;
@@ -2066,6 +2235,8 @@ th {
   .stats-band,
   .admin-grid,
   .adventure-grid,
+  .task-grid,
+  .conduct-grid,
   .deed-grid,
   .deed-editor__grid,
   .review-grid,
@@ -2103,6 +2274,14 @@ th {
   .header-user__menu::after {
     left: 0;
     right: auto;
+  }
+
+  .roster-member__summary {
+    align-items: flex-start;
+  }
+
+  .roster-member__summary-metrics {
+    text-align: left;
   }
 }
 
