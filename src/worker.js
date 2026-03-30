@@ -1823,13 +1823,11 @@ async function loadOrderTasks(env, viewer) {
       SELECT
         t.*,
         creator.display_name AS created_by_name,
-        assignee.display_name AS assigned_to_name,
         completer.display_name AS completed_by_name,
         approver.display_name AS approved_by_name,
         proposal.title AS source_proposal_title
       FROM order_tasks t
       JOIN members creator ON creator.id = t.created_by_member_id
-      JOIN members assignee ON assignee.id = t.assigned_to_member_id
       LEFT JOIN members completer ON completer.id = t.completed_by_member_id
       LEFT JOIN members approver ON approver.id = t.approved_by_member_id
       LEFT JOIN improvement_proposals proposal ON proposal.id = t.source_proposal_id
@@ -1848,10 +1846,17 @@ async function loadOrderTasks(env, viewer) {
     `,
   );
 
+  const assigneeMap = await loadOrderTaskAssigneeMap(
+    env,
+    rows.map((row) => row.id),
+  );
+
   return rows.map((row) => {
     const taskType = String(row.task_type || "general");
     const status = String(row.status || "open");
-    const isAssignee = row.assigned_to_member_id === viewer?.id;
+    const assignees = assigneeMap.get(row.id) || [];
+    const leadAssignee = assignees[0] || null;
+    const isAssignee = assignees.some((entry) => entry.id === viewer?.id);
     const canManageTasks = viewerRole === "admin" || viewerRole === "steward";
 
     return {
@@ -1868,8 +1873,11 @@ async function loadOrderTasks(env, viewer) {
       closedAt: row.closed_at || null,
       createdByMemberId: row.created_by_member_id,
       createdByName: row.created_by_name,
-      assignedToMemberId: row.assigned_to_member_id,
-      assignedToName: row.assigned_to_name,
+      assignedToMemberId: leadAssignee?.id || row.assigned_to_member_id || null,
+      assignedToName: leadAssignee?.displayName || null,
+      assigneeMemberIds: assignees.map((entry) => entry.id),
+      assigneeNames: assignees.map((entry) => entry.displayName),
+      assignees,
       completedByMemberId: row.completed_by_member_id || null,
       completedByName: row.completed_by_name || null,
       approvedByMemberId: row.approved_by_member_id || null,
@@ -1902,8 +1910,10 @@ async function loadOrderTaskSummary(env, memberId) {
         COUNT(t.id) AS completed_count,
         ROUND(AVG(t.rating), 2) AS average_rating
       FROM members m
+      LEFT JOIN order_task_assignees ta
+        ON ta.member_id = m.id
       LEFT JOIN order_tasks t
-        ON t.assigned_to_member_id = m.id
+        ON t.id = ta.task_id
        AND t.status IN ('approved', 'closed')
       WHERE m.status = 'active'
       GROUP BY m.id, m.display_name
@@ -1940,6 +1950,69 @@ async function loadOrderTaskSummary(env, memberId) {
       0,
     ),
   };
+}
+
+async function loadOrderTaskAssigneeMap(env, taskIds = []) {
+  const normalizedTaskIds = [...new Set((taskIds || []).map((taskId) => String(taskId || "").trim()).filter(Boolean))];
+  const assigneeMap = new Map();
+
+  if (!normalizedTaskIds.length) {
+    return assigneeMap;
+  }
+
+  const placeholders = normalizedTaskIds.map(() => "?").join(", ");
+  const rows = await all(
+    env,
+    `
+      SELECT
+        ta.task_id,
+        ta.assignment_order,
+        m.id,
+        m.email,
+        m.display_name,
+        m.role,
+        m.status,
+        m.duty_count,
+        m.created_at,
+        m.approved_at
+      FROM order_task_assignees ta
+      JOIN members m ON m.id = ta.member_id
+      WHERE ta.task_id IN (${placeholders})
+      ORDER BY ta.assignment_order ASC, m.display_name ASC
+    `,
+    normalizedTaskIds,
+  );
+
+  for (const row of rows) {
+    const current = assigneeMap.get(row.task_id) || [];
+    current.push({
+      ...memberToClient(row),
+      assignmentOrder: Number(row.assignment_order || 0),
+    });
+    assigneeMap.set(row.task_id, current);
+  }
+
+  return assigneeMap;
+}
+
+async function isOrderTaskAssignee(env, taskId, memberId, fallbackAssignedToMemberId = null) {
+  if (!taskId || !memberId) {
+    return false;
+  }
+
+  const assignment = await first(
+    env,
+    `
+      SELECT task_id
+      FROM order_task_assignees
+      WHERE task_id = ?
+        AND member_id = ?
+      LIMIT 1
+    `,
+    [taskId, memberId],
+  );
+
+  return Boolean(assignment) || fallbackAssignedToMemberId === memberId;
 }
 
 async function loadConductLedger(env, viewer) {
@@ -2431,6 +2504,19 @@ async function createImplementationTaskForProposal(env, proposal) {
     ],
   );
 
+  await run(
+    env,
+    `
+      INSERT INTO order_task_assignees (
+        task_id,
+        member_id,
+        assignment_order
+      )
+      VALUES (?, ?, 0)
+    `,
+    [taskId, magister.id],
+  );
+
   return {
     taskId,
     assigneeId: magister.id,
@@ -2862,33 +2948,50 @@ async function handleCreateOrderTask(request, env, actor) {
   const body = await readJson(request);
   const title = String(body?.title || "").trim();
   const description = String(body?.description || "").trim();
-  const requestedAssigneeId = String(body?.assignedToMemberId || actor.id).trim();
+  const requestedAssigneeIds = normalizeMemberIdList(
+    Array.isArray(body?.assignedToMemberIds) ? body.assignedToMemberIds : [body?.assignedToMemberId || actor.id],
+  );
   const effectiveRole = await getEffectiveMemberRole(env, actor);
 
   if (!title) {
     return json({ error: "Поручению нужно дать название, иначе летопись не поймёт, что именно делать." }, 400);
   }
 
-  if ((effectiveRole !== "admin" && effectiveRole !== "steward") && requestedAssigneeId !== actor.id) {
+  if (!requestedAssigneeIds.length) {
+    return json({ error: "Нужно назвать хотя бы одного исполнителя поручения." }, 400);
+  }
+
+  if (
+    effectiveRole !== "admin" &&
+    effectiveRole !== "steward" &&
+    (requestedAssigneeIds.length !== 1 || requestedAssigneeIds[0] !== actor.id)
+  ) {
     return json({ error: "Соратник вне Совета может назначить исполнителем только самого себя." }, 403);
   }
 
-  const assignee = await first(
+  const assigneePlaceholders = requestedAssigneeIds.map(() => "?").join(", ");
+  const assigneeRows = await all(
     env,
     `
       SELECT id, display_name
       FROM members
-      WHERE id = ? AND status = 'active'
-      LIMIT 1
+      WHERE status = 'active'
+        AND id IN (${assigneePlaceholders})
     `,
-    [requestedAssigneeId],
+    requestedAssigneeIds,
   );
+  const assigneeById = new Map(assigneeRows.map((row) => [row.id, row]));
+  const assignees = requestedAssigneeIds
+    .map((memberId) => assigneeById.get(memberId))
+    .filter(Boolean);
 
-  if (!assignee) {
-    return json({ error: "Исполнитель не найден в активном круге." }, 404);
+  if (assignees.length !== requestedAssigneeIds.length) {
+    return json({ error: "Один из выбранных исполнителей не найден в активном круге." }, 404);
   }
 
   const now = new Date().toISOString();
+  const taskId = crypto.randomUUID();
+  const leadAssigneeId = requestedAssigneeIds[0];
   await run(
     env,
     `
@@ -2904,8 +3007,23 @@ async function handleCreateOrderTask(request, env, actor) {
       )
       VALUES (?, ?, ?, 'general', 'open', ?, ?, ?)
     `,
-    [crypto.randomUUID(), title, description, actor.id, assignee.id, now],
+    [taskId, title, description, actor.id, leadAssigneeId, now],
   );
+
+  for (const [assignmentOrder, assigneeId] of requestedAssigneeIds.entries()) {
+    await run(
+      env,
+      `
+        INSERT INTO order_task_assignees (
+          task_id,
+          member_id,
+          assignment_order
+        )
+        VALUES (?, ?, ?)
+      `,
+      [taskId, assigneeId, assignmentOrder],
+    );
+  }
 
   return json({ ok: true });
 }
@@ -2930,8 +3048,14 @@ async function handleCompleteOrderTask(request, env, actor, taskId) {
     return json({ error: "Замыслы Магистра выносятся на одобрение ордена отдельной печатью, а не обычным завершением." }, 400);
   }
 
-  if (task.assigned_to_member_id !== actor.id) {
-    return json({ error: "Отметить завершение поручения может только его назначенный исполнитель." }, 403);
+  const isAssignee = await isOrderTaskAssignee(
+    env,
+    task.id,
+    actor.id,
+    task.assigned_to_member_id,
+  );
+  if (!isAssignee) {
+    return json({ error: "Отметить завершение поручения может только один из назначенных исполнителей." }, 403);
   }
 
   if (task.status !== "open") {
@@ -3039,7 +3163,13 @@ async function handleSubmitTaskForOrderReview(request, env, actor, taskId) {
     return json({ error: "Обычные поручения завершаются через печать Совета, а не через одобрение ордена." }, 400);
   }
 
-  if (task.assigned_to_member_id !== actor.id) {
+  const isAssignee = await isOrderTaskAssignee(
+    env,
+    task.id,
+    actor.id,
+    task.assigned_to_member_id,
+  );
+  if (!isAssignee) {
     return json({ error: "Такой замысел может вынести на одобрение только назначенный Магистр." }, 403);
   }
 
@@ -3662,11 +3792,12 @@ async function loadMemberAchievementStats(env, memberId) {
     all(
       env,
       `
-        SELECT approved_at, rating
-        FROM order_tasks
-        WHERE assigned_to_member_id = ?
+        SELECT t.approved_at, t.rating
+        FROM order_tasks t
+        JOIN order_task_assignees ta ON ta.task_id = t.id
+        WHERE ta.member_id = ?
           AND status IN ('approved', 'closed')
-        ORDER BY approved_at ASC, created_at ASC
+        ORDER BY t.approved_at ASC, t.created_at ASC
       `,
       [memberId],
     ),
@@ -7115,6 +7246,21 @@ function normalizeTime(value) {
 function normalizePositiveInteger(value) {
   const parsed = Number.parseInt(String(value ?? "").trim(), 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function normalizeMemberIdList(values) {
+  const source = Array.isArray(values) ? values : [values];
+  const uniqueIds = [];
+
+  for (const value of source) {
+    const normalized = String(value || "").trim();
+    if (!normalized || uniqueIds.includes(normalized)) {
+      continue;
+    }
+    uniqueIds.push(normalized);
+  }
+
+  return uniqueIds;
 }
 
 function getActiveServiceDeedEntries() {

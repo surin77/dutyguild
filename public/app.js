@@ -1433,18 +1433,27 @@ function renderTasksPanel() {
               <span>Краткое описание</span>
               <textarea name="description" rows="3" placeholder="Что именно надо свершить и на что обратить внимание"></textarea>
             </label>
-            <label>
-              <span>Исполнитель</span>
-              <select name="assignedToMemberId">
+            <fieldset class="member-checks">
+              <legend>Исполнители</legend>
+              <div class="member-checks__grid">
                 ${assigneeOptions
                   .map(
                     (member) => `
-                      <option value="${escapeHtml(member.id)}">${escapeHtml(member.displayName)}</option>
+                      <label class="member-check">
+                        <input
+                          type="checkbox"
+                          name="assignedToMemberIds"
+                          value="${escapeHtml(member.id)}"
+                          ${member.id === state.me?.id ? "checked" : ""}
+                        />
+                        <span>${escapeHtml(member.displayName)}</span>
+                      </label>
                     `,
                   )
                   .join("")}
-              </select>
-            </label>
+              </div>
+              <p class="panel__aside-note">Можно отметить сразу нескольких соратников, если поручение требует общей руки.</p>
+            </fieldset>
             <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
               Вписать поручение
             </button>
@@ -1495,7 +1504,9 @@ function renderOrderTaskCard(task) {
       </div>
       <p>${escapeHtml(task.description || "Описание не оставлено, но поручение уже внесено в книгу.")}</p>
       <div class="list-card__meta-row">
-        <span class="list-card__meta">Исполнитель: ${escapeHtml(task.assignedToName)}</span>
+        <span class="list-card__meta">${
+          task.assigneeNames?.length > 1 ? "Исполнители" : "Исполнитель"
+        }: ${escapeHtml((task.assigneeNames || []).join(", ") || task.assignedToName || "Имя ещё не вписано")}</span>
         <span class="list-card__meta">Вписал: ${escapeHtml(task.createdByName)}</span>
         <span class="list-card__meta">${escapeHtml(task.taskType === "proposal" ? "Поручение замысла" : "Обычное поручение")}</span>
       </div>
@@ -3055,7 +3066,7 @@ async function onCreateOrderTask(event) {
       body: {
         title: formData.get("title"),
         description: formData.get("description"),
-        assignedToMemberId: formData.get("assignedToMemberId"),
+        assignedToMemberIds: formData.getAll("assignedToMemberIds"),
       },
     });
     form.reset();
