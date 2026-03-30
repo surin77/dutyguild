@@ -539,6 +539,18 @@ const EMBER_FIELD = Object.freeze([
   { originX: "11.2%", originY: "6.1vh", travelX: "21vw", travelY: "-50vh", duration: "12.8s", delay: "-10.56s", size: "4px", opacity: "0.8", blur: "0.12px", scaleEnd: "1.04", rotation: "15deg" },
   { originX: "13.5%", originY: "5.7vh", travelX: "29vw", travelY: "-67vh", duration: "12.8s", delay: "-10.72s", size: "5px", opacity: "0.92", blur: "0.2px", scaleEnd: "1.26", rotation: "27deg" },
   { originX: "10.5%", originY: "5.3vh", travelX: "14vw", travelY: "-33vh", duration: "12.8s", delay: "-10.86s", size: "2px", opacity: "0.54", blur: "0.03px", scaleEnd: "0.74", rotation: "5deg" },
+  { originX: "12.9%", originY: "6.4vh", travelX: "30vw", travelY: "-71vh", duration: "11.9s", delay: "-2.18s", size: "6px", opacity: "0.96", blur: "0.22px", scaleEnd: "1.32", rotation: "29deg" },
+  { originX: "10.9%", originY: "4.9vh", travelX: "16vw", travelY: "-36vh", duration: "11.6s", delay: "-2.46s", size: "2px", opacity: "0.58", blur: "0.03px", scaleEnd: "0.78", rotation: "7deg" },
+  { originX: "11.7%", originY: "5.4vh", travelX: "20vw", travelY: "-46vh", duration: "11.4s", delay: "-2.72s", size: "4px", opacity: "0.84", blur: "0.1px", scaleEnd: "1.04", rotation: "13deg" },
+  { originX: "12.3%", originY: "6.1vh", travelX: "24vw", travelY: "-56vh", duration: "11.8s", delay: "-3.08s", size: "5px", opacity: "0.9", blur: "0.16px", scaleEnd: "1.16", rotation: "21deg" },
+  { originX: "13.9%", originY: "6.5vh", travelX: "33vw", travelY: "-74vh", duration: "11.2s", delay: "-3.44s", size: "4px", opacity: "0.86", blur: "0.12px", scaleEnd: "1.08", rotation: "31deg" },
+  { originX: "10.4%", originY: "5.1vh", travelX: "15vw", travelY: "-35vh", duration: "11.7s", delay: "-7.12s", size: "3px", opacity: "0.64", blur: "0.05px", scaleEnd: "0.86", rotation: "6deg" },
+  { originX: "11.5%", originY: "5.8vh", travelX: "18vw", travelY: "-43vh", duration: "11.5s", delay: "-7.36s", size: "3px", opacity: "0.72", blur: "0.08px", scaleEnd: "0.94", rotation: "10deg" },
+  { originX: "12.1%", originY: "6.2vh", travelX: "23vw", travelY: "-52vh", duration: "11.3s", delay: "-7.62s", size: "4px", opacity: "0.82", blur: "0.12px", scaleEnd: "1.06", rotation: "16deg" },
+  { originX: "13.1%", originY: "6.8vh", travelX: "28vw", travelY: "-63vh", duration: "11.1s", delay: "-7.94s", size: "5px", opacity: "0.9", blur: "0.18px", scaleEnd: "1.18", rotation: "24deg" },
+  { originX: "14.2%", originY: "6.6vh", travelX: "35vw", travelY: "-77vh", duration: "10.9s", delay: "-8.26s", size: "6px", opacity: "0.98", blur: "0.24px", scaleEnd: "1.34", rotation: "34deg" },
+  { originX: "11.1%", originY: "5.5vh", travelX: "17vw", travelY: "-40vh", duration: "11.4s", delay: "-11.34s", size: "2px", opacity: "0.62", blur: "0.03px", scaleEnd: "0.8", rotation: "8deg" },
+  { originX: "12.6%", originY: "6.3vh", travelX: "26vw", travelY: "-59vh", duration: "11.0s", delay: "-11.88s", size: "4px", opacity: "0.88", blur: "0.14px", scaleEnd: "1.1", rotation: "22deg" },
 ]);
 
 const root = document.querySelector("#app");
@@ -1753,12 +1765,44 @@ function renderProposalCard(proposal) {
           ? `<p class="list-card__meta">Одобрение исполнения: ${escapeHtml(String(proposal.completionVotes.approveCount))} из ${escapeHtml(String(proposal.completionVotes.requiredCount))}</p>`
           : ""
       }
+      ${renderProposalCommentary(proposal.proposalCommentary, "Пометки собора")}
+      ${renderProposalCommentary(proposal.completionCommentary, "Пометки по исполнению")}
       ${
         actions
           ? `<div class="list-card__actions list-card__actions--centered">${actions}</div>`
           : ""
       }
     </li>
+  `;
+}
+
+function renderProposalCommentary(comments, title) {
+  if (!Array.isArray(comments) || !comments.length) {
+    return "";
+  }
+
+  return `
+    <div class="proposal-commentary">
+      <span class="proposal-commentary__title">${escapeHtml(title)}</span>
+      <div class="proposal-commentary__list">
+        ${comments
+          .map(
+            (comment) => `
+              <article class="proposal-commentary__entry">
+                <div class="proposal-commentary__head">
+                  <strong>${escapeHtml(comment.voterName || "Соратник круга")}</strong>
+                  <span class="proposal-commentary__vote proposal-commentary__vote--${escapeHtml(comment.vote || "approve")}">
+                    ${escapeHtml(comment.vote === "reject" ? "Отклонил" : "Поддержал")}
+                  </span>
+                </div>
+                <p>${escapeHtml(comment.comment || "")}</p>
+                <span class="proposal-commentary__time">${escapeHtml(formatDateTime(comment.createdAt))}</span>
+              </article>
+            `,
+          )
+          .join("")}
+      </div>
+    </div>
   `;
 }
 
@@ -3261,11 +3305,18 @@ async function onVoteProposal(event) {
   if (!proposalId || !vote) {
     return;
   }
+  const comment = window.prompt(
+    "Если хочешь, оставь короткую пометку к голосу. Можно отправить и пустой ответ.",
+    "",
+  );
+  if (comment === null) {
+    return;
+  }
 
   await withBusy(async () => {
     const response = await api(`/api/proposals/${proposalId}/vote`, {
       method: "POST",
-      body: { vote },
+      body: { vote, comment },
     });
     await hydrateDashboard();
     state.notice =
@@ -3285,11 +3336,18 @@ async function onVoteProposalCompletion(event) {
   if (!proposalId || !vote) {
     return;
   }
+  const comment = window.prompt(
+    "Если хочешь, оставь короткую пометку к оценке исполнения. Можно отправить и пустой ответ.",
+    "",
+  );
+  if (comment === null) {
+    return;
+  }
 
   await withBusy(async () => {
     const response = await api(`/api/proposals/${proposalId}/completion-vote`, {
       method: "POST",
-      body: { vote },
+      body: { vote, comment },
     });
     await hydrateDashboard();
     state.notice =

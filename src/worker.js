@@ -2171,9 +2171,17 @@ async function loadImprovementProposals(env, viewer) {
     all(
       env,
       `
-        SELECT proposal_id, phase, voter_member_id, vote, created_at
-        FROM proposal_votes
-        ORDER BY created_at ASC
+        SELECT
+          pv.proposal_id,
+          pv.phase,
+          pv.voter_member_id,
+          pv.vote,
+          pv.comment,
+          pv.created_at,
+          voter.display_name AS voter_name
+        FROM proposal_votes pv
+        JOIN members voter ON voter.id = pv.voter_member_id
+        ORDER BY pv.created_at DESC
       `,
     ),
   ]);
@@ -2202,6 +2210,24 @@ async function loadImprovementProposals(env, viewer) {
     const completionRejectCount = completionVotes.filter((vote) => vote.vote === "reject").length;
     const myProposalVote = proposalVotes.find((vote) => vote.voter_member_id === viewer?.id)?.vote || null;
     const myCompletionVote = completionVotes.find((vote) => vote.voter_member_id === viewer?.id)?.vote || null;
+    const proposalCommentary = proposalVotes
+      .filter((vote) => String(vote.comment || "").trim())
+      .map((vote) => ({
+        voterMemberId: vote.voter_member_id,
+        voterName: vote.voter_name,
+        vote: vote.vote,
+        comment: String(vote.comment || "").trim(),
+        createdAt: vote.created_at,
+      }));
+    const completionCommentary = completionVotes
+      .filter((vote) => String(vote.comment || "").trim())
+      .map((vote) => ({
+        voterMemberId: vote.voter_member_id,
+        voterName: vote.voter_name,
+        vote: vote.vote,
+        comment: String(vote.comment || "").trim(),
+        createdAt: vote.created_at,
+      }));
 
     return {
       id: row.id,
@@ -2237,6 +2263,8 @@ async function loadImprovementProposals(env, viewer) {
         requiredCount: activeMemberCount,
         myVote: myCompletionVote,
       },
+      proposalCommentary,
+      completionCommentary,
       canVote: row.status === "voting",
       canVoteCompletion: row.status === "order_review",
       canRequestOrderReview:
@@ -2249,7 +2277,13 @@ async function loadImprovementProposals(env, viewer) {
   });
 }
 
-async function upsertProposalVote(env, { proposalId, phase, voterMemberId, vote }) {
+async function upsertProposalVote(env, {
+  proposalId,
+  phase,
+  voterMemberId,
+  vote,
+  comment = "",
+}) {
   await run(
     env,
     `
@@ -2259,15 +2293,24 @@ async function upsertProposalVote(env, { proposalId, phase, voterMemberId, vote 
         phase,
         voter_member_id,
         vote,
+        comment,
         created_at
       )
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT (proposal_id, phase, voter_member_id)
       DO UPDATE SET
         vote = EXCLUDED.vote,
+        comment = EXCLUDED.comment,
         created_at = CURRENT_TIMESTAMP
     `,
-    [crypto.randomUUID(), proposalId, phase, voterMemberId, vote],
+    [
+      crypto.randomUUID(),
+      proposalId,
+      phase,
+      voterMemberId,
+      vote,
+      String(comment || "").trim(),
+    ],
   );
 }
 
@@ -3454,6 +3497,7 @@ async function handleImprovementProposalVote(request, env, actor, proposalId) {
 
   const body = await readJson(request);
   const vote = String(body?.vote || "").trim().toLowerCase();
+  const comment = String(body?.comment || "").trim();
   if (vote !== "approve" && vote !== "reject") {
     return json({ error: "Собор принимает только голоса «за» или «против»." }, 400);
   }
@@ -3463,6 +3507,7 @@ async function handleImprovementProposalVote(request, env, actor, proposalId) {
     phase: "proposal",
     voterMemberId: actor.id,
     vote,
+    comment,
   });
 
   const resolution = await resolveImprovementProposalPhase(env, proposalId, "proposal");
@@ -3491,6 +3536,7 @@ async function handleProposalCompletionVote(request, env, actor, proposalId) {
 
   const body = await readJson(request);
   const vote = String(body?.vote || "").trim().toLowerCase();
+  const comment = String(body?.comment || "").trim();
   if (vote !== "approve" && vote !== "reject") {
     return json({ error: "Орден принимает только знак согласия или отказа." }, 400);
   }
@@ -3500,6 +3546,7 @@ async function handleProposalCompletionVote(request, env, actor, proposalId) {
     phase: "completion",
     voterMemberId: actor.id,
     vote,
+    comment,
   });
 
   const resolution = await resolveImprovementProposalPhase(env, proposalId, "completion");

@@ -1,0 +1,1 @@
+ALTER TABLE proposal_votes ADD COLUMN comment TEXT NOT NULL DEFAULT '';
