@@ -2763,7 +2763,11 @@ async function handleCycleSchedule(request, env, actor, cycleId) {
     return json({ error: "Точное время можно назначать только для ещё идущего обряда." }, 400);
   }
 
-  const actorRole = await getEffectiveMemberRole(env, actor);
+  const nearestScheduledCycleId = await loadNearestScheduledCycleId(env);
+  if (!nearestScheduledCycleId || nearestScheduledCycleId !== cycle.id) {
+    return json({ error: "Точный срок можно назвать только для ближайшего обряда ордена." }, 400);
+  }
+
   const assignment = await first(
     env,
     `
@@ -2775,8 +2779,8 @@ async function handleCycleSchedule(request, env, actor, cycleId) {
     [cycleId, actor.id],
   );
 
-  if (!assignment && actorRole !== "admin" && actorRole !== "steward") {
-    return json({ error: "Назначить точный срок обряда могут только названные герои или Совет." }, 403);
+  if (!assignment) {
+    return json({ error: "Назвать точный срок обряда могут только сами участники ближайшего обряда." }, 403);
   }
 
   const body = await readJson(request);
@@ -5060,6 +5064,8 @@ async function hydrateCycle(env, cycleRow, viewerMemberId = null) {
     return null;
   }
 
+  const nearestScheduledCycleId = await loadNearestScheduledCycleId(env);
+
   const assigneeRows = await all(
     env,
     `
@@ -5130,17 +5136,12 @@ async function hydrateCycle(env, cycleRow, viewerMemberId = null) {
   const viewerReview = viewerMemberId
     ? reviewRows.find((entry) => entry.author_member_id === viewerMemberId) || null
     : null;
-  const viewerRole = viewerMemberId
-    ? await getEffectiveMemberRole(
-        env,
-        await first(env, "SELECT * FROM members WHERE id = ? LIMIT 1", [viewerMemberId]),
-      )
-    : "member";
   const exactRitualDate = cycleRow.exact_ritual_date || null;
   const exactRitualStartsAt = normalizeTime(cycleRow.exact_ritual_starts_at) || null;
   const canSetSchedule =
     cycleRow.status === "scheduled" &&
-    (Boolean(viewerAssignment) || viewerRole === "admin" || viewerRole === "steward");
+    cycleRow.id === nearestScheduledCycleId &&
+    Boolean(viewerAssignment);
 
   return {
     id: cycleRow.id,
@@ -5563,6 +5564,42 @@ async function sendSameDayReminders(env) {
       deliveryStatus: delivery.mode,
     });
   }
+}
+
+async function loadNearestScheduledCycleId(env) {
+  const today = todayInTimeZone(getConfig(env).timeZone);
+  const currentCycle = await first(
+    env,
+    `
+      SELECT id
+      FROM cleaning_cycles
+      WHERE status = 'scheduled'
+        AND starts_on <= ?
+        AND ends_on >= ?
+      ORDER BY starts_on DESC
+      LIMIT 1
+    `,
+    [today, today],
+  );
+
+  if (currentCycle?.id) {
+    return currentCycle.id;
+  }
+
+  const nextCycle = await first(
+    env,
+    `
+      SELECT id
+      FROM cleaning_cycles
+      WHERE status = 'scheduled'
+        AND starts_on > ?
+      ORDER BY starts_on ASC
+      LIMIT 1
+    `,
+    [today],
+  );
+
+  return nextCycle?.id || null;
 }
 
 async function cleanupExpiredRows(env) {

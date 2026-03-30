@@ -1047,7 +1047,7 @@ function renderCyclePanel(title, cycle, emptyText, panelClass = "") {
     `
     : `
       <p class="panel__aside-note">
-        Точный срок ещё не назван. Назначенные хранители могут выбрать день и час внутри промежутка, чтобы занять это окно за орденом.
+        Точный срок ещё не назван. Его может назвать только один из участников ближайшего обряда, чтобы орден заранее занял это окно.
       </p>
     `;
   const scheduleForm = cycle.canSetSchedule
@@ -1055,7 +1055,7 @@ function renderCyclePanel(title, cycle, emptyText, panelClass = "") {
       <form class="stack-form ritual-schedule-form" data-cycle-schedule="${escapeHtml(cycle.id)}">
         <div class="ritual-schedule-form__head">
           <strong>Назвать точный срок обряда</strong>
-          <span>После этого всему кругу уйдёт письмо, а новые походы в это окно будут блокироваться.</span>
+          <span>Это право есть только у участников ближайшего обряда. После выбора всему кругу уйдёт письмо, а новые походы в это окно будут блокироваться.</span>
         </div>
         <div class="split-fields">
           <label>
