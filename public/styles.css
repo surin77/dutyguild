@@ -1981,6 +1981,37 @@ th {
   margin-top: 8px;
 }
 
+.task-card__assignees {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.task-card__assignee-label {
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.task-card__assignee-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.task-card__assignee-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(22, 16, 15, 0.9);
+  border: 1px solid rgba(229, 193, 136, 0.28);
+  color: var(--paper);
+  font-weight: 700;
+}
+
 .review-grid {
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
   align-items: start;

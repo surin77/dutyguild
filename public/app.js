@@ -1482,6 +1482,9 @@ function renderTasksPanel() {
 
 function renderOrderTaskCard(task) {
   const statusMeta = getOrderTaskStatusMeta(task);
+  const assigneeNames = Array.isArray(task.assigneeNames)
+    ? task.assigneeNames.filter(Boolean)
+    : [];
   const actionButtons = [
     task.canComplete
       ? `<button class="button button--primary" type="button" data-task-complete="${escapeHtml(task.id)}" ${state.busy ? "disabled" : ""}>Сдать исполнение</button>`
@@ -1503,10 +1506,21 @@ function renderOrderTaskCard(task) {
         <span class="status-pill status-pill--${escapeHtml(statusMeta.tone)}">${escapeHtml(statusMeta.label)}</span>
       </div>
       <p>${escapeHtml(task.description || "Описание не оставлено, но поручение уже внесено в книгу.")}</p>
+      <div class="task-card__assignees">
+        <span class="task-card__assignee-label">${
+          assigneeNames.length > 1 ? "Исполнители" : "Исполнитель"
+        }</span>
+        <div class="task-card__assignee-list">
+          ${
+            assigneeNames.length
+              ? assigneeNames
+                  .map((name) => `<span class="task-card__assignee-pill">${escapeHtml(name)}</span>`)
+                  .join("")
+              : `<span class="task-card__assignee-pill">${escapeHtml(task.assignedToName || "Имя ещё не вписано")}</span>`
+          }
+        </div>
+      </div>
       <div class="list-card__meta-row">
-        <span class="list-card__meta">${
-          task.assigneeNames?.length > 1 ? "Исполнители" : "Исполнитель"
-        }: ${escapeHtml((task.assigneeNames || []).join(", ") || task.assignedToName || "Имя ещё не вписано")}</span>
         <span class="list-card__meta">Вписал: ${escapeHtml(task.createdByName)}</span>
         <span class="list-card__meta">${escapeHtml(task.taskType === "proposal" ? "Поручение замысла" : "Обычное поручение")}</span>
       </div>
@@ -1731,7 +1745,7 @@ function renderProposalCard(proposal) {
       </p>
       ${
         proposal.linkedTaskTitle
-          ? `<p class="list-card__meta">Связанное поручение: ${escapeHtml(proposal.linkedTaskTitle)} · ${escapeHtml(proposal.linkedTaskAssigneeName || "Магистр Совета")}</p>`
+          ? `<p class="list-card__meta">Связанное поручение: ${escapeHtml(proposal.linkedTaskTitle)} · ${escapeHtml((proposal.linkedTaskAssigneeNames || []).join(", ") || proposal.linkedTaskAssigneeName || "Магистр Совета")}</p>`
           : ""
       }
       ${

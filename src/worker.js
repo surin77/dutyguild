@@ -2177,6 +2177,10 @@ async function loadImprovementProposals(env, viewer) {
       `,
     ),
   ]);
+  const linkedTaskAssigneeMap = await loadOrderTaskAssigneeMap(
+    env,
+    proposalRows.map((row) => row.linked_task_id).filter(Boolean),
+  );
 
   const activeMemberCount = activeMembers.length;
   const majorityCount = getElectionMajorityCount(activeMemberCount);
@@ -2211,6 +2215,8 @@ async function loadImprovementProposals(env, viewer) {
       linkedTaskStatus: row.linked_task_status || null,
       linkedTaskAssigneeId: row.linked_task_assignee_id || null,
       linkedTaskAssigneeName: row.linked_task_assignee_name || null,
+      linkedTaskAssigneeNames:
+        (linkedTaskAssigneeMap.get(row.linked_task_id) || []).map((entry) => entry.displayName),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       approvedAt: row.approved_at || null,
@@ -2515,6 +2521,26 @@ async function createImplementationTaskForProposal(env, proposal) {
       VALUES (?, ?, 0)
     `,
     [taskId, magister.id],
+  );
+
+  await notifyOrderTaskCreated(
+    env,
+    {
+      id: proposal.author_member_id,
+      display_name: proposal.author_name || "Летописец замысла",
+    },
+    {
+      id: taskId,
+      title: `Воплотить замысел: ${proposal.title}`,
+      description: proposal.description || "",
+      assignees: [
+        {
+          id: magister.id,
+          display_name: magister.display_name,
+          assignment_order: 0,
+        },
+      ],
+    },
   );
 
   return {
@@ -3024,6 +3050,17 @@ async function handleCreateOrderTask(request, env, actor) {
       [taskId, assigneeId, assignmentOrder],
     );
   }
+
+  await notifyOrderTaskCreated(env, actor, {
+    id: taskId,
+    title,
+    description,
+    assignees: assignees.map((row, assignmentOrder) => ({
+      id: row.id,
+      display_name: row.display_name,
+      assignment_order: assignmentOrder,
+    })),
+  });
 
   return json({ ok: true });
 }
@@ -6461,6 +6498,97 @@ async function sendProposalLifecycleEmail(env, details) {
       ctaHref: getAppOrigin(env),
     }),
   });
+}
+
+async function sendOrderTaskAssignedEmail(env, details) {
+  const assigneeNames = (details.assigneeNames || []).filter(Boolean);
+  const assigneeLabel =
+    assigneeNames.join(", ") || "Исполнитель будет назван в летописи";
+  const text = [
+    `${details.displayName}, приветствую.`,
+    "",
+    "В книгу ордена внесено новое поручение.",
+    `Поручение: ${details.title}`,
+    `Исполнители: ${assigneeLabel}`,
+    `Кто вписал: ${details.actorName}`,
+    details.description ? `Замысел: ${details.description}` : null,
+    "",
+    "Откройте Duty Guild, чтобы увидеть поручение в летописи и отметить исполнение, когда дело будет завершено.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return sendEmail(env, {
+    to: details.email,
+    subject: "Duty Guild: вам вверено новое поручение",
+    text,
+    html: renderEmailShell(env, {
+      kicker: "Новое поручение",
+      title: "Совет вверил новое дело",
+      lead:
+        assigneeNames.length > 1
+          ? "Поручение вручено сразу нескольким соратникам, и летопись уже вписала весь состав исполнителей."
+          : "Летопись назвала исполнителя нового поручения и ждёт, когда дело будет доведено до печати Совета.",
+      sceneKey: "citadel",
+      bodyHtml:
+        renderEmailDetailRows([
+          ["Поручение", details.title],
+          ["Исполнители", assigneeLabel],
+          ["Вписал в книгу", details.actorName],
+        ]) +
+        (details.description
+          ? `
+            <div style="margin-top:18px;padding:18px 20px;border-radius:18px;background:#f5eadb;border:1px solid #e4ccb0;color:#5a463d;line-height:1.65;">
+              ${escapeHtml(details.description)}
+            </div>
+          `
+          : ""),
+      ctaLabel: "Открыть книгу поручений",
+      ctaHref: getAppOrigin(env),
+    }),
+  });
+}
+
+async function notifyOrderTaskCreated(env, actor, task) {
+  const assignees = (task.assignees || []).filter((entry) => entry?.id);
+  if (!assignees.length) {
+    return;
+  }
+
+  const recipients = await all(
+    env,
+    `
+      SELECT id, email, display_name
+      FROM members
+      WHERE status = 'active'
+        AND id IN (${assignees.map(() => "?").join(", ")})
+      ORDER BY display_name ASC
+    `,
+    assignees.map((entry) => entry.id),
+  );
+  const assigneeNames = assignees
+    .slice()
+    .sort((left, right) => Number(left.assignment_order || 0) - Number(right.assignment_order || 0))
+    .map((entry) => entry.display_name)
+    .filter(Boolean);
+  const actorName = actor.display_name || actor.displayName || "Совет ордена";
+
+  for (const recipient of recipients) {
+    const delivery = await sendOrderTaskAssignedEmail(env, {
+      email: recipient.email,
+      displayName: recipient.display_name,
+      title: task.title,
+      description: task.description || "",
+      actorName,
+      assigneeNames,
+    });
+
+    await logNotification(env, {
+      kind: "order-task-created",
+      memberId: recipient.id,
+      deliveryStatus: delivery.mode,
+    });
+  }
 }
 
 async function notifyProposalVoteOpened(env, details) {
