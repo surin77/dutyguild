@@ -526,32 +526,46 @@ const PAGE_DEFINITIONS = Object.freeze([
 ]);
 
 const BRAND_MARK_SRC = "/assets/brand/dutyguild-mark.svg";
-const EMBER_FIELD = Object.freeze([
-  { originX: "11%", originY: "5vh", travelX: "13vw", travelY: "-34vh", duration: "12.8s", delay: "-1.10s", size: "3px", opacity: "0.74", blur: "0.08px", scaleEnd: "0.96", rotation: "9deg" },
-  { originX: "11.8%", originY: "6vh", travelX: "19vw", travelY: "-48vh", duration: "12.8s", delay: "-1.24s", size: "5px", opacity: "0.9", blur: "0.16px", scaleEnd: "1.2", rotation: "14deg" },
-  { originX: "12.4%", originY: "5.4vh", travelX: "24vw", travelY: "-58vh", duration: "12.8s", delay: "-1.37s", size: "4px", opacity: "0.84", blur: "0.12px", scaleEnd: "1.06", rotation: "20deg" },
-  { originX: "10.7%", originY: "5.8vh", travelX: "16vw", travelY: "-41vh", duration: "12.8s", delay: "-1.52s", size: "2px", opacity: "0.62", blur: "0.04px", scaleEnd: "0.86", rotation: "6deg" },
-  { originX: "13.2%", originY: "6.2vh", travelX: "27vw", travelY: "-64vh", duration: "12.8s", delay: "-5.78s", size: "6px", opacity: "0.94", blur: "0.24px", scaleEnd: "1.28", rotation: "24deg" },
-  { originX: "12%", originY: "5.6vh", travelX: "18vw", travelY: "-44vh", duration: "12.8s", delay: "-5.92s", size: "3px", opacity: "0.7", blur: "0.08px", scaleEnd: "0.94", rotation: "11deg" },
-  { originX: "11.4%", originY: "5vh", travelX: "15vw", travelY: "-37vh", duration: "12.8s", delay: "-6.04s", size: "2px", opacity: "0.58", blur: "0.03px", scaleEnd: "0.78", rotation: "4deg" },
-  { originX: "13.8%", originY: "6vh", travelX: "22vw", travelY: "-53vh", duration: "12.8s", delay: "-6.18s", size: "4px", opacity: "0.82", blur: "0.14px", scaleEnd: "1.02", rotation: "17deg" },
-  { originX: "12.8%", originY: "5.2vh", travelX: "17vw", travelY: "-39vh", duration: "12.8s", delay: "-10.42s", size: "3px", opacity: "0.68", blur: "0.06px", scaleEnd: "0.88", rotation: "8deg" },
-  { originX: "11.2%", originY: "6.1vh", travelX: "21vw", travelY: "-50vh", duration: "12.8s", delay: "-10.56s", size: "4px", opacity: "0.8", blur: "0.12px", scaleEnd: "1.04", rotation: "15deg" },
-  { originX: "13.5%", originY: "5.7vh", travelX: "29vw", travelY: "-67vh", duration: "12.8s", delay: "-10.72s", size: "5px", opacity: "0.92", blur: "0.2px", scaleEnd: "1.26", rotation: "27deg" },
-  { originX: "10.5%", originY: "5.3vh", travelX: "14vw", travelY: "-33vh", duration: "12.8s", delay: "-10.86s", size: "2px", opacity: "0.54", blur: "0.03px", scaleEnd: "0.74", rotation: "5deg" },
-  { originX: "12.9%", originY: "6.4vh", travelX: "30vw", travelY: "-71vh", duration: "11.9s", delay: "-2.18s", size: "6px", opacity: "0.96", blur: "0.22px", scaleEnd: "1.32", rotation: "29deg" },
-  { originX: "10.9%", originY: "4.9vh", travelX: "16vw", travelY: "-36vh", duration: "11.6s", delay: "-2.46s", size: "2px", opacity: "0.58", blur: "0.03px", scaleEnd: "0.78", rotation: "7deg" },
-  { originX: "11.7%", originY: "5.4vh", travelX: "20vw", travelY: "-46vh", duration: "11.4s", delay: "-2.72s", size: "4px", opacity: "0.84", blur: "0.1px", scaleEnd: "1.04", rotation: "13deg" },
-  { originX: "12.3%", originY: "6.1vh", travelX: "24vw", travelY: "-56vh", duration: "11.8s", delay: "-3.08s", size: "5px", opacity: "0.9", blur: "0.16px", scaleEnd: "1.16", rotation: "21deg" },
-  { originX: "13.9%", originY: "6.5vh", travelX: "33vw", travelY: "-74vh", duration: "11.2s", delay: "-3.44s", size: "4px", opacity: "0.86", blur: "0.12px", scaleEnd: "1.08", rotation: "31deg" },
-  { originX: "10.4%", originY: "5.1vh", travelX: "15vw", travelY: "-35vh", duration: "11.7s", delay: "-7.12s", size: "3px", opacity: "0.64", blur: "0.05px", scaleEnd: "0.86", rotation: "6deg" },
-  { originX: "11.5%", originY: "5.8vh", travelX: "18vw", travelY: "-43vh", duration: "11.5s", delay: "-7.36s", size: "3px", opacity: "0.72", blur: "0.08px", scaleEnd: "0.94", rotation: "10deg" },
-  { originX: "12.1%", originY: "6.2vh", travelX: "23vw", travelY: "-52vh", duration: "11.3s", delay: "-7.62s", size: "4px", opacity: "0.82", blur: "0.12px", scaleEnd: "1.06", rotation: "16deg" },
-  { originX: "13.1%", originY: "6.8vh", travelX: "28vw", travelY: "-63vh", duration: "11.1s", delay: "-7.94s", size: "5px", opacity: "0.9", blur: "0.18px", scaleEnd: "1.18", rotation: "24deg" },
-  { originX: "14.2%", originY: "6.6vh", travelX: "35vw", travelY: "-77vh", duration: "10.9s", delay: "-8.26s", size: "6px", opacity: "0.98", blur: "0.24px", scaleEnd: "1.34", rotation: "34deg" },
-  { originX: "11.1%", originY: "5.5vh", travelX: "17vw", travelY: "-40vh", duration: "11.4s", delay: "-11.34s", size: "2px", opacity: "0.62", blur: "0.03px", scaleEnd: "0.8", rotation: "8deg" },
-  { originX: "12.6%", originY: "6.3vh", travelX: "26vw", travelY: "-59vh", duration: "11.0s", delay: "-11.88s", size: "4px", opacity: "0.88", blur: "0.14px", scaleEnd: "1.1", rotation: "22deg" },
-]);
+const EMBER_FIELD = Object.freeze(buildEmberField());
+
+function buildEmberField() {
+  const clusterCount = 11;
+  const embers = [];
+
+  for (let clusterIndex = 0; clusterIndex < clusterCount; clusterIndex += 1) {
+    const originX = randomBetween(4, 96);
+    const originY = randomBetween(1.5, 7.8);
+    const emberCount = Math.round(randomBetween(5, 9));
+
+    for (let emberIndex = 0; emberIndex < emberCount; emberIndex += 1) {
+      const localOffset = randomBetween(-2.6, 2.6);
+      const fanDirection = randomBetween(-18, 18);
+      embers.push({
+        originX: `${clamp(originX + localOffset, 2, 98).toFixed(1)}%`,
+        originY: `${clamp(originY + randomBetween(-0.7, 0.9), 0.8, 9).toFixed(2)}vh`,
+        travelX: `${fanDirection.toFixed(1)}vw`,
+        travelY: `-${randomBetween(28, 84).toFixed(1)}vh`,
+        duration: `${randomBetween(9.1, 14.4).toFixed(1)}s`,
+        delay: `-${randomBetween(0.2, 13.5).toFixed(2)}s`,
+        size: `${randomBetween(2, 6.6).toFixed(1)}px`,
+        opacity: `${randomBetween(0.54, 0.99).toFixed(2)}`,
+        blur: `${randomBetween(0.02, 0.24).toFixed(2)}px`,
+        scaleEnd: `${randomBetween(0.76, 1.36).toFixed(2)}`,
+        rotation: `${randomBetween(-12, 36).toFixed(0)}deg`,
+      });
+    }
+  }
+
+  return embers;
+}
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
 
 const root = document.querySelector("#app");
 window.addEventListener("hashchange", syncPageFromLocation);
@@ -1721,7 +1735,10 @@ function renderProposalsPanel() {
 
 function renderProposalCard(proposal) {
   const statusMeta = getProposalStatusMeta(proposal);
-  const actions = [
+  const discussionActions = [
+    proposal.canComment
+      ? `<button class="button button--ghost" type="submit" data-proposal-comment-submit="${escapeHtml(proposal.id)}" ${state.busy ? "disabled" : ""}>Оставить слово</button>`
+      : "",
     proposal.canVote
       ? `<button class="button button--primary" type="button" data-proposal-vote="${escapeHtml(proposal.id)}" data-vote-choice="approve" ${state.busy ? "disabled" : ""}>Поддержать</button>`
       : "",
@@ -1765,38 +1782,55 @@ function renderProposalCard(proposal) {
           ? `<p class="list-card__meta">Одобрение исполнения: ${escapeHtml(String(proposal.completionVotes.approveCount))} из ${escapeHtml(String(proposal.completionVotes.requiredCount))}</p>`
           : ""
       }
-      ${renderProposalCommentary(proposal.proposalCommentary, "Пометки собора")}
-      ${renderProposalCommentary(proposal.completionCommentary, "Пометки по исполнению")}
-      ${
-        actions
-          ? `<div class="list-card__actions list-card__actions--centered">${actions}</div>`
-          : ""
-      }
+      ${renderProposalDiscussion(proposal)}
+      <form class="proposal-discussion-form" data-proposal-discussion-form="${escapeHtml(proposal.id)}">
+        <label>
+          <span>Слово под замыслом</span>
+          <textarea
+            name="comment"
+            rows="3"
+            placeholder="${escapeHtml(getProposalDiscussionPlaceholder(proposal))}"
+          ></textarea>
+        </label>
+        ${
+          discussionActions
+            ? `<div class="list-card__actions proposal-discussion-form__actions">${discussionActions}</div>`
+            : ""
+        }
+      </form>
     </li>
   `;
 }
 
-function renderProposalCommentary(comments, title) {
-  if (!Array.isArray(comments) || !comments.length) {
-    return "";
+function renderProposalDiscussion(proposal) {
+  const posts = Array.isArray(proposal.discussionPosts) ? proposal.discussionPosts : [];
+  if (!posts.length) {
+    return `
+      <div class="proposal-discussion proposal-discussion--empty">
+        <span class="proposal-discussion__title">Летопись спора</span>
+        <p class="panel__aside-note">Пока под этим замыслом тихо. Первое слово может быть твоим.</p>
+      </div>
+    `;
   }
 
   return `
-    <div class="proposal-commentary">
-      <span class="proposal-commentary__title">${escapeHtml(title)}</span>
-      <div class="proposal-commentary__list">
-        ${comments
+    <div class="proposal-discussion">
+      <span class="proposal-discussion__title">Летопись спора</span>
+      <div class="proposal-discussion__list">
+        ${posts
           .map(
-            (comment) => `
-              <article class="proposal-commentary__entry">
-                <div class="proposal-commentary__head">
-                  <strong>${escapeHtml(comment.voterName || "Соратник круга")}</strong>
-                  <span class="proposal-commentary__vote proposal-commentary__vote--${escapeHtml(comment.vote || "approve")}">
-                    ${escapeHtml(comment.vote === "reject" ? "Отклонил" : "Поддержал")}
-                  </span>
+            (post) => `
+              <article class="proposal-discussion__entry">
+                <div class="proposal-discussion__head">
+                  <strong>${escapeHtml(post.authorName || "Соратник круга")}</strong>
+                  ${
+                    getProposalDiscussionBadge(post)
+                      ? `<span class="proposal-discussion__badge proposal-discussion__badge--${escapeHtml(getProposalDiscussionBadge(post).tone)}">${escapeHtml(getProposalDiscussionBadge(post).label)}</span>`
+                      : ""
+                  }
                 </div>
-                <p>${escapeHtml(comment.comment || "")}</p>
-                <span class="proposal-commentary__time">${escapeHtml(formatDateTime(comment.createdAt))}</span>
+                <p>${escapeHtml(post.body || "")}</p>
+                <span class="proposal-discussion__time">${escapeHtml(formatDateTime(post.createdAt))}</span>
               </article>
             `,
           )
@@ -1804,6 +1838,34 @@ function renderProposalCommentary(comments, title) {
       </div>
     </div>
   `;
+}
+
+function getProposalDiscussionBadge(post) {
+  if (post.phase === "proposal") {
+    return post.vote === "reject"
+      ? { label: "Отклонил замысел", tone: "reject" }
+      : { label: "Поддержал замысел", tone: "approve" };
+  }
+
+  if (post.phase === "completion") {
+    return post.vote === "reject"
+      ? { label: "Вернул исполнение", tone: "reject" }
+      : { label: "Одобрил исполнение", tone: "approve" };
+  }
+
+  return { label: "Слово в летописи", tone: "neutral" };
+}
+
+function getProposalDiscussionPlaceholder(proposal) {
+  if (proposal.canVoteCompletion) {
+    return "Оставь пометку к оценке исполнения или просто впиши слово в летопись замысла";
+  }
+
+  if (proposal.canVote) {
+    return "Оставь довод к своему голосу или начни обсуждение под замыслом";
+  }
+
+  return "Оставь замечание, вопрос или продолжи обсуждение под этим замыслом";
 }
 
 function renderDeedSummaryCard(deed) {
@@ -2936,6 +2998,9 @@ function bindEvents() {
   document.querySelectorAll("[data-proposal-completion-vote]").forEach((button) => {
     button.addEventListener("click", onVoteProposalCompletion);
   });
+  document.querySelectorAll("[data-proposal-discussion-form]").forEach((form) => {
+    form.addEventListener("submit", onCreateProposalDiscussionPost);
+  });
   document.querySelectorAll("[data-proposal-order-review]").forEach((button) => {
     button.addEventListener("click", onRequestOrderReview);
   });
@@ -3305,13 +3370,7 @@ async function onVoteProposal(event) {
   if (!proposalId || !vote) {
     return;
   }
-  const comment = window.prompt(
-    "Если хочешь, оставь короткую пометку к голосу. Можно отправить и пустой ответ.",
-    "",
-  );
-  if (comment === null) {
-    return;
-  }
+  const comment = readProposalCommentDraft(event.currentTarget);
 
   await withBusy(async () => {
     const response = await api(`/api/proposals/${proposalId}/vote`, {
@@ -3336,13 +3395,7 @@ async function onVoteProposalCompletion(event) {
   if (!proposalId || !vote) {
     return;
   }
-  const comment = window.prompt(
-    "Если хочешь, оставь короткую пометку к оценке исполнения. Можно отправить и пустой ответ.",
-    "",
-  );
-  if (comment === null) {
-    return;
-  }
+  const comment = readProposalCommentDraft(event.currentTarget);
 
   await withBusy(async () => {
     const response = await api(`/api/proposals/${proposalId}/completion-vote`, {
@@ -3357,6 +3410,42 @@ async function onVoteProposalCompletion(event) {
     state.error = "";
     render();
   });
+}
+
+async function onCreateProposalDiscussionPost(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const proposalId = String(form?.dataset?.proposalDiscussionForm || "").trim();
+  if (!proposalId) {
+    return;
+  }
+
+  const formData = new FormData(form);
+  const comment = String(formData.get("comment") || "").trim();
+  if (!comment) {
+    state.error = "Чтобы вписать слово в обсуждение, нужен сам текст пометки.";
+    state.notice = "";
+    render();
+    return;
+  }
+
+  await withBusy(async () => {
+    await api(`/api/proposals/${proposalId}/posts`, {
+      method: "POST",
+      body: { comment },
+    });
+    form.reset();
+    await hydrateDashboard();
+    state.notice = "Слово внесено в летопись замысла.";
+    state.error = "";
+    render();
+  });
+}
+
+function readProposalCommentDraft(button) {
+  const form = button.closest("[data-proposal-discussion-form]");
+  const textarea = form?.querySelector('textarea[name="comment"]');
+  return String(textarea?.value || "").trim();
 }
 
 async function onCopyCalendarLink() {

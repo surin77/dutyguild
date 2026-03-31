@@ -1,8 +1,8 @@
 :root {
   --bg: #121212;
   --bg-soft: #1d1d1d;
-  --bg-panel: #f8f4ee;
-  --bg-panel-2: #f0e8dd;
+  --bg-panel: #e9dccd;
+  --bg-panel-2: #d7c4b0;
   --bg-panel-dark: #241d1a;
   --ink: #231b17;
   --ink-soft: #655952;
@@ -82,6 +82,7 @@ td {
   pointer-events: none;
   overflow: hidden;
   mix-blend-mode: screen;
+  opacity: 0.94;
 }
 
 .ember {
@@ -95,8 +96,8 @@ td {
   background:
     radial-gradient(circle, rgba(255, 245, 222, 0.98) 0%, rgba(255, 199, 108, 0.95) 32%, rgba(198, 73, 33, 0.58) 68%, rgba(198, 73, 33, 0) 100%);
   box-shadow:
-    0 0 14px rgba(255, 161, 76, 0.42),
-    0 0 28px rgba(194, 73, 28, 0.18);
+    0 0 18px rgba(255, 161, 76, 0.52),
+    0 0 34px rgba(194, 73, 28, 0.24);
   filter: blur(var(--ember-blur));
   transform-origin: center;
   transform: translate3d(0, 0, 0) rotate(var(--ember-rotation)) scale(0.24);
@@ -770,9 +771,9 @@ td {
 .panel {
   border-radius: var(--radius-xl);
   padding: 24px;
-  background: linear-gradient(180deg, rgba(248, 244, 238, 1), rgba(241, 233, 222, 1));
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
+  background: linear-gradient(180deg, rgba(233, 220, 205, 0.82), rgba(209, 191, 171, 0.78));
+  border: 1px solid rgba(191, 169, 148, 0.78);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
 }
 
 .panel--wide {
@@ -838,7 +839,7 @@ td {
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid rgba(203, 188, 173, 0.9);
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(237, 226, 212, 0.52);
   color: var(--ink);
 }
 
@@ -867,7 +868,7 @@ select {
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid #cbbcad;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(245, 237, 228, 0.72);
   color: var(--ink);
 }
 
@@ -947,8 +948,8 @@ select:focus {
 .list-card {
   padding: 14px 16px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(203, 188, 173, 0.9);
+  background: rgba(236, 226, 213, 0.46);
+  border: 1px solid rgba(191, 173, 156, 0.72);
 }
 
 .list-card p {
@@ -2006,9 +2007,9 @@ th {
   min-height: 38px;
   padding: 0 14px;
   border-radius: 999px;
-  background: rgba(22, 16, 15, 0.9);
-  border: 1px solid rgba(229, 193, 136, 0.28);
-  color: var(--paper);
+  background: linear-gradient(180deg, rgba(116, 73, 46, 0.42), rgba(90, 58, 38, 0.5));
+  border: 1px solid rgba(229, 193, 136, 0.34);
+  color: #fff4e7;
   font-weight: 700;
 }
 
@@ -2187,34 +2188,34 @@ th {
   gap: 12px;
 }
 
-.proposal-commentary {
+.proposal-discussion {
   display: grid;
   gap: 10px;
   margin-top: 12px;
 }
 
-.proposal-commentary__title {
+.proposal-discussion__title {
   font-size: 0.76rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--gold);
 }
 
-.proposal-commentary__list {
+.proposal-discussion__list {
   display: grid;
   gap: 10px;
 }
 
-.proposal-commentary__entry {
+.proposal-discussion__entry {
   display: grid;
   gap: 8px;
   padding: 14px 16px;
   border-radius: 16px;
-  background: rgba(255, 249, 241, 0.7);
-  border: 1px solid rgba(212, 199, 187, 0.82);
+  background: rgba(236, 226, 213, 0.44);
+  border: 1px solid rgba(191, 173, 156, 0.68);
 }
 
-.proposal-commentary__head {
+.proposal-discussion__head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -2222,7 +2223,7 @@ th {
   gap: 10px;
 }
 
-.proposal-commentary__vote {
+.proposal-discussion__badge {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
@@ -2234,26 +2235,48 @@ th {
   font-weight: 800;
 }
 
-.proposal-commentary__vote--approve {
+.proposal-discussion__badge--approve {
   background: rgba(56, 106, 74, 0.16);
   border: 1px solid rgba(56, 106, 74, 0.24);
   color: #335b42;
 }
 
-.proposal-commentary__vote--reject {
+.proposal-discussion__badge--reject {
   background: rgba(134, 47, 37, 0.13);
   border: 1px solid rgba(134, 47, 37, 0.24);
   color: #7c2f29;
 }
 
-.proposal-commentary__entry p {
+.proposal-discussion__badge--neutral {
+  background: rgba(114, 84, 56, 0.12);
+  border: 1px solid rgba(114, 84, 56, 0.22);
+  color: #6d5138;
+}
+
+.proposal-discussion__entry p {
   margin: 0;
   color: var(--ink);
 }
 
-.proposal-commentary__time {
+.proposal-discussion__time {
   color: var(--ink-soft);
   font-size: 0.82rem;
+}
+
+.proposal-discussion-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.proposal-discussion-form__actions {
+  justify-content: flex-start;
+}
+
+.button--ghost {
+  color: #5b3c2d;
+  background: linear-gradient(180deg, rgba(240, 220, 196, 0.9), rgba(208, 179, 145, 0.92));
+  box-shadow: 0 10px 24px rgba(126, 79, 45, 0.14);
 }
 
 .list-card__actions--centered {

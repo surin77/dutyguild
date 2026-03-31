@@ -1078,6 +1078,15 @@ async function handleFetch(request, env) {
     return handleProposalCompletionVote(request, env, member, proposalCompletionVoteMatch[1]);
   }
 
+  const proposalDiscussionPostMatch = pathname.match(/^\/api\/proposals\/([^/]+)\/posts$/);
+  if (proposalDiscussionPostMatch && request.method === "POST") {
+    const member = await requireMember(request, env);
+    if (member instanceof Response) {
+      return member;
+    }
+    return handleCreateProposalDiscussionPost(request, env, member, proposalDiscussionPostMatch[1]);
+  }
+
   return json({ error: "Маршрут не найден." }, 404);
 }
 
@@ -2131,7 +2140,7 @@ async function loadConductSummary(env) {
 
 async function loadImprovementProposals(env, viewer) {
   const viewerRole = await getEffectiveMemberRole(env, viewer);
-  const [activeMembers, proposalRows, voteRows] = await Promise.all([
+  const [activeMembers, proposalRows, voteRows, discussionRows] = await Promise.all([
     all(
       env,
       `
@@ -2184,6 +2193,23 @@ async function loadImprovementProposals(env, viewer) {
         ORDER BY pv.created_at DESC
       `,
     ),
+    all(
+      env,
+      `
+        SELECT
+          post.id,
+          post.proposal_id,
+          post.author_member_id,
+          post.phase,
+          post.vote,
+          post.body,
+          post.created_at,
+          author.display_name AS author_name
+        FROM proposal_discussion_posts post
+        JOIN members author ON author.id = post.author_member_id
+        ORDER BY post.created_at ASC
+      `,
+    ),
   ]);
   const linkedTaskAssigneeMap = await loadOrderTaskAssigneeMap(
     env,
@@ -2199,6 +2225,21 @@ async function loadImprovementProposals(env, viewer) {
     const current = votesByProposal.get(key) || [];
     current.push(vote);
     votesByProposal.set(key, current);
+  }
+
+  const discussionByProposal = new Map();
+  for (const row of discussionRows) {
+    const current = discussionByProposal.get(row.proposal_id) || [];
+    current.push({
+      id: row.id,
+      authorMemberId: row.author_member_id,
+      authorName: row.author_name,
+      phase: row.phase || "general",
+      vote: row.vote || null,
+      body: row.body,
+      createdAt: row.created_at,
+    });
+    discussionByProposal.set(row.proposal_id, current);
   }
 
   return proposalRows.map((row) => {
@@ -2263,8 +2304,10 @@ async function loadImprovementProposals(env, viewer) {
         requiredCount: activeMemberCount,
         myVote: myCompletionVote,
       },
+      discussionPosts: discussionByProposal.get(row.id) || [],
       proposalCommentary,
       completionCommentary,
+      canComment: true,
       canVote: row.status === "voting",
       canVoteCompletion: row.status === "order_review",
       canRequestOrderReview:
@@ -2312,6 +2355,51 @@ async function upsertProposalVote(env, {
       String(comment || "").trim(),
     ],
   );
+}
+
+async function createProposalDiscussionPost(env, {
+  proposalId,
+  authorMemberId,
+  body,
+  phase = "general",
+  vote = null,
+}) {
+  const normalizedBody = String(body || "").trim();
+  if (!normalizedBody) {
+    return null;
+  }
+
+  const normalizedPhase = ["proposal", "completion"].includes(String(phase || "").trim())
+    ? String(phase || "").trim()
+    : "general";
+  const normalizedVote = vote === "approve" || vote === "reject" ? vote : null;
+
+  await run(
+    env,
+    `
+      INSERT INTO proposal_discussion_posts (
+        id,
+        proposal_id,
+        author_member_id,
+        phase,
+        vote,
+        body
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+    [
+      crypto.randomUUID(),
+      proposalId,
+      authorMemberId,
+      normalizedPhase,
+      normalizedVote,
+      normalizedBody,
+    ],
+  );
+
+  return {
+    ok: true,
+  };
 }
 
 async function resolveImprovementProposalPhase(env, proposalId, phase) {
@@ -3510,6 +3598,14 @@ async function handleImprovementProposalVote(request, env, actor, proposalId) {
     comment,
   });
 
+  await createProposalDiscussionPost(env, {
+    proposalId,
+    authorMemberId: actor.id,
+    body: comment,
+    phase: "proposal",
+    vote,
+  });
+
   const resolution = await resolveImprovementProposalPhase(env, proposalId, "proposal");
   return json({ ok: true, resolution });
 }
@@ -3549,8 +3645,48 @@ async function handleProposalCompletionVote(request, env, actor, proposalId) {
     comment,
   });
 
+  await createProposalDiscussionPost(env, {
+    proposalId,
+    authorMemberId: actor.id,
+    body: comment,
+    phase: "completion",
+    vote,
+  });
+
   const resolution = await resolveImprovementProposalPhase(env, proposalId, "completion");
   return json({ ok: true, resolution });
+}
+
+async function handleCreateProposalDiscussionPost(request, env, actor, proposalId) {
+  const proposal = await first(
+    env,
+    `
+      SELECT id
+      FROM improvement_proposals
+      WHERE id = ?
+      LIMIT 1
+    `,
+    [proposalId],
+  );
+
+  if (!proposal) {
+    return json({ error: "Такой замысел не найден в свитке улучшений." }, 404);
+  }
+
+  const body = await readJson(request);
+  const comment = String(body?.comment || "").trim();
+  if (!comment) {
+    return json({ error: "Чтобы вписать слово в обсуждение, нужен сам текст пометки." }, 400);
+  }
+
+  await createProposalDiscussionPost(env, {
+    proposalId,
+    authorMemberId: actor.id,
+    body: comment,
+    phase: "general",
+  });
+
+  return json({ ok: true });
 }
 
 async function buildDashboard(env, member) {
