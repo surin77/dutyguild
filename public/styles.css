@@ -1123,6 +1123,18 @@ select:focus {
   margin-bottom: 12px;
 }
 
+.deed-form--locked {
+  align-content: start;
+  background: linear-gradient(180deg, rgba(74, 52, 34, 0.74), rgba(53, 37, 24, 0.78));
+  border-color: rgba(196, 129, 83, 0.22);
+}
+
+.deed-form--locked p {
+  margin: 0;
+  color: rgba(233, 220, 205, 0.82);
+  line-height: 1.6;
+}
+
 .deed-side-card__subsection {
   display: grid;
   gap: 12px;
@@ -2340,6 +2352,13 @@ th {
 .roster-member__summary-metrics span {
   color: var(--ink-soft);
   font-size: 0.95rem;
+}
+
+.roster-member__meta-note {
+  color: var(--red) !important;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .roster-member__summary-metrics {

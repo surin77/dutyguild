@@ -1333,6 +1333,16 @@ async function handleCreateServiceDeed(request, env, actor) {
   const notes = String(body?.notes || "").trim();
   const now = new Date().toISOString();
 
+  if (!canLogServiceDeeds(actor)) {
+    return json(
+      {
+        error:
+          "Почётные члены не вписываются в книгу деяний, но могут оставаться в зале и следить за летописью ордена.",
+      },
+      403,
+    );
+  }
+
   if (!deedType) {
     return json({ error: "Выберите, какое именно деяние вписывается в книгу служений." }, 400);
   }
@@ -1751,6 +1761,8 @@ async function loadServiceDeedSummary(env, memberId) {
         FROM members m
         LEFT JOIN service_deeds d ON d.member_id = m.id AND d.status = 'approved'
         WHERE m.status = 'active'
+          AND COALESCE(m.membership_kind, 'full') = 'full'
+          AND COALESCE(m.can_log_deeds, TRUE) = TRUE
         GROUP BY m.id
         ORDER BY total DESC, m.display_name ASC
       `,
@@ -1767,6 +1779,8 @@ async function loadServiceDeedSummary(env, memberId) {
         JOIN members m ON m.id = d.member_id
         WHERE d.status = 'approved'
           AND m.status = 'active'
+          AND COALESCE(m.membership_kind, 'full') = 'full'
+          AND COALESCE(m.can_log_deeds, TRUE) = TRUE
         GROUP BY d.deed_type, m.id, m.display_name
         ORDER BY d.deed_type ASC, total DESC, m.display_name ASC
       `,
@@ -2749,6 +2763,16 @@ async function handleStewardElectionVote(request, env, actor) {
   const activeElection = await getActiveStewardElection(env);
   if (!activeElection) {
     return json({ error: "Сейчас нет открытого выборного собора." }, 400);
+  }
+
+  if (!canHoldStewardOffice(actor)) {
+    return json(
+      {
+        error:
+          "Почётные члены могут наблюдать за выборным собором, но не участвуют в избрании Сенешаля.",
+      },
+      403,
+    );
   }
 
   const body = await readJson(request);
@@ -4519,7 +4543,10 @@ function getHiddenAchievementViewerEmails(env) {
 
 function isUniqueRatingLeaderForMember(member, roster) {
   const ratedMembers = (roster || []).filter(
-    (entry) => entry.averageRating !== null && Number(entry.feedbackCount || 0) >= 5,
+    (entry) =>
+      !isHonoraryMember(entry) &&
+      entry.averageRating !== null &&
+      Number(entry.feedbackCount || 0) >= 5,
   );
   if (!ratedMembers.length || member?.averageRating === null || member?.averageRating === undefined) {
     return false;
@@ -4764,6 +4791,65 @@ function renderIcsDisplayAlarm(summary, duration) {
   ];
 }
 
+function normalizeMembershipKind(value) {
+  return String(value || "").trim().toLowerCase() === "honorary" ? "honorary" : "full";
+}
+
+function readMemberToggle(value, fallback = true) {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === "false" || normalized === "f" || normalized === "no") {
+    return false;
+  }
+  if (normalized === "true" || normalized === "t" || normalized === "yes") {
+    return true;
+  }
+
+  return Number(value) !== 0;
+}
+
+function getMemberParticipationProfile(member) {
+  const membershipKind = normalizeMembershipKind(
+    member?.membership_kind ?? member?.membershipKind,
+  );
+  const defaultParticipation = membershipKind !== "honorary";
+
+  return {
+    membershipKind,
+    isHonorary: membershipKind === "honorary",
+    canJoinRitualRotation: readMemberToggle(
+      member?.can_join_ritual_rotation ?? member?.canJoinRitualRotation,
+      defaultParticipation,
+    ),
+    canLogDeeds: readMemberToggle(
+      member?.can_log_deeds ?? member?.canLogDeeds,
+      defaultParticipation,
+    ),
+  };
+}
+
+function isHonoraryMember(member) {
+  return getMemberParticipationProfile(member).isHonorary;
+}
+
+function canJoinRitualRotation(member) {
+  return getMemberParticipationProfile(member).canJoinRitualRotation;
+}
+
+function canLogServiceDeeds(member) {
+  return getMemberParticipationProfile(member).canLogDeeds;
+}
+
+function canHoldStewardOffice(member) {
+  return Boolean(member) && member.status === "active" && !isHonoraryMember(member);
+}
+
 async function loadRoster(env) {
   const rows = await all(
     env,
@@ -4774,6 +4860,9 @@ async function loadRoster(env) {
         m.display_name,
         m.role,
         m.status,
+        m.membership_kind,
+        m.can_join_ritual_rotation,
+        m.can_log_deeds,
         m.duty_count,
         m.created_at,
         m.approved_at,
@@ -4816,7 +4905,7 @@ function decorateCouncilMember(member, stewardMemberId) {
   const effectiveRole =
     member.baseRole === "admin" || member.role === "admin"
       ? "admin"
-      : member.id === stewardMemberId
+      : canHoldStewardOffice(member) && member.id === stewardMemberId
         ? "steward"
         : "member";
 
@@ -4838,6 +4927,12 @@ function compareCouncilMembers(left, right) {
 
   if (leftWeight !== rightWeight) {
     return leftWeight - rightWeight;
+  }
+
+  const leftHonorary = isHonoraryMember(left);
+  const rightHonorary = isHonoraryMember(right);
+  if (leftHonorary !== rightHonorary) {
+    return leftHonorary ? 1 : -1;
   }
 
   return left.displayName.localeCompare(right.displayName, "ru");
@@ -4864,7 +4959,9 @@ async function getEffectiveMemberRole(env, member) {
   }
 
   const stewardMemberId = await getCurrentStewardMemberId(env);
-  return member.id === stewardMemberId ? "steward" : "member";
+  return canHoldStewardOffice(member) && member.id === stewardMemberId
+    ? "steward"
+    : "member";
 }
 
 async function getCurrentStewardMemberId(env) {
@@ -4889,6 +4986,7 @@ async function getLatestCompletedStewardRecord(env) {
         AND e.status = 'completed'
         AND e.winner_member_id IS NOT NULL
         AND m.status = 'active'
+        AND COALESCE(m.membership_kind, 'full') = 'full'
         AND m.role = 'member'
       ORDER BY COALESCE(e.completed_at, e.started_at) DESC, e.started_at DESC
       LIMIT 1
@@ -5055,7 +5153,7 @@ async function loadCouncilElectionState(env, viewer, roster, currentStewardMembe
   ]);
 
   const rosterById = new Map(roster.map((member) => [member.id, member]));
-  const voters = roster.filter((member) => member.status === "active");
+  const voters = roster.filter((member) => canHoldStewardOffice(member));
   const votesByCandidate = new Map();
   for (const vote of voteRows) {
     votesByCandidate.set(
@@ -5085,7 +5183,10 @@ async function loadCouncilElectionState(env, viewer, roster, currentStewardMembe
         dutyCount: Number(candidate.duty_count_snapshot || member?.dutyCount || 0),
         voteCount: Number(votesByCandidate.get(candidate.member_id) || 0),
         isMyVote: myVoteCandidateId === candidate.member_id,
-        canReceiveVote: Boolean(viewer) && viewer.id !== candidate.member_id,
+        canReceiveVote:
+          Boolean(viewer) &&
+          canHoldStewardOffice(viewer) &&
+          viewer.id !== candidate.member_id,
       };
     })
     .sort(compareElectionCandidates);
@@ -5104,14 +5205,16 @@ async function loadCouncilElectionState(env, viewer, roster, currentStewardMembe
         voters.length > 0 &&
         voters.every((member) => votedMemberIds.has(member.id)),
       myVoteCandidateId,
-      canVote: Boolean(viewer),
+      canVote: Boolean(viewer) && canHoldStewardOffice(viewer),
       candidates,
     },
   };
 }
 
 function pickInitialStewardCandidates(roster) {
-  const eligibleMembers = roster.filter((member) => member.status === "active" && member.baseRole !== "admin");
+  const eligibleMembers = roster.filter(
+    (member) => canHoldStewardOffice(member) && member.baseRole !== "admin",
+  );
   if (!eligibleMembers.length) {
     return [];
   }
@@ -5367,7 +5470,7 @@ async function loadElectionVoterRoster(env, currentStewardMemberId = null) {
     await loadRoster(env),
     currentStewardMemberId ?? (await getCurrentStewardMemberId(env)),
   );
-  return roster.filter((member) => member.status === "active");
+  return roster.filter((member) => canHoldStewardOffice(member));
 }
 
 function formatCandidateNames(candidates) {
@@ -5605,6 +5708,9 @@ async function createNextCycle(env, createdByMemberId) {
         m.display_name,
         m.role,
         m.status,
+        m.membership_kind,
+        m.can_join_ritual_rotation,
+        m.can_log_deeds,
         m.duty_count,
         m.calendar_token,
         COUNT(r.id) AS review_count,
@@ -5613,6 +5719,8 @@ async function createNextCycle(env, createdByMemberId) {
       LEFT JOIN cycle_assignments a ON a.member_id = m.id
       LEFT JOIN cycle_reviews r ON r.cycle_id = a.cycle_id
       WHERE m.status = 'active'
+        AND COALESCE(m.membership_kind, 'full') = 'full'
+        AND COALESCE(m.can_join_ritual_rotation, TRUE) = TRUE
       GROUP BY m.id
       ORDER BY m.display_name ASC
     `,
@@ -6033,6 +6141,9 @@ async function getCurrentMember(request, env) {
         m.display_name,
         m.role,
         m.status,
+        m.membership_kind,
+        m.can_join_ritual_rotation,
+        m.can_log_deeds,
         m.duty_count,
         m.calendar_token,
         s.id AS session_id
@@ -6087,6 +6198,7 @@ function memberToClient(member) {
       ? null
       : Number(member.average_rating);
   const rank = getMemberRank({ dutyCount, averageRating });
+  const participation = getMemberParticipationProfile(member);
 
   return {
     id: member.id,
@@ -6095,6 +6207,10 @@ function memberToClient(member) {
     role: member.role,
     baseRole: member.role,
     status: member.status,
+    membershipKind: participation.membershipKind,
+    isHonorary: participation.isHonorary,
+    canJoinRitualRotation: participation.canJoinRitualRotation,
+    canLogDeeds: participation.canLogDeeds,
     dutyCount,
     createdAt: member.created_at || null,
     approvedAt: member.approved_at || member.created_at || null,

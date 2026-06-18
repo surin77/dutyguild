@@ -684,7 +684,7 @@ function renderHeaderUserMenu() {
           <div class="header-user__details">
             <div class="header-user__detail">
               <span class="header-user__detail-label">Сан</span>
-              <span>${escapeHtml(roleLabel(member.role))}</span>
+              <span>${escapeHtml(memberRoleLabel(member))}</span>
             </div>
             <div class="header-user__detail">
               <span class="header-user__detail-label">Звание</span>
@@ -1278,9 +1278,53 @@ function renderDeedsPanel() {
     .map((deedType) => renderDeedLeaderList(deedType))
     .join("");
   const canManageDeeds = Boolean(state.me?.permissions?.canManageDeeds);
+  const canLogDeeds = Boolean(state.me?.canLogDeeds);
   const ledgerRows = (state.dashboard?.serviceDeedLedger || [])
     .map((entry) => renderServiceDeedLedgerRow(entry, canManageDeeds))
     .join("");
+  const deedForm = canLogDeeds
+    ? `
+      <form id="service-deed-form" class="stack-form deed-form">
+        <h3>Вписать новое деяние</h3>
+        <label>
+          <span>Какое деяние свершено</span>
+          <select name="deedType">
+            <option value="">Выберите деяние</option>
+            ${visibleDeeds
+              .map(
+                (deed) => `
+                  <option value="${escapeHtml(deed.id)}">${escapeHtml(deed.label)}</option>
+                `,
+              )
+              .join("")}
+          </select>
+        </label>
+        <div class="deed-form__hint">
+          <span class="section-tag">Знамения служения</span>
+          <p>Одно внесение — одно деяние. Знамения открываются на рубежах 1, 5, 10 и 20 утверждённых свершений каждого вида.</p>
+        </div>
+        <label>
+          <span>Пометка летописца</span>
+          <textarea
+            name="notes"
+            rows="3"
+            placeholder="Например: изгнал сор из зала, напитал источник ордена или пополнил кладовую быта"
+          ></textarea>
+        </label>
+        <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
+          Вписать деяние
+        </button>
+      </form>
+    `
+    : `
+      <article class="stack-form deed-form deed-form--locked">
+        <h3>Почётное место у книги деяний</h3>
+        <p>
+          Почётные члены остаются в круге и видят весь ход летописи, но новые деяния больше не
+          вписывают и в счёт служения не входят.
+        </p>
+      </article>
+    `;
 
   return `
     <article class="panel panel--wide">
@@ -1294,37 +1338,7 @@ function renderDeedsPanel() {
       <div class="deed-grid">
         <div class="deed-main">
           <div class="deed-summary-grid">${deedCards}</div>
-          <form id="service-deed-form" class="stack-form deed-form">
-            <h3>Вписать новое деяние</h3>
-            <label>
-              <span>Какое деяние свершено</span>
-              <select name="deedType">
-                <option value="">Выберите деяние</option>
-                ${visibleDeeds
-                  .map(
-                    (deed) => `
-                      <option value="${escapeHtml(deed.id)}">${escapeHtml(deed.label)}</option>
-                    `,
-                  )
-                  .join("")}
-              </select>
-            </label>
-            <div class="deed-form__hint">
-              <span class="section-tag">Знамения служения</span>
-              <p>Одно внесение — одно деяние. Знамения открываются на рубежах 1, 5, 10 и 20 утверждённых свершений каждого вида.</p>
-            </div>
-            <label>
-              <span>Пометка летописца</span>
-              <textarea
-                name="notes"
-                rows="3"
-                placeholder="Например: изгнал сор из зала, напитал источник ордена или пополнил кладовую быта"
-              ></textarea>
-            </label>
-            <button class="button button--primary" type="submit" ${state.busy ? "disabled" : ""}>
-              Вписать деяние
-            </button>
-          </form>
+          ${deedForm}
         </div>
         <div class="deed-side">
           <article class="deed-side-card">
@@ -2804,14 +2818,19 @@ function renderRosterPanel() {
 function renderRosterMemberCard(member) {
   const stats = member.profileStats || {};
   const leadingDeed = getLeadingDeedLabel(stats.leadingDeedType);
+  const roleText = memberRoleLabel(member);
+  const membershipMeta = member.isHonorary
+    ? `<span class="roster-member__meta-note">Почётное место в ордене · без ротации обрядов и новых деяний</span>`
+    : "";
 
   return `
     <details class="roster-member">
       <summary class="roster-member__summary">
         <div class="roster-member__identity">
           <strong>${escapeHtml(member.displayName)}</strong>
-          <span>${escapeHtml(roleLabel(member.role))}</span>
+          <span>${escapeHtml(roleText)}</span>
           <span>${escapeHtml(memberRankTitle(member))}</span>
+          ${membershipMeta}
         </div>
         <div class="roster-member__summary-metrics">
           <span>${escapeHtml(String(stats.ritualsCompleted || 0))} обрядов</span>
@@ -3817,11 +3836,12 @@ function sleep(ms) {
 }
 
 function getStats() {
-  const memberCount = state.dashboard?.roster?.length || 0;
+  const activeRoster = (state.dashboard?.roster || []).filter((member) => !isHonoraryMember(member));
+  const memberCount = activeRoster.length;
   const cycleCount = state.dashboard?.recentCycles?.length || 0;
   const gameCount = state.dashboard?.upcomingGames?.length || 0;
   const pendingReviewCount = state.dashboard?.pendingReviewCycles?.length || 0;
-  const ratings = (state.dashboard?.roster || [])
+  const ratings = activeRoster
     .map((member) => member.averageRating)
     .filter((value) => typeof value === "number");
 
@@ -3851,6 +3871,18 @@ function roleLabel(role) {
     return "Сенешаль Совета";
   }
   return "Соратник круга";
+}
+
+function isHonoraryMember(member) {
+  return String(member?.membershipKind || "").trim().toLowerCase() === "honorary";
+}
+
+function memberRoleLabel(member) {
+  if (isHonoraryMember(member)) {
+    return "Почётный член ордена";
+  }
+
+  return roleLabel(member?.role);
 }
 
 function getAssignableTaskMembers() {
@@ -3948,6 +3980,10 @@ function memberRankShort(member) {
 }
 
 function memberRankProgress(member) {
+  if (isHonoraryMember(member)) {
+    return "Имя сохранено в почётной летописи. Новые ступени для этого места больше не набираются.";
+  }
+
   return member?.rank?.progressLabel || "Путь звания ещё не раскрыт.";
 }
 
@@ -3960,6 +3996,10 @@ function memberNextRankTitle(member) {
 }
 
 function memberRankFutureHint(member) {
+  if (isHonoraryMember(member)) {
+    return "Почётный член остаётся в круге как свидетель и гость ордена.";
+  }
+
   return member?.rank?.futureRatingHint || "Слава ордена ещё только собирается.";
 }
 
